@@ -15,7 +15,7 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 - **GitHub:** https://github.com/Manditha77
 - **LinkedIn:** https://www.linkedin.com/in/manditha-madushanka-455145281
 - **Medium:** https://medium.com/@manditha (TODO: confirm the full profile URL)
-- **CV file:** `public/Manditha-Madushanka-CV.pdf` (TODO: add the PDF)
+- **CV file:** `public/Manditha-Madushanka-CV.pdf`
 - Do NOT publish: phone number, street address.
 
 ---
@@ -125,7 +125,7 @@ A VR training simulator where trainees learn electrical workshop safety by doing
 - Main Coordinator, IM Auwrudu, Industrial Management Science Students' Association, 2024
 
 ### Education
-- BSc (Hons) Management and Information Technology (IT specialisation), University of Kelaniya, 2023 – present (GPA 3.36 / 4.00; optional, Manditha decides whether to show it)
+- BSc (Hons) Management and Information Technology (IT specialisation), University of Kelaniya, 2023 – present (GPA 3.36 / 4.00)
 
 ---
 
@@ -136,15 +136,13 @@ A VR training simulator where trainees learn electrical workshop safety by doing
 ---
 
 ## Skills (grouped; no percentages)
-- **Languages:** Java, JavaScript, TypeScript*, Python, C#, C++, SQL
+- **Languages:** Java, JavaScript, TypeScript, Python, C#, C++, SQL
 - **Backend:** Spring Boot, REST APIs, gRPC, Apache Kafka, Microservices, Event-Driven Architecture
 - **Frontend & Mobile:** React.js, Next.js, HTML, CSS, Bootstrap, Android (Java), Flutter, Firebase
 - **Databases:** PostgreSQL, MySQL
 - **DevOps & Tools:** Git, GitHub, Bitbucket, Docker, Microsoft Azure, SonarQube, Postman
 - **XR:** Unity 6 (URP), XR Interaction Toolkit, OpenXR, WebXR
 - **Practices:** OOP, unit testing, refactoring, Agile/Scrum
-
-*TypeScript and C# are not on the CV. TypeScript is used to build this site, and C# in ElectricalSafetyVR. Add them to the CV too, or remove them here.
 
 ---
 
