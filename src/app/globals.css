@@ -1,26 +1,115 @@
 @import "tailwindcss";
 
+/* Light-theme variant for the few places that need it (e.g. the theme toggle icon).
+   The inline theme script always sets data-theme, so this is reliable when JS runs. */
+@custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
+
+/* ---------- Design tokens ---------- */
+
+/* Dark is the default theme. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0b0f14;
+  --surface: #121821;
+  --text: #e6edf3;
+  --text-muted: #9aa7b4;
+  --border: #243041;
+  --accent: #2dd4bf;
+  --accent-contrast: #04201c;
+
+  --header-h: 4rem;
+  color-scheme: dark;
+}
+
+/* Light theme: chosen manually, or from the OS when nothing is stored. */
+:root[data-theme="light"] {
+  --bg: #fbfcfd;
+  --surface: #f1f4f7;
+  --text: #0b1220;
+  --text-muted: #4a5565;
+  --border: #d5dbe3;
+  --accent: #0f766e;
+  --accent-contrast: #ffffff;
+  color-scheme: light;
+}
+
+/* No-JS fallback: follow the OS unless dark was chosen explicitly. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #fbfcfd;
+    --surface: #f1f4f7;
+    --text: #0b1220;
+    --text-muted: #4a5565;
+    --border: #d5dbe3;
+    --accent: #0f766e;
+    --accent-contrast: #ffffff;
+    color-scheme: light;
+  }
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@theme {
+  --container-content: 68.75rem;
+
+  --text-display: clamp(2.25rem, 1.6rem + 3.2vw, 4rem);
+  --text-display--line-height: 1.05;
+  --text-h2: clamp(1.5rem, 1.25rem + 1.25vw, 2.25rem);
+  --text-h2--line-height: 1.15;
+}
+
+/* ---------- Base ---------- */
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  main:focus {
+    outline: none;
+  }
+
+  /* Anchor targets (sections, #main) land below the sticky header. */
+  html {
+    scroll-padding-top: var(--header-h);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
