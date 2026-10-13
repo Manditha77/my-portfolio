@@ -48,7 +48,7 @@ export const site: Site = {
       label: "LinkedIn",
       href: "https://www.linkedin.com/in/manditha-madushanka-455145281",
     },
-    medium: { label: "Medium", href: "https://medium.com/@manditha" },
+    medium: { label: "Medium", href: "https://medium.com/@manditha77madushanka" },
     githubRepos: {
       label: "More on GitHub",
       href: "https://github.com/Manditha77?tab=repositories",
@@ -69,5 +69,5 @@ export const site: Site = {
     heading: "Let's talk",
     line: "I'm open to Associate Software Engineer roles, and to XR collaborations. The fastest way to reach me is by email.",
   },
-  todos: ["TODO: confirm the full profile URL"],
+  todos: [],
 };

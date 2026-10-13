@@ -14,7 +14,7 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 - **Email:** manditha77madushanka@gmail.com
 - **GitHub:** https://github.com/Manditha77
 - **LinkedIn:** https://www.linkedin.com/in/manditha-madushanka-455145281
-- **Medium:** https://medium.com/@manditha (TODO: confirm the full profile URL)
+- **Medium:** https://medium.com/@manditha77madushanka
 - **CV file:** `public/Manditha-Madushanka-CV.pdf`
 - Do NOT publish: phone number, street address.
 
@@ -127,13 +127,13 @@ A VR training simulator where trainees learn electrical workshop safety by doing
 - Main Coordinator, IM Auwrudu, Industrial Management Science Students' Association, 2024
 
 ### Education
-- BSc (Hons) Management and Information Technology (IT specialisation), University of Kelaniya, 2023 – present (GPA 3.36 / 4.00)
+- BSc (Hons) Management and Information Technology (IT specialisation), University of Kelaniya, 2023 – present
 
 ---
 
 ## Writing (Medium)
-- **I Turned My Laptop's Gaming GPU Into an AI Image Studio** (Aug 2026): Running Stable Diffusion locally on an NVIDIA RTX 4060, including the errors and fixes. URL: https://medium.com/@manditha/i-turned-my-laptops-gaming-gpu-into-an-ai-image-studio (TODO: verify)
-- **Building My Own VPN on Microsoft Azure as a University Student** (Jun 2026): WireGuard on Azure, including debugging iptables rules. URL: https://medium.com/@manditha/building-my-own-vpn-on-microsoft-azure-as-a-university-student (TODO: verify)
+- **I Turned My Laptop's Gaming GPU Into an AI Image Studio** (Aug 2026): Running Stable Diffusion locally on an NVIDIA RTX 4060, including the errors and fixes. URL: https://medium.com/@manditha77madushanka/i-turned-my-laptops-gaming-gpu-into-an-ai-image-studio-ee851474d6eb
+- **Building My Own VPN on Microsoft Azure as a University Student** (Jun 2026): WireGuard on Azure, including debugging iptables rules. URL: https://medium.com/@manditha77madushanka/building-my-own-vpn-on-microsoft-azure-as-a-university-student-9f8fd0577aea
 
 ---
 
