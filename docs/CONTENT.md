@@ -130,7 +130,7 @@ A VR training simulator where trainees learn electrical workshop safety by doing
 ---
 
 ## Writing (Medium)
-- **I Turned My Laptop's Gaming GPU Into an AI Image Studio** (Aug 2026): running Stable Diffusion locally on an NVIDIA RTX 4060, including the errors and fixes. URL: https://medium.com/@manditha/i-turned-my-laptops-gaming-gpu-into-an-ai-image-studio (TODO: verify)
+- **I Turned My Laptop's Gaming GPU Into an AI Image Studio** (Aug 2026): Running Stable Diffusion locally on an NVIDIA RTX 4060, including the errors and fixes. URL: https://medium.com/@manditha/i-turned-my-laptops-gaming-gpu-into-an-ai-image-studio (TODO: verify)
 - **Building My Own VPN on Microsoft Azure as a University Student** (Jun 2026): WireGuard on Azure, including debugging iptables rules. URL: https://medium.com/@manditha/building-my-own-vpn-on-microsoft-azure-as-a-university-student (TODO: verify)
 
 ---

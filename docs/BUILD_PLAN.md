@@ -53,10 +53,13 @@ No real content yet. Plan first.
 
 ### Step 2: Content layer
 ```
-Read docs/CONTENT.md and create typed content files in src/content/
-(site.ts, projects.ts, xr.ts, experience.ts, writing.ts, skills.ts, about.ts).
-Define TypeScript types for each. Copy the text exactly; do not rewrite or embellish.
-Keep any TODO items as TODO strings and list them for me at the end.
+Read docs/CONTENT.md and complete the content layer in src/content/.
+site.ts and navigation.ts already exist from Step 1: extend them, don't replace or duplicate them,
+and keep everything that currently imports them working.
+Create the remaining files: projects.ts, xr.ts, experience.ts, writing.ts, skills.ts, about.ts.
+Define strict TypeScript types for each (no any; optional fields for things like screenshots and the video ID).
+Copy the text exactly from CONTENT.md; do not rewrite or embellish.
+Keep TODO items as visible TODO strings and list them for me at the end.
 Plan first.
 ```
 
