@@ -165,10 +165,19 @@ Plan first.
 
 ### Step 9: Contact + footer
 ```
-Build the Contact section (#contact) from src/content/site.ts: heading, line, an email button
-(mailto) plus a "copy email" button with accessible feedback, and LinkedIn/GitHub/Medium links.
-No contact form or backend for now. Update the footer with © year, links, and "Built with
-Next.js · source on GitHub". Plan first.
+Build the Contact section (#contact) and finish the footer, from src/content/site.ts.
+Contact:
+- Heading and line from site.ts, then a primary "Email me" button (mailto:) and a secondary "Copy email" button.
+- Copy email: navigator.clipboard with a fallback; shows "Copied!" for ~2s and announces it via an aria-live
+  region; if copying fails, show the address as selectable text. This button is the only client component.
+- Below: LinkedIn, GitHub and Medium as text-and-icon links (new tab, rel="noopener noreferrer", "(opens in new tab)" for screen readers).
+- Display the email address as plain text too, so it can be read and copied by hand.
+- No form, no backend, no phone number, no address.
+Footer:
+- © current year + name, the same three social links (icon-only with aria-labels), "Back to top",
+  and "Built with Next.js · Source on GitHub" linking to the portfolio repo (put the repo URL in site.ts; ask me for it).
+Server Components except the copy button; no new dependencies. Check at 360, 768 and 1280px in both themes.
+Plan first.
 ```
 
 ### Step 10: Motion polish pass

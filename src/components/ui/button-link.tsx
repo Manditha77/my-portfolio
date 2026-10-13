@@ -6,7 +6,11 @@ type ButtonLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   variant?: "primary" | "secondary";
 };
 
-const variants = {
+/** Shared with <button> elements that should look like ButtonLink. */
+export const buttonBase =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-colors";
+
+export const buttonVariants = {
   primary: "bg-accent text-accent-contrast hover:opacity-90",
   secondary: "border border-border text-text hover:border-accent hover:text-accent",
 } as const;
@@ -14,11 +18,7 @@ const variants = {
 export function ButtonLink({ variant = "primary", className, children, ...rest }: ButtonLinkProps) {
   return (
     <a
-      className={cx(
-        "inline-flex min-h-11 items-center justify-center rounded-md px-4 text-sm font-medium transition-colors",
-        variants[variant],
-        className,
-      )}
+      className={cx(buttonBase, buttonVariants[variant], className)}
       {...rest}
     >
       {children}

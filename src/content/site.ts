@@ -15,6 +15,7 @@ export type Site = {
     linkedin: ExternalLink;
     medium: ExternalLink;
     githubRepos: ExternalLink;
+    portfolioRepo: ExternalLink;
   };
   hero: {
     intro: string;
@@ -29,6 +30,15 @@ export type Site = {
   contact: {
     heading: string;
     line: string;
+    emailCta: string;
+    copyCta: string;
+    copied: string;
+    copyFailed: string;
+    emailLabel: string;
+    opensNewTab: string;
+  };
+  footer: {
+    builtWith: string;
   };
   todos: readonly Todo[];
 };
@@ -53,6 +63,10 @@ export const site: Site = {
       label: "More on GitHub",
       href: "https://github.com/Manditha77?tab=repositories",
     },
+    portfolioRepo: {
+      label: "Source on GitHub",
+      href: "https://github.com/Manditha77/my-portfolio",
+    },
   },
   hero: {
     intro:
@@ -68,6 +82,15 @@ export const site: Site = {
   contact: {
     heading: "Let's talk",
     line: "I'm open to Associate Software Engineer roles, and to XR collaborations. The fastest way to reach me is by email.",
+    emailCta: "Email me",
+    copyCta: "Copy email",
+    copied: "Copied!",
+    copyFailed: "Couldn't copy. Select the address:",
+    emailLabel: "Email",
+    opensNewTab: "(opens in new tab)",
+  },
+  footer: {
+    builtWith: "Built with Next.js",
   },
   todos: [],
 };

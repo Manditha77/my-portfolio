@@ -8,11 +8,13 @@ type SectionProps = Omit<HTMLAttributes<HTMLElement>, "id"> & {
   id: SectionId;
   /** Less vertical padding, for small strips such as Writing. */
   compact?: boolean;
+  /** Overrides the h2 text; defaults to the section's navigation label. */
+  heading?: string;
   children?: ReactNode;
 };
 
 /** A home page section with an h2 taken from the navigation content, labelled for assistive tech. */
-export function Section({ id, compact = false, children, className, ...rest }: SectionProps) {
+export function Section({ id, compact = false, heading, children, className, ...rest }: SectionProps) {
   const headingId = `${id}-heading`;
 
   return (
@@ -24,7 +26,7 @@ export function Section({ id, compact = false, children, className, ...rest }: S
     >
       <Container>
         <h2 id={headingId} className="text-h2 font-semibold tracking-tight">
-          {sectionLabel(id)}
+          {heading ?? sectionLabel(id)}
         </h2>
         {children}
       </Container>
