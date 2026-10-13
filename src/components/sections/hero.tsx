@@ -1,5 +1,6 @@
 import { site } from "@/content/site";
 import { HeroPoster } from "@/components/three/hero-poster";
+import { HeroVisual } from "@/components/three/hero-visual";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import { IconLink } from "@/components/ui/icon-link";
@@ -37,12 +38,14 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Reserved slot for the Step 4 3D element: fixed aspect ratio so swapping it in never shifts layout. */}
+        {/* Fixed aspect ratio: the poster renders first and the 3D canvas (desktop only) overlays it, so nothing shifts. */}
         <div
           aria-hidden="true"
           className="relative mx-auto aspect-square w-full max-w-xs motion-safe:animate-hero-in sm:max-w-sm lg:max-w-none"
         >
-          <HeroPoster />
+          <HeroVisual>
+            <HeroPoster />
+          </HeroVisual>
         </div>
       </Container>
     </section>

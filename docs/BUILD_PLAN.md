@@ -82,11 +82,23 @@ Plan first.
 ### Step 4: The 3D element
 ```
 Replace the hero poster area with the one 3D element, following CLAUDE.md section 6 exactly.
-Propose 2–3 concepts first (procedural, lightweight, pointer-reactive, fits "software engineer
-who also builds XR"), with an estimated bundle size for each, and wait for me to pick one.
-Requirements: next/dynamic with ssr:false, loaded after idle; static poster fallback (no WebGL,
-reduced motion, or still loading); DPR capped at 1.5; pauses when off-screen; aria-hidden;
-no layout shift. Report the added JS size after building.
+Propose 2–3 concepts first, with an estimated added JS size for each, and wait for me to pick.
+Include this concept as one option: "Systems from parts": a cube made of smaller blocks
+(instancedMesh, one draw call, no textures) that slowly rotates and, on pointer move/hover,
+gently separates into its modules and then reassembles. It should match the existing hero poster.
+
+When to load 3D (otherwise the existing poster stays):
+- only at the lg breakpoint and up AND with (hover: hover) and (pointer: fine)
+- WebGL is available, prefers-reduced-motion is not "reduce", and Save-Data is not on
+- loaded with next/dynamic (ssr:false) after the browser is idle; phones never download the 3D chunk
+
+Requirements: add three and @react-three/fiber (drei only if truly needed; justify it);
+the poster stays as the fallback and loading state, with an identical size and aspect ratio (no layout shift);
+the canvas fades in over the poster once ready; DPR capped at 1.5; pause rendering when off-screen or the tab
+is hidden; aria-hidden; no pointer/scroll trapping.
+After building, report the lazily loaded 3D chunk size, and confirm first-load JS for / did not grow meaningfully
+and that a 360px mobile emulation does not request the 3D chunk (check the DevTools Network tab).
+Plan first.
 ```
 
 ### Step 5: Selected Work (SE projects)

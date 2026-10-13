@@ -3,7 +3,7 @@ import { cx } from "@/lib/cx";
 /*
  * Static poster for the hero visual: an orthographic projection of nested cubes (a tesseract-like
  * wireframe) over a faded grid. Rendered on the server as inline SVG, so it costs no request and
- * no client JS. Step 4 reuses it as the fallback for the 3D element (no WebGL, reduced motion, loading).
+ * no client JS. It is also the fallback and loading state for the 3D element (see HeroVisual).
  */
 
 type Vec3 = readonly [number, number, number];
@@ -95,16 +95,19 @@ export function HeroPoster({ className }: HeroPosterProps) {
       <path d={gridPath} className="stroke-border" strokeWidth={1} mask="url(#hero-poster-mask)" />
       <circle cx={CENTER} cy={CENTER} r={CENTER} fill="url(#hero-poster-glow)" />
 
-      <g fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke">
-        <path d={spokesPath} className="stroke-accent" strokeWidth={1} strokeOpacity={0.35} />
-        <path d={innerPath} className="stroke-accent" strokeWidth={1.25} strokeOpacity={0.6} />
-        <path d={outerPath} className="stroke-accent" strokeWidth={1.75} />
-      </g>
+      {/* The cube fades out once HeroVisual's 3D canvas is ready; the grid and glow stay as its backdrop. */}
+      <g className="transition-opacity duration-400 group-data-[3d=ready]:opacity-0">
+        <g fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke">
+          <path d={spokesPath} className="stroke-accent" strokeWidth={1} strokeOpacity={0.35} />
+          <path d={innerPath} className="stroke-accent" strokeWidth={1.25} strokeOpacity={0.6} />
+          <path d={outerPath} className="stroke-accent" strokeWidth={1.75} />
+        </g>
 
-      <g className="fill-accent">
-        {outerPoints.map(({ key, point: [cx, cy] }) => (
-          <circle key={key} cx={cx} cy={cy} r={3.5} />
-        ))}
+        <g className="fill-accent">
+          {outerPoints.map(({ key, point: [cx, cy] }) => (
+            <circle key={key} cx={cx} cy={cy} r={3.5} />
+          ))}
+        </g>
       </g>
     </svg>
   );
