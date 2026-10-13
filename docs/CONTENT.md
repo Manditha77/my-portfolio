@@ -144,7 +144,7 @@ A VR training simulator where trainees learn electrical workshop safety by doing
 - **Databases:** PostgreSQL, MySQL
 - **DevOps & Tools:** Git, GitHub, Bitbucket, Docker, Microsoft Azure, SonarQube, Postman
 - **XR:** Unity 6 (URP), XR Interaction Toolkit, OpenXR, WebXR
-- **Practices:** OOP, unit testing, refactoring, Agile/Scrum
+- **Practices:** OOP, Unit testing, Refactoring, Agile/Scrum
 
 ---
 

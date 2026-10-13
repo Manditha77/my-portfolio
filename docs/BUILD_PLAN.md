@@ -148,9 +148,18 @@ Plan first.
 
 ### Step 8: Skills + About
 ```
-Build the Skills section (#skills) as grouped tag lists from src/content/skills.ts (no bars, no
-percentages), and the About section (#about) from src/content/about.ts with an optional photo slot
-(public/images/manditha.jpg if it exists; otherwise no image).
+Build the Skills section (#skills) and the About section (#about) from src/content/skills.ts and about.ts.
+Skills:
+- Grouped tag lists (reuse TagList), one group per row with the group name as a small label. No bars, no percentages, no icons.
+- TypeScript and C# stay in the Languages group; remove any asterisk or footnote about them in skills.ts and docs/CONTENT.md.
+- Tags in the XR group use the accent style, as a quiet link to the XR section.
+- Two columns of groups on desktop, one on mobile.
+About:
+- The 4 paragraphs from about.ts, comfortable reading width (~65ch).
+- If public/images/manditha.jpg exists: a rounded photo beside the text on desktop and above it on mobile,
+  via next/image with alt text "Manditha Madushanka". If it doesn't exist, no image area at all.
+- End with two text links: "Download CV" and "Get in touch" (→ #contact).
+Server Components only, no new dependencies. Check at 360, 768 and 1280px in both themes.
 Plan first.
 ```
 

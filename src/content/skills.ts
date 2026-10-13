@@ -1,6 +1,8 @@
 export type SkillGroup = {
   label: string;
   items: readonly string[];
+  /** "accent" tints the tags, a quiet link to the XR section. */
+  tone?: "accent";
 };
 
 /** Grouped skills. No levels or percentages. */
@@ -52,9 +54,10 @@ export const skillGroups: readonly SkillGroup[] = [
   {
     label: "XR",
     items: ["Unity 6 (URP)", "XR Interaction Toolkit", "OpenXR", "WebXR"],
+    tone: "accent",
   },
   {
     label: "Practices",
-    items: ["OOP", "unit testing", "refactoring", "Agile/Scrum"],
+    items: ["OOP", "Unit testing", "Refactoring", "Agile/Scrum"],
   },
 ];
