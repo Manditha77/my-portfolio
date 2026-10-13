@@ -131,10 +131,18 @@ Plan first.
 
 ### Step 7: Experience + Writing
 ```
-Build the Experience section (#experience) from src/content/experience.ts, with the aeroPORT
-internship as the prominent first entry (role, company, dates, product line, bullets, tech tags),
-then a compact list of Leadership & Activities and Education. After it, a small Writing strip with
-the 2 Medium articles from src/content/writing.ts (external links, rel="noopener").
+Build the Experience section (#experience) and a Writing strip after it, from src/content/experience.ts and writing.ts.
+Experience:
+- The aeroPORT internship is the prominent first entry: role, company, dates, location, a one-line product
+  description (aeroPORT DCS used by Air Arabia), the bullets, and tech tags (reuse the Tag component).
+- Then a compact "Leadership & activities" list (role, event/organisation, year) and an "Education" entry.
+- Use semantic markup (article/ol, time elements for dates). No logos or images.
+Writing:
+- A small strip titled "Writing" with the 2 Medium articles: title, month/year, one-line summary,
+  external link with rel="noopener noreferrer" and a visible "↗" plus "(opens Medium)" for screen readers.
+- Keep the Medium URLs as they are in writing.ts; they are still TODO-verified, so list them for me at the end.
+Reuse existing components and tokens; Server Components only; no new dependencies.
+Check at 360, 768 and 1280px in both themes.
 Plan first.
 ```
 

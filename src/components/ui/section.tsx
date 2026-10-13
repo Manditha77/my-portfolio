@@ -6,15 +6,22 @@ import { Container } from "./container";
 
 type SectionProps = Omit<HTMLAttributes<HTMLElement>, "id"> & {
   id: SectionId;
+  /** Less vertical padding, for small strips such as Writing. */
+  compact?: boolean;
   children?: ReactNode;
 };
 
 /** A home page section with an h2 taken from the navigation content, labelled for assistive tech. */
-export function Section({ id, children, className, ...rest }: SectionProps) {
+export function Section({ id, compact = false, children, className, ...rest }: SectionProps) {
   const headingId = `${id}-heading`;
 
   return (
-    <section id={id} aria-labelledby={headingId} className={cx("py-16 sm:py-24", className)} {...rest}>
+    <section
+      id={id}
+      aria-labelledby={headingId}
+      className={cx(compact ? "py-12 sm:py-16" : "py-16 sm:py-24", className)}
+      {...rest}
+    >
       <Container>
         <h2 id={headingId} className="text-h2 font-semibold tracking-tight">
           {sectionLabel(id)}

@@ -1,7 +1,11 @@
+import type { IsoMonth } from "@/lib/dates";
+
 export type Job = {
   role: string;
   company: string;
-  period: string;
+  start: IsoMonth;
+  /** Omitted while ongoing. */
+  end?: IsoMonth;
   location: string;
   /** aeroPORT is proprietary: describe only what CONTENT.md says. */
   product: string;
@@ -19,15 +23,17 @@ export type LeadershipRole = {
 export type Education = {
   degree: string;
   institution: string;
-  period: string;
-  gpa: string;
+  start: IsoMonth;
+  /** Omitted while ongoing ("present"). */
+  end?: IsoMonth;
 };
 
 export const experience: readonly Job[] = [
   {
     role: "Software Engineer Intern",
     company: "Information Systems Associates (Pvt) Ltd",
-    period: "Jul 2025 – Jan 2026",
+    start: "2025-07",
+    end: "2026-01",
     location: "Colombo, Sri Lanka",
     product:
       "aeroPORT, a microservices-based Departure Control System (DCS) used by Air Arabia for check-in, boarding, baggage and passenger operations",
@@ -83,7 +89,14 @@ export const education: readonly Education[] = [
     degree:
       "BSc (Hons) Management and Information Technology (IT specialisation)",
     institution: "University of Kelaniya",
-    period: "2023 – present",
-    gpa: "3.36 / 4.00",
+    start: "2023",
   },
 ];
+
+/** Interface strings for the Experience section. */
+export const experienceCopy = {
+  techLabel: "Technologies used",
+  leadershipHeading: "Leadership & activities",
+  educationHeading: "Education",
+  present: "present",
+};
