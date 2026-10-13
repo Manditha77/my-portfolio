@@ -182,10 +182,17 @@ Plan first.
 
 ### Step 10: Motion polish pass
 ```
-Review the whole home page and propose a light, consistent motion system using motion/react:
-reveal-on-scroll once per section, hover states on cards and buttons, and smooth anchor scrolling.
-Everything must respect prefers-reduced-motion. Show the plan with durations and easings; don't
-add motion to the text in the hero LCP element.
+Polish pass on the home page, in two parts. Plan first.
+1. Spacing: the vertical gap between sections is too large (about a full screen between some sections on desktop).
+   Propose one consistent section spacing scale (e.g. ~96–128px between sections on desktop, ~64–80px on mobile),
+   applied through the Section component, not per section. Show before/after values.
+2. Motion with motion/react:
+   - reveal-on-scroll once per section (short fade + small rise, 300–400ms, ease-out); never on the hero h1 or hero text
+   - subtle hover/focus transitions on buttons, links and cards (CSS where possible)
+   - smooth anchor scrolling
+   - everything disabled under prefers-reduced-motion
+   Keep client JS minimal: one small reusable Reveal wrapper, sections stay Server Components.
+   Report the first-load JS change for /.
 ```
 
 ### Step 11: SEO and sharing
