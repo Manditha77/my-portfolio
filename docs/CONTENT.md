@@ -32,7 +32,9 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 
 ## Selected Work (SE)
 
-### 1. GroceryEase: web-based grocery management system
+**Section intro:** Two full-stack Java and Spring Boot systems, and the research I'm doing for my final-year dissertation.
+
+### 1. GroceryEase: Web-based grocery management system
 - **Year:** 2024–2025 · **Type:** Solo project
 - **Repo:** https://github.com/Manditha77/groceryease_sdp
 - **Stack:** Java, Spring Boot, React.js, JavaScript, MySQL

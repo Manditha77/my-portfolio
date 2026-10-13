@@ -30,7 +30,7 @@ export const projects: readonly Project[] = [
   {
     slug: "groceryease",
     title: "GroceryEase",
-    subtitle: "web-based grocery management system",
+    subtitle: "Web-based grocery management system",
     year: "2024–2025",
     type: "Solo project",
     repo: "https://github.com/Manditha77/groceryease_sdp",
@@ -102,3 +102,13 @@ export const projects: readonly Project[] = [
 ];
 
 export const moreOnGitHub: ExternalLink = site.links.githubRepos;
+
+/** Interface strings for the Selected Work section. */
+export const workCopy = {
+  intro:
+    "Two full-stack Java and Spring Boot systems, and the research I'm doing for my final-year dissertation.",
+  roleLabel: "My role:",
+  approachHeading: "Approach so far",
+  repoLink: "View code",
+  repoLinkSuffix: "on GitHub",
+};

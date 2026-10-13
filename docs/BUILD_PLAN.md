@@ -103,11 +103,17 @@ Plan first.
 
 ### Step 5: Selected Work (SE projects)
 ```
-Build the Selected Work section (#work) from src/content/projects.ts: 3 project cards with
-title, year/type badge, blurb, highlights, tech tags (mono font), and links (GitHub, and a
-screenshot if present in public/images/projects/<slug>/). Show the "In progress" status on PPCH
-and "Team project · my role: …" on the Employee Management System card.
-Responsive grid (1 column on mobile, 3 on desktop). End with a "More on GitHub" link. next/image for screenshots.
+Build the Selected Work section (#work) from src/content/projects.ts.
+- 3 project cards: title, year and type badge, blurb, highlights, tech tags (mono), and links (GitHub repo).
+- PPCH shows an "In progress" badge; the Employee Management System card shows "Team project" plus a "My role: …" line.
+- Screenshots: if images exist in public/images/projects/<slug>/, show the first one with next/image (explicit sizes,
+  lazy-loaded, meaningful alt text). If none exist, show no image area at all for that card (no fake screenshots or
+  stock images) and list which ones are missing at the end.
+- Layout: 1 column on mobile; on desktop, either a 3-column grid or GroceryEase as a wider featured card with the
+  other two beside or below it. Propose which and why.
+- Section heading and a one-line intro, plus a "More on GitHub" link at the end.
+- Whole cards should not be clickable blobs: use real links with clear text and visible focus styles.
+- Server Components only; hover effects with CSS only.
 Plan first.
 ```
 
