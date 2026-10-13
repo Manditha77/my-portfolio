@@ -22,7 +22,7 @@ export function Header() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="inline-flex min-h-11 items-center rounded-md px-3 text-sm text-text-muted transition-colors hover:text-text"
+                    className="inline-flex min-h-11 items-center rounded-md px-3 text-sm text-text-muted transition-colors duration-150 ease-out hover:text-text"
                   >
                     {item.label}
                   </Link>

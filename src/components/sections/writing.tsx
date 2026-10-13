@@ -4,7 +4,7 @@ import { formatMonth } from "@/lib/dates";
 
 export function Writing() {
   return (
-    <Section id="writing" compact>
+    <Section id="writing">
       <ol role="list" className="mt-6 grid gap-4 md:grid-cols-2">
         {articles.map((article, index) => {
           const headingId = `article-${index}`;
@@ -25,7 +25,7 @@ export function Writing() {
                     href={article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="-mx-1 inline-block rounded-sm px-1 py-1.5 hover:text-accent"
+                    className="-mx-1 inline-block rounded-sm px-1 py-1.5 transition-colors duration-150 ease-out hover:text-accent"
                   >
                     {leading}
                     {/* Keep the arrow on the same line as the last word. */}

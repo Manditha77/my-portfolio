@@ -3,32 +3,31 @@ import type { SectionId } from "@/content/navigation";
 import { sectionLabel } from "@/content/navigation";
 import { cx } from "@/lib/cx";
 import { Container } from "./container";
+import { Reveal } from "./reveal";
 
 type SectionProps = Omit<HTMLAttributes<HTMLElement>, "id"> & {
   id: SectionId;
-  /** Less vertical padding, for small strips such as Writing. */
-  compact?: boolean;
   /** Overrides the h2 text; defaults to the section's navigation label. */
   heading?: string;
   children?: ReactNode;
 };
 
-/** A home page section with an h2 taken from the navigation content, labelled for assistive tech. */
-export function Section({ id, compact = false, heading, children, className, ...rest }: SectionProps) {
+/**
+ * A home page section with an h2 taken from the navigation content, labelled for assistive tech.
+ * Owns the vertical rhythm (py-section) and the one-time reveal, so sections never set their own.
+ */
+export function Section({ id, heading, children, className, ...rest }: SectionProps) {
   const headingId = `${id}-heading`;
 
   return (
-    <section
-      id={id}
-      aria-labelledby={headingId}
-      className={cx(compact ? "py-12 sm:py-16" : "py-16 sm:py-24", className)}
-      {...rest}
-    >
+    <section id={id} aria-labelledby={headingId} className={cx("py-section", className)} {...rest}>
       <Container>
-        <h2 id={headingId} className="text-h2 font-semibold tracking-tight">
-          {heading ?? sectionLabel(id)}
-        </h2>
-        {children}
+        <Reveal>
+          <h2 id={headingId} className="text-h2 font-semibold tracking-tight">
+            {heading ?? sectionLabel(id)}
+          </h2>
+          {children}
+        </Reveal>
       </Container>
     </section>
   );

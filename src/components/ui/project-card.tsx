@@ -67,7 +67,7 @@ export function ProjectCard({ project, featured = false }: ProjectCardProps) {
     <article
       aria-labelledby={headingId}
       className={cx(
-        "flex h-full flex-col rounded-lg border border-border bg-surface p-5 transition-colors focus-within:border-accent sm:p-6",
+        "flex h-full flex-col rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6",
         featured && "lg:grid lg:grid-cols-2 lg:gap-10",
       )}
     >
@@ -116,7 +116,7 @@ export function ProjectCard({ project, featured = false }: ProjectCardProps) {
             {workCopy.repoLink}
             <span className="sr-only"> for {project.title}</span> {workCopy.repoLinkSuffix}
           </span>
-          <span aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5">
+          <span aria-hidden="true" className="transition-transform duration-150 ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
             →
           </span>
         </a>

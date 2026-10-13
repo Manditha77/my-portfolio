@@ -13,7 +13,7 @@ export function Experience() {
             <li key={`${job.company}-${job.start}`}>
               <article
                 aria-labelledby={headingId}
-                className="rounded-lg border border-border bg-surface p-5 sm:p-6"
+                className="rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6"
               >
                 <p className="font-mono text-xs text-text-muted">
                   <DateRange start={job.start} end={job.end} presentLabel={experienceCopy.present} />

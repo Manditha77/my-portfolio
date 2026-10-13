@@ -31,7 +31,7 @@ export function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label={shellCopy.toggleTheme}
-      className="inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors hover:text-text"
+      className="inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors duration-150 ease-out hover:text-text"
     >
       {/* Both icons render; CSS shows the one for the theme you'd switch to. */}
       <SunIcon className="light:hidden" />

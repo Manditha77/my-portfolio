@@ -11,8 +11,8 @@ export function Hero() {
   const { hero, links } = site;
 
   return (
-    <section id="top" aria-labelledby="top-heading" className="pt-8 pb-12 lg:py-16">
-      <Container className="grid items-center gap-10 lg:min-h-[calc(100svh-var(--header-h)-8rem)] lg:grid-cols-[1.15fr_1fr] lg:gap-12">
+    <section id="top" aria-labelledby="top-heading" className="pt-8 pb-section lg:pt-16">
+      <Container className="grid items-center gap-10 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
         <div>
           <StatusPill>{hero.statusPill}</StatusPill>
           <h1 id="top-heading" className="mt-5 text-display font-semibold tracking-tight">

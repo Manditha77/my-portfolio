@@ -52,7 +52,7 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
         aria-controls={panelId}
         aria-label={open ? shellCopy.closeMenu : shellCopy.openMenu}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex size-11 items-center justify-center rounded-md text-text transition-colors hover:text-accent"
+        className="inline-flex size-11 items-center justify-center rounded-md text-text transition-colors duration-150 ease-out hover:text-accent"
       >
         {open ? <CloseIcon /> : <MenuIcon />}
       </button>
@@ -71,7 +71,7 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
                 <Link
                   href={item.href}
                   onClick={close}
-                  className="flex min-h-11 items-center border-b border-border text-base text-text transition-colors hover:text-accent"
+                  className="flex min-h-11 items-center border-b border-border text-base text-text transition-colors duration-150 ease-out hover:text-accent"
                 >
                   {item.label}
                 </Link>

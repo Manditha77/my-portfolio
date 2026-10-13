@@ -62,6 +62,9 @@
 @theme {
   --container-content: 68.75rem;
 
+  /* Vertical padding on each side of a home section (py-section); the gap between sections is twice this. */
+  --spacing-section: clamp(2.25rem, 1.75rem + 2vw, 3.5rem);
+
   --text-display: clamp(2.25rem, 1.6rem + 3.2vw, 4rem);
   --text-display--line-height: 1.05;
   --text-h2: clamp(1.5rem, 1.25rem + 1.25vw, 2.25rem);
@@ -126,4 +129,18 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* Reveal-on-scroll is server-rendered hidden (inline styles from Motion). Show it straight away
+   under reduced motion, and when JS never ran (the inline theme script always sets data-theme). */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+:root:not([data-theme]) [data-reveal] {
+  opacity: 1 !important;
+  transform: none !important;
 }

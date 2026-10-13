@@ -8,7 +8,7 @@ type ButtonLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
 
 /** Shared with <button> elements that should look like ButtonLink. */
 export const buttonBase =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-colors";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-[color,background-color,border-color,opacity,transform] duration-150 ease-out motion-safe:active:translate-y-px";
 
 export const buttonVariants = {
   primary: "bg-accent text-accent-contrast hover:opacity-90",
