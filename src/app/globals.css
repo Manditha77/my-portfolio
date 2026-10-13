@@ -66,6 +66,20 @@
   --text-display--line-height: 1.05;
   --text-h2: clamp(1.5rem, 1.25rem + 1.25vw, 2.25rem);
   --text-h2--line-height: 1.15;
+
+  /* Hero poster entrance. Used with motion-safe: only; never applied to hero text (LCP). */
+  --animate-hero-in: hero-in 400ms ease-out both;
+
+  @keyframes hero-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 /* ---------- Base ---------- */
