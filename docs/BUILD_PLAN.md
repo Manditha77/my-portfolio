@@ -65,12 +65,17 @@ Plan first.
 
 ### Step 3: Hero (static)
 ```
-Build the Hero section using src/content/site.ts: h1 name, tagline, intro, an
-"Open to Associate SE roles" status pill, CTAs (View my work → #work, Download CV → /Manditha-Madushanka-CV.pdf with the download attribute),
-and GitHub/LinkedIn icon links with aria-labels.
-Reserve a right-hand (desktop) / below-text (mobile) area for the future 3D element,
-using a static decorative poster for now. The hero text must be the LCP element and render
-without any client JS. Subtle entrance animation that is disabled under prefers-reduced-motion.
+Build the Hero section using src/content/site.ts (use its existing fields: name, headline,
+hero intro, status pill, CTA labels, cvHref, GitHub/LinkedIn links).
+- h1 name, tagline, intro, an "Open to Associate SE roles" status pill
+- CTAs: "View my work" → #work (primary), "Download CV" → cvHref with the download attribute (secondary)
+- GitHub and LinkedIn icon links with aria-labels
+- Two columns on desktop (text left, visual right); stacked on mobile (text first)
+- Reserve the visual area for the Step 4 3D element: for now a static, decorative, aria-hidden
+  poster (simple SVG built from our tokens, fixed aspect ratio so nothing shifts later)
+- The hero text is the LCP element and renders as a Server Component with no client JS
+- A subtle entrance animation is allowed only if it doesn't delay or hide the h1, and is off under prefers-reduced-motion
+- The hero should fill most of the first screen on desktop without pushing the CTAs below the fold on a 360×640 phone
 Plan first.
 ```
 
