@@ -92,5 +92,5 @@ export const site: Site = {
   footer: {
     builtWith: "Built with Next.js",
   },
-  todos: [],
+  todos: ["TODO: production site URL (for metadataBase, so Open Graph image URLs are absolute)"],
 };

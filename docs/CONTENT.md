@@ -70,40 +70,72 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 
 ---
 
-## XR Spotlight: ElectricalSafetyVR
+## VR / AR Projects: ElectricalSafetyVR
 
+- **Nav label:** VR/AR (anchor `#xr`)
+- **Subtitle:** Side work in virtual and augmented reality, built with Unity and OpenXR.
 - **Full title:** Electrical Workshop Safety Training Simulator
-- **Context:** University group project, INTE 42312 Virtual & Augmented Reality, University of Kelaniya, 2026
+- **Context:** University group project, INTE 42312 Virtual & Augmented Reality, University of Kelaniya. Team of 5, completed October 2026.
 - **Repo:** https://github.com/Manditha77/ElectricalSafetyVR
-- **Video:** YouTube (unlisted). TODO: video ID
+- **Video:** YouTube (unlisted). TODO: video ID (to be uploaded). Until it exists, show the overview screenshot with a "Demo video coming soon" label; no fake play button.
 - **Stack:** Unity 6 (URP), XR Interaction Toolkit 3, OpenXR, XR Device Simulator, C#
-- **My role:** Environment design (the workshop room, outdoor yard, props, signage and placement hints), plus the final integration of every team member's work into one working build.
-- **Team:** TODO: names and each person's area (all have agreed to be named).
+- **Platform:** Windows build (OpenXR); developed and demonstrated with the XR Device Simulator. (If tested on a real headset later, update this line.)
 
-**Spotlight blurb (home page):**
-A VR training simulator where trainees learn electrical workshop safety by doing: they spot and fix hazards, put on the right PPE, replace a fuse and put out an electrical fire, all without real-world risk. I designed the environment and integrated the team's work into the final build.
+### Images (public/images/xr/electrical-safety-vr/)
+| File | Shows | Alt text |
+|---|---|---|
+| overview.png | Workshop entrance: welcome board, PPE station, workbench | VR electrical workshop with a welcome board, a PPE station and a workbench |
+| ppe.png | Putting on PPE at the PPE station (PPE 1 / 6) | Trainee picking up an insulated glove at the PPE station, with a PPE progress counter |
+| hazard.png | Wet-floor hazard with its risk panel and the Safe Isolation poster | Wet-floor hazard beside Workstation 2 with a risk panel and the Safe Isolation steps poster |
+| fuse-snap.png | Fitting the new fuse ("Release to fit") next to the damaged-parts bin | Fitting a new fuse into Workstation 2, with the damaged-parts bin beside it |
+| results.png | Training results: PASS – EXCELLENT | Training results screen showing a pass, 6 of 6 job steps, 4 of 4 hazards and zero unsafe actions |
 
-**Case study (`/work/electrical-safety-vr`):**
+### Home page spotlight blurb
+A VR training simulator where trainees learn electrical workshop safety by doing. They put on the right PPE, find and make safe hazards against the clock, then isolate, prove dead and replace a blown fuse in the correct order, and get a scored result at the end. I built the indoor workshop and integrated our five-person team's work into the final build.
 
-*The problem:* Electrical workshop safety is best learned through practice, but practising with live hazards such as damaged leads, faulty fuses and electrical fires is dangerous. We built a VR workshop where trainees can make mistakes safely. (TODO: Manditha to confirm this framing.)
+### Case study (`/work/electrical-safety-vr`)
 
-*What trainees do (features):*
-- Spot and fix hazards around the workshop
-- Gear up at a PPE station (goggles, gloves, ear defenders, safety boots)
-- Replace a fuse, with a snap-fit interaction
-- Dispose of the damaged fuse correctly
-- Tackle an electrical fire with a CO₂ extinguisher
-- Follow 3D spatial audio and voice guidance
-- Read real-world safety signage, including a Safe Isolation poster
-- Explore an outdoor yard as well as the workshop interior
+**The problem**
+Electrical workshop safety is best learned through practice, but practising with live hazards is dangerous. For our Virtual & Augmented Reality module, we built a VR workshop where trainees put on the right PPE, spot and fix hazards, and replace a blown fuse in the correct, safe order, and where a mistake costs nothing.
 
-*My role:* Environment design for the workshop and yard (layout, props, signs, boards and placement hints) and final integration, which meant bringing each teammate's scenes, scripts and interactions into a single build that runs end-to-end.
+**What trainees do**
+1. **Pre-work check:** put on all six PPE items at the PPE station before starting.
+2. **Hazard check against the clock:** two minutes to find and make safe four hazards: a loose metal tool, an overloaded power strip, a wet floor and a live damaged lead. Missed hazards flash red and explain the risk and what should have been done.
+3. **The job, by the Safe Isolation procedure:** isolate the correct workstation (W2), lock off with a DANGER tag, prove the tester, test for dead at the test point (0 V), replace the blown fuse, dispose of the damaged fuse, and restore power.
+4. **Results:** a pass grade with the job score, time, unsafe actions and specific feedback, such as "Wrong isolator! W1 feeds Workstation 1."
 
-*Technical challenges:* TODO, 2–3 real ones from Manditha. For example: what broke when merging everyone's work, how the snap-fit fuse was made reliable, and keeping URP lighting performant in VR. Do not write this section until he provides them.
+Also in the simulator: an electrical fire task with a CO₂ extinguisher, a power cut with an emergency torch, 3D spatial audio and voice guidance, real-world safety signage including a Safe Isolation poster, and an outdoor yard.
 
-*Outcome (keep modest):* Our lecturer recognised it as an excellent, fully working VR simulation compared with the other teams' projects.
+**My role**
+- Built the indoor workshop environment.
+- Integrated the team's work: merged five members' branches into one working build and fixed the integration bugs (fuse snap-fit, PPE grabbing, build setup).
+- Added two finishing touches: a disposal bin for the damaged fuse, and a 3D spatial sound for opening and closing the fuse cover, generated in code.
 
-*Credits:* Team (TODO). Third-party assets from Poly Haven (CC0), Poly Pizza, Sketchfab (CC BY 4.0), CGTrader and the Unity Asset Store, as listed in the repo's `CREDITS.md`. Link to it.
+**Technical challenges**
+
+*1. Merging five branches into one build.*
+Each teammate worked on their own Git branch, with their own scenes, prefabs and references. I merged everything into one main scene and wrote small Unity editor tools (menu commands) that applied each of my changes with a matching revert, so I could try integration fixes without risking anyone else's work. The first build opened to an empty scene; the cause was the wrong scene in Build Profiles, fixed by setting the main scene at index 0.
+
+*2. PPE that couldn't be grabbed.*
+After the PPE shelf was moved, the gloves, goggles and ear defenders stopped responding to the controller ray. The shelf's solid box collider now enclosed the items, so the ray hit the shelf first. I wrote an editor tool that finds furniture colliders enclosing grabbable items and switches them to triggers, which XR rays ignore, leaving everything else unchanged.
+
+*3. A fuse snap-fit that is forgiving but still safe.*
+Lining a small fuse up with its holder in VR was fiddly and often failed. I added a snap-assist: if the new fuse is released within about 20 cm of the holder, with the cover open and the blown fuse already removed, it snaps into place, locks and completes the task once. It's easy for the trainee, but it still enforces the correct safety order.
+
+**Outcome**
+Our lecturer recognised it as an excellent, fully working VR simulation compared with the other teams' projects.
+
+**Team**
+- Manditha Madushanka: environment design and integration
+- Dulmi: interactions
+- Sanduni: electrical safety hazards
+- Dinan: game flow
+- Ridmi: workshop scene
+
+**Credits**
+Third-party 3D models, textures and audio from Poly Haven (CC0), Poly Pizza, Sketchfab (CC BY 4.0), CGTrader, the Unity Asset Store and Pixabay; voice-guidance clips made with AI text-to-speech. Full list in the repo's CREDITS.md.
+
+**Still optional (don't block on these):** each teammate's exact area in more detail; real-headset testing; project length in weeks; one environment detail Manditha is proudest of.
 
 ---
 

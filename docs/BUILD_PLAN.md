@@ -119,14 +119,38 @@ Plan first.
 
 ### Step 6: XR Spotlight + case study page
 ```
-Build two things from src/content/xr.ts:
-1) The home #xr Spotlight section with the "mode shift" styling from CLAUDE.md section 5: title,
-   blurb, my-role line, stack tags, a YouTube facade (youtube-nocookie, click to load), and buttons
-   for "Read the case study" (→ /work/electrical-safety-vr) and the repo.
-2) The /work/electrical-safety-vr page: problem, my role, features, technical challenges, video,
-   outcome, team credits, asset credits (link to the repo's CREDITS.md), and repo link. Include
-   per-page metadata. If any content is still TODO, render a clear placeholder and tell me.
-Plan first.
+Build Step 6 (XR) using docs/XR-CONTENT.md as the source of truth.
+
+1. Content:
+   - Replace the XR section in docs/CONTENT.md with the contents of docs/XR-CONTENT.md, then delete docs/XR-CONTENT.md.
+   - Update src/content/xr.ts to match exactly: strict types; images with alt text and real width/height
+     read from the files in public/images/projects/electrical-safety-vr/; team list; challenges; youtubeId optional
+     and currently empty.
+
+2. Turn the XR feature flag on (site.ts features.xr = true) so the section and the "XR" nav link return.
+
+3. Home #xr Spotlight, with the "mode shift" styling from CLAUDE.md §5 (faint grid/scanline background, accent glow):
+   - title, blurb, stack tags (accent tone), overview.png as the visual
+   - buttons: "Read the case study" (→ /work/electrical-safety-vr) and "View code on GitHub"
+
+4. /work/electrical-safety-vr page:
+   - hero: title, context line (including "Team of 5"), stack tags, repo link
+   - video block: if youtubeId exists, a YouTube facade (youtube-nocookie, click to load, no third-party JS
+     before the click); if not, show overview.png with a small "Demo video coming soon" label and no play button
+   - sections in this order: The problem, What trainees do (numbered), My role, Technical challenges
+     (3 cards), Outcome, Credits
+   - Team presentation: don't make Team a separate section. Put the team as one compact line at the start
+     of Credits, e.g. "Built with Dulmi (interactions), Sanduni (hazards), Dinan (game flow) and Ridmi
+     (workshop scene)." Then the asset credits, with a link to the repo's CREDITS.md.
+     "My role" and "Technical challenges" stay the main, most prominent sections.
+   - a simple gallery of the 5 screenshots (next/image, lazy-loaded, captions from the alt text)
+   - "← Back to home" at the top, and a link to the next home section (#experience) at the bottom
+   - page metadata: title, description from the blurb, Open Graph image = overview.png
+
+5. Server Components only (except the video facade, if it needs client JS); reuse existing components
+   (Section, TagList, Badge, ButtonLink, Reveal) and tokens; no new dependencies unless you justify them.
+
+Check at 360, 768 and 1280px in both themes. Plan first.
 ```
 
 ### Step 7: Experience + Writing

@@ -40,7 +40,7 @@ Single-page home (`/`), with anchor sections in this order:
 
 1. **Hero**: name, "Software Engineer · building VR/AR on the side", a short intro, an "Open to Associate SE roles" status, CTAs (View work, Download CV), GitHub and LinkedIn icons. Contains the one 3D element.
 2. **Selected Work (SE)**: 3 project cards (GroceryEase, Employee Management System, PPCH Framework).
-3. **XR Spotlight**: ElectricalSafetyVR summary with the video, linking to the full case study.
+3. **VR / AR Projects** (nav "VR/AR", anchor `#xr`): ElectricalSafetyVR summary with the video, linking to the full case study.
 4. **Experience**: the aeroPORT internship (prominent) and leadership roles.
 5. **Writing**: 2 Medium articles (small strip).
 6. **Skills**: grouped, not progress bars, no percentages.
@@ -62,7 +62,7 @@ The structure must make it easy to add `/xr` later as a separate XR showcase (a 
 - **Tokens (CSS variables on `:root`):** `--bg`, `--surface`, `--text`, `--text-muted`, `--border`, `--accent` (a single electric cyan/teal, which nods to XR), `--accent-contrast`. Every text/background pair must meet WCAG AA contrast.
 - **Typography:** one sans for UI and body (e.g. Inter or Geist via `next/font`), and one mono for small labels and tech tags (e.g. Geist Mono / JetBrains Mono). Fluid type with `clamp()`.
 - **Layout:** mobile-first; max content width ~1100px; 16px side gutter on mobile; no horizontal scroll at 320px.
-- **The XR section gets a subtle visual shift** (e.g. a faint grid/scanline background and accent glow) so it feels like entering a different "mode", while still clearly belonging to the same site.
+- **The VR / AR Projects section gets a subtle visual shift** (e.g. a faint grid/scanline background and accent glow) so it feels like entering a different "mode", while still clearly belonging to the same site.
 - **Motion:** short (150–400ms), purposeful; reveal-on-scroll at most once per element. Nothing loops in the UI except the 3D element.
 
 ## 6. The 3D element (one only)

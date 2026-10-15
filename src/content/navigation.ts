@@ -18,7 +18,7 @@ export type HomeSection = {
 export const homeSections = [
   { id: "top", label: "Intro", inNav: false },
   { id: "work", label: "Work", inNav: true },
-  { id: "xr", label: "XR", inNav: true },
+  { id: "xr", label: "VR/AR", inNav: true },
   { id: "experience", label: "Experience", inNav: true },
   { id: "writing", label: "Writing", inNav: false },
   { id: "skills", label: "Skills", inNav: false },

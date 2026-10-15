@@ -144,3 +144,38 @@
   opacity: 1 !important;
   transform: none !important;
 }
+
+/* ---------- VR / AR "mode shift" ---------- */
+
+/* A faint grid with scanlines behind the section, fading out at the edges. Static: nothing loops.
+   Derived from --accent, so it follows the theme; the tint stays low enough to keep text contrast. */
+[data-mode="xr"] {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-mode="xr"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  --xr-line: color-mix(in oklab, var(--accent) 9%, transparent);
+  --xr-scan: color-mix(in oklab, var(--accent) 4%, transparent);
+  background-image:
+    linear-gradient(to right, var(--xr-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--xr-line) 1px, transparent 1px),
+    repeating-linear-gradient(to bottom, var(--xr-scan) 0 1px, transparent 1px 4px);
+  background-size:
+    32px 32px,
+    32px 32px,
+    100% 4px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 45%, #000 30%, transparent 100%);
+}
+
+/* Soft accent glow around the spotlight card. */
+.xr-glow {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--accent) 12%, transparent),
+    0 0 48px -8px color-mix(in oklab, var(--accent) 28%, transparent);
+}
