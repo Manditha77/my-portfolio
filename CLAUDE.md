@@ -40,7 +40,7 @@ Single-page home (`/`), with anchor sections in this order:
 
 1. **Hero**: name, "Software Engineer · building VR/AR on the side", a short intro, an "Open to Associate SE roles" status, CTAs (View work, Download CV), GitHub and LinkedIn icons. Contains the one 3D element.
 2. **Selected Work (SE)**: 3 project cards (GroceryEase, Employee Management System, PPCH Framework).
-3. **VR / AR Projects** (nav "VR/AR", anchor `#xr`): ElectricalSafetyVR summary with the video, linking to the full case study.
+3. **VR / AR Projects** (nav "VR/AR", anchor `#vr-ar`; the old `#xr` still resolves via a hidden alias): ElectricalSafetyVR summary with the video, linking to the full case study.
 4. **Experience**: the aeroPORT internship (prominent) and leadership roles.
 5. **Writing**: 2 Medium articles (small strip).
 6. **Skills**: grouped, not progress bars, no percentages.

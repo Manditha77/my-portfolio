@@ -72,7 +72,7 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 
 ## VR / AR Projects: ElectricalSafetyVR
 
-- **Nav label:** VR/AR (anchor `#xr`)
+- **Nav label:** VR/AR (anchor `#vr-ar`)
 - **Subtitle:** Side work in virtual and augmented reality, built with Unity and OpenXR.
 - **Full title:** Electrical Workshop Safety Training Simulator
 - **Context:** University group project, INTE 42312 Virtual & Augmented Reality, University of Kelaniya. Team of 5, completed October 2026.

@@ -30,7 +30,7 @@ export function XrVideo({ video, poster }: XrVideoProps) {
     return (
       <div className={frame}>
         {posterImage}
-        <Badge className="absolute bottom-3 left-3 bg-bg/90 backdrop-blur-sm">{xrCopy.videoComingSoon}</Badge>
+        <Badge className="absolute top-3 left-3 bg-bg/90 backdrop-blur-sm">{xrCopy.videoComingSoon}</Badge>
       </div>
     );
   }

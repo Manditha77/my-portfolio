@@ -13,7 +13,7 @@ export function XrSpotlight() {
   const headingId = `project-${project.slug}`;
 
   return (
-    <Section id="xr" heading={xrCopy.heading} data-mode="xr">
+    <Section id="vr-ar" anchorAliases={["xr"]} heading={xrCopy.heading} data-mode="xr">
       <p className="mt-3 max-w-prose text-text-muted sm:text-lg">{xrCopy.subtitle}</p>
 
       <article

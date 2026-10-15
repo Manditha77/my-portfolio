@@ -165,7 +165,7 @@ export default function ElectricalSafetyVrPage() {
           aria-label={xrCopy.pageNavLabel}
           className="flex flex-wrap justify-between gap-4 border-t border-border py-8"
         >
-          <Link href="/#xr" className={textLink}>
+          <Link href="/#vr-ar"className={textLink}>
             <span aria-hidden="true">←</span>
             {xrCopy.backToSection}
           </Link>

@@ -129,7 +129,7 @@ Build Step 6 (XR) using docs/XR-CONTENT.md as the source of truth.
 
 2. Turn the XR feature flag on (site.ts features.xr = true) so the section and the "XR" nav link return.
 
-3. Home #xr Spotlight, with the "mode shift" styling from CLAUDE.md §5 (faint grid/scanline background, accent glow):
+3. Home #vr-ar Spotlight, with the "mode shift" styling from CLAUDE.md §5 (faint grid/scanline background, accent glow):
    - title, blurb, stack tags (accent tone), overview.png as the visual
    - buttons: "Read the case study" (→ /work/electrical-safety-vr) and "View code on GitHub"
 
