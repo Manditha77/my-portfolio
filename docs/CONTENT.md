@@ -32,7 +32,7 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 
 ## Selected Work (SE)
 
-**Section intro:** Two full-stack Java and Spring Boot systems, and the research I'm doing for my final-year dissertation.
+**Section intro:** Two full-stack Java and Spring Boot systems, and the research from my final-year dissertation.
 
 ### 1. GroceryEase: Web-based grocery management system
 - **Year:** 2024–2025 · **Type:** Solo project
@@ -55,16 +55,16 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 - **Media:** TODO: screenshot(s); optional deployment diagram.
 
 ### 3. PPCH Framework: Predictive and Proactive Code Health (dissertation)
-- **Year:** 2026 · **Type:** Final-year dissertation · **Status:** In progress
+- **Year:** 2026 · **Type:** Final-year dissertation · **Status:** Completed
 - **Repo:** https://github.com/Manditha77/ppch-framework
-- **Stack:** Python, GitHub REST API, SonarQube (SonarScanner), Java codebases (Apache Commons)
-- **Card blurb:** My final-year research: a Sense–Analyze–Act framework for Java pull requests that mines project history, measures code health and aims to flag risky changes before they merge.
-- **Approach so far (factual):**
-  - **Sense:** a resumable, rate-limit-aware pipeline that collects every historical pull request (open, closed, merged) from Apache Commons repositories through the GitHub REST API
-  - **Next:** run SonarScanner on base and head commits per PR, then engineer features with a leakage-safe train/test split
+- **Stack:** Python, scikit-learn, XGBoost, GitHub REST API, SonarQube (SonarScanner), GitHub Actions, Java (Apache Commons)
+- **Card blurb:** My final-year research: a Sense–Analyze–Act framework that predicts when a Java pull request will increase code complexity, and proposes verified refactorings before it merges. Trained on 334 real Apache Commons pull requests and deployed as a working GitHub Action.
+- **How it works:**
+  - **Sense:** mines PR history through the GitHub REST API and runs SonarScanner on before/after snapshots to build a leakage-safe dataset of 334 PRs
+  - **Analyze:** compares four models with 1,000-iteration bootstrap validation; the best, Logistic Regression, reached 0.78 AUC
+  - **Act:** an ILP-based Extract Method engine proposes refactorings behind four safety checks; every applied suggestion was re-verified safe by a real SonarQube scan
+  - **Deployed:** a GitHub Action (Random Forest + XGBoost) that comments on real PRs at submission. A reactive scanner took a mean 82 hours (median 13) to flag complexity-increasing PRs; the Action caught 42% of them (22 of 52) before merge
 - **Connection:** Grew out of refactoring and SonarQube work during my internship.
-- **Do not claim:** results, accuracy figures or conclusions (none exist yet).
-- **Optional:** One-line research question (TODO, optional).
 
 **More on GitHub:** link to https://github.com/Manditha77?tab=repositories
 

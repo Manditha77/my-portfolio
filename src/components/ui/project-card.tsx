@@ -81,7 +81,7 @@ export function ProjectCard({ project, featured = false }: ProjectCardProps) {
         <div className="flex flex-wrap gap-2">
           <Badge>{project.year}</Badge>
           <Badge>{project.type}</Badge>
-          {project.status ? <Badge variant="accent">{project.status}</Badge> : null}
+          {project.status ? <Badge>{project.status}</Badge> : null}
         </div>
 
         <h3 id={headingId} className="mt-4 text-xl font-semibold tracking-tight">

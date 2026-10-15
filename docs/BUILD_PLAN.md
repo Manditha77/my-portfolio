@@ -105,7 +105,7 @@ Plan first.
 ```
 Build the Selected Work section (#work) from src/content/projects.ts.
 - 3 project cards: title, year and type badge, blurb, highlights, tech tags (mono), and links (GitHub repo).
-- PPCH shows an "In progress" badge; the Employee Management System card shows "Team project" plus a "My role: …" line.
+- PPCH shows a "Completed" badge (normal style); the Employee Management System card shows "Team project" plus a "My role: …" line.
 - Screenshots: if images exist in public/images/projects/<slug>/, show the first one with next/image (explicit sizes,
   lazy-loaded, meaningful alt text). If none exist, show no image area at all for that card (no fake screenshots or
   stock images) and list which ones are missing at the end.

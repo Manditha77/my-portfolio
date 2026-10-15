@@ -21,7 +21,6 @@ export type Project = {
   approach?: readonly ProjectApproachStep[];
   connection?: string;
   statusNote?: string;
-  researchQuestion?: string;
   media?: readonly ContentImage[];
   todos: readonly Todo[];
 };
@@ -74,30 +73,40 @@ export const projects: readonly Project[] = [
     subtitle: "Predictive and Proactive Code Health",
     year: "2026",
     type: "Final-year dissertation",
-    status: "In progress",
+    status: "Completed",
     repo: "https://github.com/Manditha77/ppch-framework",
     stack: [
       "Python",
+      "scikit-learn",
+      "XGBoost",
       "GitHub REST API",
       "SonarQube (SonarScanner)",
-      "Java codebases (Apache Commons)",
+      "GitHub Actions",
+      "Java (Apache Commons)",
     ],
     blurb:
-      "My final-year research: a Sense–Analyze–Act framework for Java pull requests that mines project history, measures code health and aims to flag risky changes before they merge.",
-    // Work in progress: no results, accuracy figures or conclusions exist yet. Never claim any.
+      "My final-year research: a Sense–Analyze–Act framework that predicts when a Java pull request will increase code complexity, and proposes verified refactorings before it merges. Trained on 334 real Apache Commons pull requests and deployed as a working GitHub Action.",
     approach: [
       {
         label: "Sense",
-        text: "a resumable, rate-limit-aware pipeline that collects every historical pull request (open, closed, merged) from Apache Commons repositories through the GitHub REST API",
+        text: "mines PR history through the GitHub REST API and runs SonarScanner on before/after snapshots to build a leakage-safe dataset of 334 PRs",
       },
       {
-        label: "Next",
-        text: "run SonarScanner on base and head commits per PR, then engineer features with a leakage-safe train/test split",
+        label: "Analyze",
+        text: "compares four models with 1,000-iteration bootstrap validation; the best, Logistic Regression, reached 0.78 AUC",
+      },
+      {
+        label: "Act",
+        text: "an ILP-based Extract Method engine proposes refactorings behind four safety checks; every applied suggestion was re-verified safe by a real SonarQube scan",
+      },
+      {
+        label: "Deployed",
+        text: "a GitHub Action (Random Forest + XGBoost) that comments on real PRs at submission. A reactive scanner took a mean 82 hours (median 13) to flag complexity-increasing PRs; the Action caught 42% of them (22 of 52) before merge",
       },
     ],
     connection:
       "Grew out of refactoring and SonarQube work during my internship.",
-    todos: ["TODO: (optional) one-line research question"],
+    todos: [],
   },
 ];
 
@@ -106,9 +115,9 @@ export const moreOnGitHub: ExternalLink = site.links.githubRepos;
 /** Interface strings for the Selected Work section. */
 export const workCopy = {
   intro:
-    "Two full-stack Java and Spring Boot systems, and the research I'm doing for my final-year dissertation.",
+    "Two full-stack Java and Spring Boot systems, and the research from my final-year dissertation.",
   roleLabel: "My role:",
-  approachHeading: "Approach so far",
+  approachHeading: "How it works",
   repoLink: "View code",
   repoLinkSuffix: "on GitHub",
 };
