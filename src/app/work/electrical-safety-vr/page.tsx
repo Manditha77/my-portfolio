@@ -8,24 +8,37 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import { GitHubIcon } from "@/components/ui/icons";
 import { TagList } from "@/components/ui/tag";
+import { baseOpenGraph } from "@/lib/seo";
 
 const { caseStudy, images } = project;
 
+const PATH = "/work/electrical-safety-vr";
+
+const shareImage = {
+  url: images.overview.src,
+  width: images.overview.width,
+  height: images.overview.height,
+  alt: images.overview.alt,
+};
+
+// Sets both og and twitter images, so the root's generated share image doesn't replace overview.png.
 export const metadata: Metadata = {
-  title: `${project.title} · ${xrCopy.pageTitleSuffix}`,
+  title: project.title,
   description: project.spotlightBlurb,
+  alternates: { canonical: PATH },
   openGraph: {
+    ...baseOpenGraph,
+    type: "article",
+    url: PATH,
     title: `${project.title}: ${project.fullTitle}`,
     description: project.spotlightBlurb,
-    type: "article",
-    images: [
-      {
-        url: images.overview.src,
-        width: images.overview.width,
-        height: images.overview.height,
-        alt: images.overview.alt,
-      },
-    ],
+    images: [shareImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${project.title}: ${project.fullTitle}`,
+    description: project.spotlightBlurb,
+    images: [shareImage],
   },
 };
 

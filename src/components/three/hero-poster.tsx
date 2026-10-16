@@ -1,68 +1,17 @@
+import { cubeGeometry, gridPath as buildGridPath } from "@/lib/cube";
 import { cx } from "@/lib/cx";
 
 /*
- * Static poster for the hero visual: an orthographic projection of nested cubes (a tesseract-like
- * wireframe) over a faded grid. Rendered on the server as inline SVG, so it costs no request and
- * no client JS. It is also the fallback and loading state for the 3D element (see HeroVisual).
+ * Static poster for the hero visual: the nested-cube motif (see lib/cube) over a faded grid.
+ * Rendered on the server as inline SVG, so it costs no request and no client JS. It is also the
+ * fallback and loading state for the 3D element (see HeroVisual).
  */
-
-type Vec3 = readonly [number, number, number];
 
 const VIEW = 400;
 const CENTER = VIEW / 2;
-const SCALE = 100;
-// View rotation (radians). Kept off the true isometric angle so no two vertices overlap.
-const YAW = 0.6;
-const PITCH = 0.45;
 
-/** Rotate around Y, then X, then project orthographically into the 400×400 viewBox. */
-function project([x, y, z]: Vec3): [number, number] {
-  const rx = x * Math.cos(YAW) + z * Math.sin(YAW);
-  const rz = -x * Math.sin(YAW) + z * Math.cos(YAW);
-  const ry = y * Math.cos(PITCH) - rz * Math.sin(PITCH);
-  return [CENTER + rx * SCALE, CENTER - ry * SCALE];
-}
-
-function cubeVertices(half: number): Vec3[] {
-  const vertices: Vec3[] = [];
-  for (const x of [-half, half]) {
-    for (const y of [-half, half]) {
-      for (const z of [-half, half]) vertices.push([x, y, z]);
-    }
-  }
-  return vertices;
-}
-
-/** Indices of vertex pairs that differ in exactly one axis (the 12 cube edges). */
-const CUBE_EDGES: [number, number][] = [];
-for (let a = 0; a < 8; a++) {
-  for (let b = a + 1; b < 8; b++) {
-    const diff = a ^ b;
-    if (diff === 1 || diff === 2 || diff === 4) CUBE_EDGES.push([a, b]);
-  }
-}
-
-function segmentsPath(pairs: [Vec3, Vec3][]): string {
-  return pairs
-    .map(([from, to]) => {
-      const [x1, y1] = project(from);
-      const [x2, y2] = project(to);
-      return `M${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}`;
-    })
-    .join("");
-}
-
-const outer = cubeVertices(1);
-const inner = cubeVertices(0.5);
-const outerPath = segmentsPath(CUBE_EDGES.map(([a, b]) => [outer[a], outer[b]]));
-const innerPath = segmentsPath(CUBE_EDGES.map(([a, b]) => [inner[a], inner[b]]));
-const spokesPath = segmentsPath(outer.map((vertex, i) => [vertex, inner[i]]));
-const outerPoints = outer.map((vertex) => ({ key: vertex.join(","), point: project(vertex) }));
-
-const GRID_STEP = 25;
-const gridPath = Array.from({ length: VIEW / GRID_STEP - 1 }, (_, i) => (i + 1) * GRID_STEP)
-  .map((p) => `M${p} 0V${VIEW}M0 ${p}H${VIEW}`)
-  .join("");
+const { outerPath, innerPath, spokesPath, outerPoints } = cubeGeometry({ view: VIEW, scale: 100 });
+const gridPath = buildGridPath(VIEW, VIEW, 25);
 
 type HeroPosterProps = {
   className?: string;

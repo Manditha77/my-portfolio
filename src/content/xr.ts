@@ -187,7 +187,6 @@ export const xrCopy = {
   nextSection: "Next: Experience",
   pageNavLabel: "More from the portfolio",
   builtWith: "Built with",
-  pageTitleSuffix: "Manditha Madushanka",
   headings: {
     problem: "The problem",
     traineeSteps: "What trainees do",

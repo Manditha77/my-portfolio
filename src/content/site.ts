@@ -40,6 +40,21 @@ export type Site = {
   footer: {
     builtWith: string;
   };
+  seo: {
+    defaultTitle: string;
+    titleTemplate: string;
+    description: string;
+    /** Label above the name on the generated share image. */
+    ogLabel: string;
+    ogAlt: string;
+  };
+  notFound: {
+    title: string;
+    label: string;
+    heading: string;
+    line: string;
+    cta: string;
+  };
   todos: readonly Todo[];
 };
 
@@ -92,5 +107,20 @@ export const site: Site = {
   footer: {
     builtWith: "Built with Next.js",
   },
-  todos: ["TODO: production site URL (for metadataBase, so Open Graph image URLs are absolute)"],
+  seo: {
+    defaultTitle: "Manditha Madushanka · Software Engineer",
+    titleTemplate: "%s · Manditha Madushanka",
+    description:
+      "Software engineer in Colombo, Sri Lanka. Full-stack Java, Spring Boot and React, with industry experience on an airline Departure Control System, plus VR/AR side projects.",
+    ogLabel: "Java · Spring Boot · React",
+    ogAlt: "Manditha Madushanka, Software Engineer · building VR/AR on the side",
+  },
+  notFound: {
+    title: "Page not found",
+    label: "404",
+    heading: "Page not found",
+    line: "That page doesn't exist or has moved.",
+    cta: "Back to home",
+  },
+  todos: ["TODO: set NEXT_PUBLIC_SITE_URL on Vercel to the production URL"],
 };

@@ -88,6 +88,7 @@ The structure must make it easy to add `/xr` later as a separate XR showcase (a 
 - Server Components by default; `"use client"` only where interaction or animation needs it.
 - Small, readable components; no `any`; named exports for components.
 - No inline magic colours. Use tokens or Tailwind theme values.
+- Share images and icons are drawn from `src/lib/cube.ts`, with colours from `src/lib/brand.ts`. Keep `brand.ts` in sync with the dark tokens in `globals.css`. Set `NEXT_PUBLIC_SITE_URL` in every deploy environment.
 
 ## 9. How we work (workflow rules)
 
