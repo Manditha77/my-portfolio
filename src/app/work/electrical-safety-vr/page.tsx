@@ -9,6 +9,7 @@ import { Container } from "@/components/ui/container";
 import { GitHubIcon } from "@/components/ui/icons";
 import { TagList } from "@/components/ui/tag";
 import { baseOpenGraph } from "@/lib/seo";
+import { camelCaseBreaks } from "@/lib/word-breaks";
 
 const { caseStudy, images } = project;
 
@@ -60,8 +61,8 @@ export default function ElectricalSafetyVrPage() {
   
           <header className="pt-6 pb-8">
             <p className="font-mono text-xs text-accent">{xrCopy.heading}</p>
-            <h1 id="case-study-heading" className="mt-3 text-display font-semibold tracking-tight">
-              {project.title}
+            <h1 id="case-study-heading" className="mt-3 text-display font-semibold tracking-tight wrap-break-word">
+              {camelCaseBreaks(project.title)}
             </h1>
             <p className="mt-3 text-lg text-text-muted sm:text-xl">{project.fullTitle}</p>
             <p className="mt-5 max-w-prose">{project.context}</p>

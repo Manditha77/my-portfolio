@@ -21,7 +21,8 @@ export function XrVideo({ video, poster }: XrVideoProps) {
       width={poster.width}
       height={poster.height}
       sizes="(min-width: 1100px) 1100px, 100vw"
-      loading="eager"
+      // The LCP image on the case study page: preloaded with high fetch priority.
+      preload
       className="size-full object-cover"
     />
   );

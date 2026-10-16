@@ -43,6 +43,7 @@ export const shellCopy = {
   cv: "CV",
   openMenu: "Open menu",
   closeMenu: "Close menu",
-  toggleTheme: "Toggle colour theme",
+  switchToLight: "Switch to light theme",
+  switchToDark: "Switch to dark theme",
   backToTop: "Back to top",
 };

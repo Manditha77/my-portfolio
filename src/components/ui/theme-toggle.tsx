@@ -30,12 +30,13 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      aria-label={shellCopy.toggleTheme}
       className="inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors duration-150 ease-out hover:text-text"
     >
-      {/* Both icons render; CSS shows the one for the theme you'd switch to. */}
+      {/* Both icons and labels render; CSS shows the pair for the theme you'd switch to (no hydration mismatch). */}
       <SunIcon className="light:hidden" />
       <MoonIcon className="hidden light:block" />
+      <span className="sr-only light:hidden">{shellCopy.switchToLight}</span>
+      <span className="hidden light:sr-only">{shellCopy.switchToDark}</span>
     </button>
   );
 }

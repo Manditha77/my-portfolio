@@ -217,15 +217,59 @@ Polish pass on the home page, in two parts. Plan first.
    - everything disabled under prefers-reduced-motion
    Keep client JS minimal: one small reusable Reveal wrapper, sections stay Server Components.
    Report the first-load JS change for /.
+**After deploying Step 11:**
+- Vercel → Project → Settings → Environments → Production → Environment Variables:
+  `NEXT_PUBLIC_SITE_URL` = `https://manditha.vercel.app` (type Config; Production + Preview).
+- Check `/sitemap.xml` and `/robots.txt` on the live site use the real URL.
+- Google Search Console: URL-prefix property `https://manditha.vercel.app/`, verified with the HTML file
+  `public/google83ae2c7b0390bd5a.html` (keep this file permanently); sitemap `sitemap.xml` submitted (Success, 2 pages).
+- LinkedIn Post Inspector (linkedin.com/post-inspector) to check the share preview.
 ```
 
-### Step 11: SEO and sharing
+
+### Step 12: Performance and accessibility audit
 ```
-Add SEO per CLAUDE.md: metadata (title template, description, canonical) via the Metadata API,
-Open Graph and Twitter cards with a generated OG image (app/opengraph-image.tsx) for home and the case
-study, app/sitemap.ts, app/robots.ts, JSON-LD Person schema (name, jobTitle, alumniOf, sameAs:
-GitHub/LinkedIn/Medium), a favicon/app icon, and a not-found page. Use an env var
-NEXT_PUBLIC_SITE_URL for absolute URLs. Plan first.
+**1. Measure the live site first (PageSpeed Insights, pagespeed.web.dev)**
+Run Mobile and Desktop for both pages:
+- `https://manditha.vercel.app`
+- `https://manditha.vercel.app/work/electrical-safety-vr`
+
+Targets (CLAUDE.md §7): Performance ≥ 90, Accessibility ≥ 95, Best Practices ≥ 95, SEO ≥ 95 on mobile.
+Treat the "Insights" and "Diagnostics" items as suggestions; don't chase small savings once the scores pass.
+
+Results (16 Oct 2026):
+| Page | Mobile | Desktop |
+|---|---|---|
+| Home | 99 / 100 / 100 / 100 | 100 / 100 / 100 / 100 |
+| Case study | 97 / 100 / 100 / 100 (LCP 2.6 s) | — |
+
+**2. Validate structured data**
+validator.schema.org → `https://manditha.vercel.app` → expect one Person item with 0 errors and 0 warnings. ✅
+
+**3. Audit what automated tools miss (Claude Code, plan mode)**
+```
+Final audit for what automated tools miss. PageSpeed Insights (live) already scores mobile 99/100/100/100
+and desktop 100/100/100/100 on the home page, so don't chase its minor insights. Plan first, list issues
+by severity, fix only after I approve.
+1. Colour contrast in the DARK theme (PageSpeed only tested light): check every text/background pair,
+   including muted text, tags, badges, the accent-toned VR/AR tags and the "Demo video coming soon" label.
+   List anything below WCAG AA.
+2. Keyboard: full Tab pass on / and /work/electrical-safety-vr (skip link → nav → mobile menu → every link and
+   button → footer). Focus always visible, logical order, nothing unreachable, Esc closes the menu.
+3. Reduced motion: no reveal animations, no smooth scrolling, no 3D, nothing hidden.
+4. Case study page: the hero image is the LCP image (priority), gallery images lazy, correct sizes, no CLS.
+5. 320px: no horizontal scroll on either page.
+```
+Outcome: dark-theme contrast passes AA; reduced motion already correct; fixed the case-study title overflow
+at 320px, prioritised the case-study hero image for LCP, and fixed mobile-menu and theme-toggle focus handling.
+
+**4. Manual keyboard check (in a real browser, `pnpm dev`)**
+- Tab from the address bar: "Skip to content" appears first and works.
+- Tab through the whole page: a visible focus ring the whole way, nothing skipped, order is logical.
+- At 360px: open the menu with Enter, Tab through it, Esc closes it and focus returns to the menu button.
+- Repeat on /work/electrical-safety-vr.
+
+**5. Commit, push, and re-run PageSpeed on the case study** to confirm LCP is at or under ~2.5 s.
 ```
 
 ### Step 12: Performance and accessibility audit

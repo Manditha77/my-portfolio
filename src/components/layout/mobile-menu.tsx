@@ -17,6 +17,7 @@ type MobileMenuProps = {
 export function MobileMenu({ items, cvHref }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
   useEffect(() => {
@@ -28,15 +29,29 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
         buttonRef.current?.focus();
       }
     };
+    // Focus or a click outside closes the menu, so focus never ends up hidden behind the open panel.
+    // Focus stays wherever the user moved it.
+    const isOutside = (target: EventTarget | null) =>
+      target instanceof Node && !buttonRef.current?.contains(target) && !panelRef.current?.contains(target);
+    const onFocusIn = (event: FocusEvent) => {
+      if (isOutside(event.target)) setOpen(false);
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (isOutside(event.target)) setOpen(false);
+    };
     const desktop = window.matchMedia("(min-width: 48rem)");
     const onResize = () => {
       if (desktop.matches) setOpen(false);
     };
 
     document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("pointerdown", onPointerDown);
     desktop.addEventListener("change", onResize);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("pointerdown", onPointerDown);
       desktop.removeEventListener("change", onResize);
     };
   }, [open]);
@@ -58,6 +73,7 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
       </button>
 
       <div
+        ref={panelRef}
         id={panelId}
         className={cx(
           "absolute inset-x-0 top-full border-b border-border bg-bg transition-[opacity,transform,visibility] duration-200 ease-out",

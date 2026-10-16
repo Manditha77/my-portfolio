@@ -31,7 +31,8 @@ export function YouTubeFacade({ youtubeId, title, playLabel, children }: YouTube
       type="button"
       aria-label={playLabel}
       onClick={() => setPlaying(true)}
-      className="group absolute inset-0 size-full cursor-pointer"
+      // Inset ring: the frame's overflow-hidden would clip the default outward outline.
+      className="group absolute inset-0 size-full cursor-pointer focus-visible:-outline-offset-4"
     >
       {children}
       <span
