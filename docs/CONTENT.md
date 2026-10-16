@@ -70,10 +70,14 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 
 ---
 
-## VR / AR Projects: ElectricalSafetyVR
+## VR / AR Projects
 
 - **Nav label:** VR/AR (anchor `#vr-ar`)
-- **Subtitle:** Side work in virtual and augmented reality, built with Unity and OpenXR.
+- **Subtitle:** Side work in virtual and augmented reality, built with Unity, OpenXR and WebXR.
+- **Order:** ElectricalSafetyVR first, then AR Elemental Arena. Each case study links to the other (previous/next).
+
+### 1. ElectricalSafetyVR
+
 - **Full title:** Electrical Workshop Safety Training Simulator
 - **Context:** University group project, INTE 42312 Virtual & Augmented Reality, University of Kelaniya. Team of 5, completed October 2026.
 - **Repo:** https://github.com/Manditha77/ElectricalSafetyVR
@@ -81,7 +85,7 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 - **Stack:** Unity 6 (URP), XR Interaction Toolkit 3, OpenXR, XR Device Simulator, C#
 - **Platform:** Windows build (OpenXR); developed and demonstrated with the XR Device Simulator. (If tested on a real headset later, update this line.)
 
-### Images (public/images/xr/electrical-safety-vr/)
+#### Images (public/images/xr/electrical-safety-vr/)
 | File | Shows | Alt text |
 |---|---|---|
 | overview.png | Workshop entrance: welcome board, PPE station, workbench | VR electrical workshop with a welcome board, a PPE station and a workbench |
@@ -90,10 +94,10 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 | fuse-snap.png | Fitting the new fuse ("Release to fit") next to the damaged-parts bin | Fitting a new fuse into Workstation 2, with the damaged-parts bin beside it |
 | results.png | Training results: PASS – EXCELLENT | Training results screen showing a pass, 6 of 6 job steps, 4 of 4 hazards and zero unsafe actions |
 
-### Home page spotlight blurb
+#### Home page spotlight blurb
 A VR training simulator where trainees learn electrical workshop safety by doing. They put on the right PPE, find and make safe hazards against the clock, then isolate, prove dead and replace a blown fuse in the correct order, and get a scored result at the end. I built the indoor workshop and integrated our five-person team's work into the final build.
 
-### Case study (`/work/electrical-safety-vr`)
+#### Case study (`/work/electrical-safety-vr`)
 
 **The problem**
 Electrical workshop safety is best learned through practice, but practising with live hazards is dangerous. For our Virtual & Augmented Reality module, we built a VR workshop where trainees put on the right PPE, spot and fix hazards, and replace a blown fuse in the correct, safe order, and where a mistake costs nothing.
@@ -136,6 +140,82 @@ Our lecturer recognised it as an excellent, fully working VR simulation compared
 Third-party 3D models, textures and audio from Poly Haven (CC0), Poly Pizza, Sketchfab (CC BY 4.0), CGTrader, the Unity Asset Store and Pixabay; voice-guidance clips made with AI text-to-speech. Full list in the repo's CREDITS.md.
 
 **Still optional (don't block on these):** each teammate's exact area in more detail; real-headset testing; project length in weeks; one environment detail Manditha is proudest of.
+
+### 2. AR Elemental Arena
+
+- **Title:** AR Elemental Arena
+- **Subtitle:** Mobile web AR creature battler
+- **Context:** Individual assignment, INTE 42312 Virtual & Augmented Reality, University of Kelaniya. Solo, September 2026.
+- **Repo:** https://github.com/Manditha77/ar-elemental-arena
+- **Live demo:** https://manditha77.github.io/ar-elemental-arena/
+- **Demo video:** youtubeId optional and currently empty. Until it exists, show the "Demo video coming soon" placeholder, as on the ElectricalSafetyVR page (portrait image in a phone-shaped frame, label at the top-left, no play button).
+- **Stack:** A-Frame 1.5, MindAR 1.2.5 (image tracking), WebXR Device API (immersive-ar, hit-test), three.js, aframe-extras, JavaScript, Open-Meteo API, GitHub Pages
+- **Runs on:** Chrome on Android (ARCore). Not yet supported on iPhone. No app install; it runs in the browser.
+
+#### Design rule (intentional, keep as is)
+The player must scan at least one summon card (marker-based AR) before the battle (markerless AR) unlocks; that is the core loop of the game. The enemy creature is always chosen at random. No demo mode or bypass.
+
+#### Summon cards (public/images/xr/ar-elemental-arena/cards/), shown on the case study so visitors can scan them from their screen
+fire-summon-card.png, water-summon-card.png, earth-summon-card.png, air-summon-card.png
+Alt text: "Fire summon card", "Water summon card", "Earth summon card", "Air summon card".
+
+#### Screenshots (public/images/xr/ar-elemental-arena/), portrait phone screenshots, 720×1600
+| File | In gallery | Alt text |
+|---|---|---|
+| menu.jpeg | yes | Game menu in Chrome on Android with two options: scan a summon card (marker-based AR) or deploy the battle arena (markerless AR) |
+| summon-water.jpeg | yes (also the home card visual and video placeholder) | The Tide Serpent creature waving on top of the scanned water summon card, with the roster at 1 of 4 |
+| summon-earth.jpeg | yes | The Stone Golem creature walking on the scanned earth summon card, with the roster at 2 of 4 |
+| battle.jpeg | yes (also the share image) | Stone Golem facing an Ember Drake in the AR arena on a real desk, with health bars, an "Air buff: Overcast" weather banner and Attack and Defend buttons |
+| battle-low-health.jpeg | **no**: the camera scene is rotated sideways (the UI is upright) | — |
+
+#### Home page card blurb
+A mobile web AR game. Scan physical summon cards to collect four elemental creatures, then place a battle arena on a real table or floor and fight a real-time battle against an AI opponent. The local live weather gives one element a damage buff. Built solo; it runs in Chrome on Android, with no app to install.
+
+#### Case study (`/work/ar-elemental-arena`)
+
+**The idea**
+The assignment required both marker-based and markerless AR, plus a data-driven feature and complex interaction. Rather than build two separate demos, I made them one game: image tracking collects creatures from physical cards, surface detection hosts the battle, both share the same roster, and live weather changes the outcome of a fight rather than being a cosmetic label.
+
+**How it plays**
+1. **Summon (marker-based AR):** point the camera at a summon card and its creature appears on the card. Drag to rotate, pinch to resize, and tap to cycle its animations, each with matching sound effects. Every card scanned adds that creature to your roster.
+2. **Choose your creature** from the ones you've scanned. The enemy is picked at random.
+3. **Deploy the arena (markerless AR):** a reticle finds a real floor or table; tap to place the arena, and both creatures appear facing each other.
+4. **Weather buff:** with your permission, the game reads the current weather at your location and gives one element ×1.5 damage for that match (for example "AIR BUFF — Overcast").
+5. **Fight in real time:** tap to move within the arena, attack when in range, and defend to halve the next hit. The enemy AI acts on its own timer: it approaches, winds up attacks you can react to, defends, retreats when low and taunts. Hits show floating damage numbers and vibrate the phone.
+6. **Win or lose,** then play again.
+
+**Try it yourself**
+You need Chrome on an Android phone with ARCore support (iPhone isn't supported yet).
+1. Open the live demo on your phone.
+2. Choose "Scan a summon card" and point your camera at one of the cards below, shown on this screen or printed.
+3. Once at least one creature is in your roster, go back and choose "Deploy the battle arena", then aim at a floor or table.
+(Show the 4 cards in a grid, large enough to scan from a laptop screen.)
+
+**What I built**
+Everything, solo: the game design, both AR modes, creature setup and animation handling, sound, the combat system and enemy AI, the weather integration, the UI, the summon card art (generated on my own GPU with ComfyUI), testing on a real Android device, and deployment to GitHub Pages.
+
+**Technical challenges**
+
+*1. Getting camera-passthrough AR to show anything.*
+Tapping "Start AR" first did nothing, because the code asked for a VR headset session; switching to an AR session fixed that, but the screen was then solid black. Two separate causes hid the camera feed: the renderer wasn't transparent, and the page's own background sat opaque behind the canvas. Fixing both, and rewriting surface detection as a proper A-Frame component so it actually ran every frame, got the reticle working on real surfaces.
+
+*2. Animations that played once, then never again.*
+Attack, hit and death animations worked the first time, then silently refused to repeat. The animation library caches one action per clip and doesn't restart a finished one. Separately, clips referenced by plain names like "Walk" never played, because each model stored them with an armature prefix ("CharacterArmature|Walk"). I read the real clip names from each model's glTF data and forced a reset on every clip switch, so every move replays reliably.
+
+*3. Making combat feel real-time.*
+The first battle loop used a single shared turn flag, so the enemy only ever reacted after the player, like a turn-based game. I replaced it with independent state per creature and a self-scheduling enemy AI (acting every 1.4–2.6 s) that moves, attacks, defends and retreats on its own clock, with a telegraphed wind-up so the player can react in time.
+
+**What I learned**
+AR bugs rarely show up as errors: a black screen, a silently ignored animation or a gesture swallowed by the browser all fail quietly. Since a phone can't easily stay connected to desktop DevTools during an AR session, I built an on-screen debug log into both scenes, and it became the most useful tool in the whole project. Every fix was confirmed on a real device, not just by the absence of console errors.
+
+**Credits**
+- 3D creature models by Quaternius: Dragon Evolved (fire), Fish (water), Mushroom King (earth), Bat (air).
+- Sound effects: Kenney.nl RPG Audio, Impact Sounds and UI Audio (CC0).
+- Summon card art: generated by me with ComfyUI (Z-Image Turbo) on my own GPU; link to the Medium article "I Turned My Laptop's Gaming GPU Into an AI Image Studio".
+- Libraries: A-Frame, MindAR and aframe-extras (MIT). Weather data: Open-Meteo.
+- Fonts: Inter and Rajdhani (Google Fonts).
+
+**Later (not now):** the demo video upload, game enhancements, iPhone support, an AR repo README rewrite.
 
 ---
 

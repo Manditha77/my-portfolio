@@ -1,4 +1,5 @@
 import type { ContentImage, ExternalLink, Todo } from "./types";
+import { articles } from "./writing";
 
 export type TeamMember = {
   name: string;
@@ -7,7 +8,8 @@ export type TeamMember = {
   isMe?: boolean;
 };
 
-export type TraineeStep = {
+/** A titled step in a numbered list ("What trainees do", "How it plays"). */
+export type NumberedStep = {
   title: string;
   body: string;
 };
@@ -24,25 +26,43 @@ export type XrVideo = {
   youtubeId?: string;
 };
 
-export type XrProject = {
+export type CreditItem = {
+  text: string;
+  link?: ExternalLink;
+};
+
+/** What every VR / AR project shares: the home card, the case study header, video and gallery. */
+export type XrProjectBase = {
   slug: string;
   title: string;
+  /** The subtitle under the title. */
   fullTitle: string;
   context: string;
-  platform: string;
   repo: string;
   stack: readonly string[];
   spotlightBlurb: string;
   video: XrVideo;
+  /** Landscape desktop captures, or portrait phone screenshots shown in a phone-shaped frame. */
+  screenshotShape: ScreenshotShape;
   images: {
+    /** The home card visual and the video placeholder. */
     overview: ContentImage;
-    /** All screenshots, in story order. */
+    /** Screenshots in story order. */
     gallery: readonly ContentImage[];
+    /** The screenshot in the generated share image, when the page has one. */
+    share?: ContentImage;
   };
+  todos: readonly Todo[];
+};
+
+export type ScreenshotShape = "landscape" | "phone";
+
+export type ElectricalSafetyVrProject = XrProjectBase & {
+  platform: string;
   team: readonly TeamMember[];
   caseStudy: {
     problem: string;
-    traineeSteps: readonly TraineeStep[];
+    traineeSteps: readonly NumberedStep[];
     alsoIncluded: string;
     role: readonly string[];
     technicalChallenges: readonly TechnicalChallenge[];
@@ -52,8 +72,29 @@ export type XrProject = {
       creditsFile: ExternalLink;
     };
   };
-  todos: readonly Todo[];
 };
+
+export type ArElementalArenaProject = XrProjectBase & {
+  liveDemoUrl: string;
+  /** Where the live demo runs. */
+  runsOn: string;
+  /** Markers for the summon (image tracking) mode, to scan from the screen or print. */
+  summonCards: readonly ContentImage[];
+  caseStudy: {
+    idea: string;
+    howItPlays: readonly NumberedStep[];
+    tryItYourself: {
+      requirement: string;
+      steps: readonly string[];
+    };
+    built: string;
+    technicalChallenges: readonly TechnicalChallenge[];
+    learned: string;
+    credits: readonly CreditItem[];
+  };
+};
+
+export type XrProject = ElectricalSafetyVrProject | ArElementalArenaProject;
 
 const repo = "https://github.com/Manditha77/ElectricalSafetyVR";
 const imageDir = "/images/xr/electrical-safety-vr";
@@ -65,7 +106,7 @@ const overview: ContentImage = {
   height: 1070,
 };
 
-export const electricalSafetyVr: XrProject = {
+export const electricalSafetyVr: ElectricalSafetyVrProject = {
   slug: "electrical-safety-vr",
   title: "ElectricalSafetyVR",
   fullTitle: "Electrical Workshop Safety Training Simulator",
@@ -80,6 +121,7 @@ export const electricalSafetyVr: XrProject = {
     provider: "youtube",
     title: "Electrical Workshop Safety Training Simulator demo",
   },
+  screenshotShape: "landscape",
   images: {
     overview,
     gallery: [
@@ -173,12 +215,166 @@ export const electricalSafetyVr: XrProject = {
   todos: ["TODO: video ID (to be uploaded)"],
 };
 
+const arRepo = "https://github.com/Manditha77/ar-elemental-arena";
+const arImageDir = "/images/xr/ar-elemental-arena";
+
+/** Portrait Android screenshots, all 720×1600. */
+function phoneShot(file: string, alt: string): ContentImage {
+  return { src: `${arImageDir}/${file}`, alt, width: 720, height: 1600 };
+}
+
+function summonCard(element: string): ContentImage {
+  return {
+    src: `${arImageDir}/cards/${element.toLowerCase()}-summon-card.png`,
+    alt: `${element} summon card`,
+    width: 912,
+    height: 1264,
+  };
+}
+
+const summonWater = phoneShot(
+  "summon-water.jpeg",
+  "The Tide Serpent creature waving on top of the scanned water summon card, with the roster at 1 of 4",
+);
+
+const battle = phoneShot(
+  "battle.jpeg",
+  "Stone Golem facing an Ember Drake in the AR arena on a real desk, with health bars, an “Air buff: Overcast” weather banner and Attack and Defend buttons",
+);
+
+// Left out: battle-low-health.jpeg, whose camera scene is rotated sideways.
+const arGallery: readonly ContentImage[] = [
+  phoneShot(
+    "menu.jpeg",
+    "Game menu in Chrome on Android with two options: scan a summon card (marker-based AR) or deploy the battle arena (markerless AR)",
+  ),
+  summonWater,
+  phoneShot(
+    "summon-earth.jpeg",
+    "The Stone Golem creature walking on the scanned earth summon card, with the roster at 2 of 4",
+  ),
+  battle,
+];
+
+// The summon card art was generated with the setup from this article.
+const gpuArticle = articles[0];
+
+export const arElementalArena: ArElementalArenaProject = {
+  slug: "ar-elemental-arena",
+  title: "AR Elemental Arena",
+  fullTitle: "Mobile web AR creature battler",
+  context:
+    "Individual assignment, INTE 42312 Virtual & Augmented Reality, University of Kelaniya. Solo, September 2026.",
+  repo: arRepo,
+  liveDemoUrl: "https://manditha77.github.io/ar-elemental-arena/",
+  runsOn: "Runs in Chrome on Android (ARCore). Not yet supported on iPhone. No app install; it runs in the browser.",
+  stack: [
+    "A-Frame 1.5",
+    "MindAR 1.2.5 (image tracking)",
+    "WebXR Device API (immersive-ar, hit-test)",
+    "three.js",
+    "aframe-extras",
+    "JavaScript",
+    "Open-Meteo API",
+    "GitHub Pages",
+  ],
+  spotlightBlurb:
+    "A mobile web AR game. Scan physical summon cards to collect four elemental creatures, then place a battle arena on a real table or floor and fight a real-time battle against an AI opponent. The local live weather gives one element a damage buff. Built solo; it runs in Chrome on Android, with no app to install.",
+  video: {
+    provider: "youtube",
+    title: "AR Elemental Arena demo",
+  },
+  screenshotShape: "phone",
+  images: {
+    overview: summonWater,
+    gallery: arGallery,
+    share: battle,
+  },
+  summonCards: ["Fire", "Water", "Earth", "Air"].map(summonCard),
+  caseStudy: {
+    idea: "The assignment required both marker-based and markerless AR, plus a data-driven feature and complex interaction. Rather than build two separate demos, I made them one game: image tracking collects creatures from physical cards, surface detection hosts the battle, both share the same roster, and live weather changes the outcome of a fight rather than being a cosmetic label.",
+    howItPlays: [
+      {
+        title: "Summon (marker-based AR)",
+        body: "Point the camera at a summon card and its creature appears on the card. Drag to rotate, pinch to resize, and tap to cycle its animations, each with matching sound effects. Every card scanned adds that creature to your roster.",
+      },
+      {
+        title: "Choose your creature",
+        body: "Pick from the ones you've scanned. The enemy is picked at random.",
+      },
+      {
+        title: "Deploy the arena (markerless AR)",
+        body: "A reticle finds a real floor or table; tap to place the arena, and both creatures appear facing each other.",
+      },
+      {
+        title: "Weather buff",
+        body: "With your permission, the game reads the current weather at your location and gives one element ×1.5 damage for that match (for example “AIR BUFF — Overcast”).",
+      },
+      {
+        title: "Fight in real time",
+        body: "Tap to move within the arena, attack when in range, and defend to halve the next hit. The enemy AI acts on its own timer: it approaches, winds up attacks you can react to, defends, retreats when low and taunts. Hits show floating damage numbers and vibrate the phone.",
+      },
+      {
+        title: "Win or lose",
+        body: "Then play again.",
+      },
+    ],
+    tryItYourself: {
+      requirement: "You need Chrome on an Android phone with ARCore support (iPhone isn't supported yet).",
+      steps: [
+        "Open the live demo on your phone.",
+        "Choose “Scan a summon card” and point your camera at one of the cards below, shown on this screen or printed.",
+        "Once at least one creature is in your roster, go back and choose “Deploy the battle arena”, then aim at a floor or table.",
+      ],
+    },
+    built:
+      "Everything, solo: the game design, both AR modes, creature setup and animation handling, sound, the combat system and enemy AI, the weather integration, the UI, the summon card art (generated on my own GPU with ComfyUI), testing on a real Android device, and deployment to GitHub Pages.",
+    technicalChallenges: [
+      {
+        title: "Getting camera-passthrough AR to show anything",
+        body: "Tapping “Start AR” first did nothing, because the code asked for a VR headset session; switching to an AR session fixed that, but the screen was then solid black. Two separate causes hid the camera feed: the renderer wasn't transparent, and the page's own background sat opaque behind the canvas. Fixing both, and rewriting surface detection as a proper A-Frame component so it actually ran every frame, got the reticle working on real surfaces.",
+      },
+      {
+        title: "Animations that played once, then never again",
+        body: "Attack, hit and death animations worked the first time, then silently refused to repeat. The animation library caches one action per clip and doesn't restart a finished one. Separately, clips referenced by plain names like “Walk” never played, because each model stored them with an armature prefix (“CharacterArmature|Walk”). I read the real clip names from each model's glTF data and forced a reset on every clip switch, so every move replays reliably.",
+      },
+      {
+        title: "Making combat feel real-time",
+        body: "The first battle loop used a single shared turn flag, so the enemy only ever reacted after the player, like a turn-based game. I replaced it with independent state per creature and a self-scheduling enemy AI (acting every 1.4–2.6 s) that moves, attacks, defends and retreats on its own clock, with a telegraphed wind-up so the player can react in time.",
+      },
+    ],
+    learned:
+      "AR bugs rarely show up as errors: a black screen, a silently ignored animation or a gesture swallowed by the browser all fail quietly. Since a phone can't easily stay connected to desktop DevTools during an AR session, I built an on-screen debug log into both scenes, and it became the most useful tool in the whole project. Every fix was confirmed on a real device, not just by the absence of console errors.",
+    credits: [
+      {
+        text: "3D creature models by Quaternius: Dragon Evolved (fire), Fish (water), Mushroom King (earth), Bat (air).",
+      },
+      { text: "Sound effects: Kenney.nl RPG Audio, Impact Sounds and UI Audio (CC0)." },
+      {
+        text: "Summon card art: generated by me with ComfyUI (Z-Image Turbo) on my own GPU.",
+        link: { label: gpuArticle.title, href: gpuArticle.url },
+      },
+      { text: "Libraries: A-Frame, MindAR and aframe-extras (MIT). Weather data: Open-Meteo." },
+      { text: "Fonts: Inter and Rajdhani (Google Fonts)." },
+    ],
+  },
+  todos: ["TODO: demo video ID (to be uploaded)"],
+};
+
+/** Case studies in the order they appear in the VR / AR Projects section. */
+export const xrProjects: readonly XrProject[] = [electricalSafetyVr, arElementalArena];
+
 /** Interface strings for the VR / AR Projects section and the case study page. */
 export const xrCopy = {
   heading: "VR / AR Projects",
-  subtitle: "Side work in virtual and augmented reality, built with Unity and OpenXR.",
+  subtitle: "Side work in virtual and augmented reality, built with Unity, OpenXR and WebXR.",
   caseStudyCta: "Read the case study",
   repoCta: "View code on GitHub",
+  liveDemoCta: "Try it live",
+  liveDemoHint: "Android Chrome",
+  opensNewTab: "(opens in new tab)",
+  openFullSize: "Open full size",
+  articleCredit: "How I set it up:",
   stackLabel: "Tech stack",
   videoComingSoon: "Demo video coming soon",
   playVideo: "Play video:",
@@ -186,6 +382,9 @@ export const xrCopy = {
   backToSection: "Back to VR / AR Projects",
   nextSection: "Next: Experience",
   pageNavLabel: "More from the portfolio",
+  caseStudyNavLabel: "Case studies",
+  previousCaseStudy: "Previous case study",
+  nextCaseStudy: "Next case study",
   builtWith: "Built with",
   headings: {
     problem: "The problem",
@@ -195,6 +394,11 @@ export const xrCopy = {
     outcome: "Outcome",
     gallery: "Screenshots",
     credits: "Credits",
+    idea: "The idea",
+    howItPlays: "How it plays",
+    tryIt: "Try it yourself",
+    built: "What I built",
+    learned: "What I learned",
   },
 };
 
