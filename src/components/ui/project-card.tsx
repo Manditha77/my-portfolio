@@ -1,83 +1,28 @@
 import Image from "next/image";
 import type { Project } from "@/content/projects";
 import { workCopy } from "@/content/projects";
-import { cx } from "@/lib/cx";
 import { Badge } from "./badge";
 import { GitHubIcon } from "./icons";
 import { TagList } from "./tag";
 
 type ProjectCardProps = {
   project: Project;
-  /** Full-width card with two inner columns on large screens. */
-  featured?: boolean;
 };
 
-export function ProjectCard({ project, featured = false }: ProjectCardProps) {
+/**
+ * Full-width project card. On large screens: summary and repo link on the left, details and tags on the right.
+ * DOM order is summary → details → link, so the single mobile column ends with the link.
+ */
+export function ProjectCard({ project }: ProjectCardProps) {
   const headingId = `project-${project.slug}`;
   const image = project.media?.[0];
-  // With a screenshot, the featured card puts it in the right column and moves the details under the blurb.
-  const mediaBeside = featured && Boolean(image);
-
-  const media = image ? (
-    <div
-      className={cx(
-        "relative overflow-hidden rounded-md border border-border bg-bg",
-        featured ? "aspect-[16/10]" : "aspect-video",
-      )}
-    >
-      <Image
-        src={image.src}
-        alt={image.alt}
-        width={image.width}
-        height={image.height}
-        sizes="(min-width: 1024px) 520px, 100vw"
-        className="size-full object-cover"
-      />
-    </div>
-  ) : null;
-
-  const details = (
-    <>
-      {project.highlights && project.highlights.length > 0 ? (
-        <ul className="list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
-          {project.highlights.map((highlight) => (
-            <li key={highlight}>{highlight}</li>
-          ))}
-        </ul>
-      ) : null}
-
-      {project.approach && project.approach.length > 0 ? (
-        <div>
-          <p className="font-mono text-xs text-text-muted">{workCopy.approachHeading}</p>
-          <ul className="mt-2 space-y-1.5 text-sm">
-            {project.approach.map((step) => (
-              <li key={step.label}>
-                <span className="font-medium text-accent">{step.label}:</span> {step.text}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      <TagList tags={project.stack} />
-    </>
-  );
 
   return (
     <article
       aria-labelledby={headingId}
-      className={cx(
-        "flex h-full flex-col rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6",
-        featured && "lg:grid lg:grid-cols-2 lg:gap-10",
-      )}
+      className="rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6 lg:grid lg:grid-cols-2 lg:gap-x-10"
     >
-      {media && (!featured || mediaBeside) ? (
-        <div className={cx("mb-5", mediaBeside && "lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mb-0")}>
-          {media}
-        </div>
-      ) : null}
-
-      <div className={cx("flex flex-col", mediaBeside && "lg:col-start-1 lg:row-start-1")}>
+      <div className="lg:col-start-1 lg:row-start-1">
         <div className="flex flex-wrap gap-2">
           <Badge>{project.year}</Badge>
           <Badge>{project.type}</Badge>
@@ -98,15 +43,47 @@ export function ProjectCard({ project, featured = false }: ProjectCardProps) {
         ) : null}
 
         {project.statusNote ? <p className="mt-3 text-sm text-text-muted">{project.statusNote}</p> : null}
-
-        {mediaBeside ? <div className="mt-5 flex flex-col gap-5">{details}</div> : null}
       </div>
 
-      {mediaBeside ? null : (
-        <div className={cx("mt-5 flex flex-col gap-5", featured && "lg:row-span-2 lg:mt-0")}>{details}</div>
-      )}
+      <div className="mt-5 flex flex-col gap-5 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
+        {image ? (
+          <div className="relative aspect-16/10 overflow-hidden rounded-md border border-border bg-bg">
+            <Image
+              src={image.src}
+              alt={image.alt}
+              width={image.width}
+              height={image.height}
+              sizes="(min-width: 1024px) 520px, 100vw"
+              className="size-full object-cover"
+            />
+          </div>
+        ) : null}
 
-      <p className={cx("mt-auto pt-5", featured && "lg:pt-6", mediaBeside && "lg:col-start-1")}>
+        {project.highlights && project.highlights.length > 0 ? (
+          <ul className="list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
+            {project.highlights.map((highlight) => (
+              <li key={highlight}>{highlight}</li>
+            ))}
+          </ul>
+        ) : null}
+
+        {project.approach && project.approach.length > 0 ? (
+          <div>
+            <p className="font-mono text-xs text-text-muted">{workCopy.approachHeading}</p>
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {project.approach.map((step) => (
+                <li key={step.label}>
+                  <span className="font-medium text-accent">{step.label}:</span> {step.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <TagList tags={project.stack} />
+      </div>
+
+      <p className="pt-5 lg:col-start-1 lg:row-start-2 lg:self-end">
         <a
           href={project.repo}
           className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-accent hover:underline hover:underline-offset-4"

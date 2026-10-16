@@ -2,18 +2,16 @@ import { moreOnGitHub, projects, workCopy } from "@/content/projects";
 import { GitHubIcon } from "@/components/ui/icons";
 import { ProjectCard } from "@/components/ui/project-card";
 import { Section } from "@/components/ui/section";
-import { cx } from "@/lib/cx";
 
 export function Work() {
   return (
     <Section id="work">
       <p className="mt-3 max-w-prose text-text-muted sm:text-lg">{workCopy.intro}</p>
 
-      {/* The first project is featured: full width on large screens, the rest two-up below it. */}
-      <ul role="list" className="mt-10 grid gap-6 lg:grid-cols-2">
-        {projects.map((project, index) => (
-          <li key={project.slug} className={cx(index === 0 && "lg:col-span-2")}>
-            <ProjectCard project={project} featured={index === 0} />
+      <ul role="list" className="mt-10 flex flex-col gap-6">
+        {projects.map((project) => (
+          <li key={project.slug}>
+            <ProjectCard project={project} />
           </li>
         ))}
       </ul>

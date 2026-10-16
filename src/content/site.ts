@@ -81,7 +81,7 @@ export const site: Site = {
   },
   contact: {
     heading: "Let's talk",
-    line: "I'm open to Associate Software Engineer roles, and to XR collaborations. The fastest way to reach me is by email.",
+    line: "I'm open to Associate Software Engineer roles, and to VR/AR collaborations. The fastest way to reach me is by email.",
     emailCta: "Email me",
     copyCta: "Copy email",
     copied: "Copied!",

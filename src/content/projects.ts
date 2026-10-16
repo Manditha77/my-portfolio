@@ -49,25 +49,6 @@ export const projects: readonly Project[] = [
     ],
   },
   {
-    slug: "employee-management-system",
-    title: "Employee Management System",
-    year: "2025",
-    type: "Team project",
-    repo: "https://github.com/SenudaJK/Employee-Management",
-    stack: [
-      "Java",
-      "Spring Boot",
-      "JavaScript",
-      "HTML",
-      "Docker",
-      "Microsoft Azure",
-    ],
-    blurb:
-      "A full-stack employee records system with full CRUD, containerised with Docker and deployed on Microsoft Azure.",
-    role: "Handled the Docker containerisation and Azure deployment, and contributed to parts of the Spring Boot backend.",
-    todos: ["TODO: screenshot(s); optional deployment diagram."],
-  },
-  {
     slug: "ppch-framework",
     title: "PPCH Framework",
     subtitle: "Predictive and Proactive Code Health",
@@ -107,6 +88,25 @@ export const projects: readonly Project[] = [
     connection:
       "Grew out of refactoring and SonarQube work during my internship.",
     todos: [],
+  },
+  {
+    slug: "employee-management-system",
+    title: "Employee Management System",
+    year: "2025",
+    type: "Team project",
+    repo: "https://github.com/SenudaJK/Employee-Management",
+    stack: [
+      "Java",
+      "Spring Boot",
+      "JavaScript",
+      "HTML",
+      "Docker",
+      "Microsoft Azure",
+    ],
+    blurb:
+      "A full-stack employee records system with full CRUD, containerised with Docker and deployed on Microsoft Azure.",
+    role: "Handled the Docker containerisation and Azure deployment, and contributed to parts of the Spring Boot backend.",
+    todos: ["TODO: screenshot(s); optional deployment diagram."],
   },
 ];
 

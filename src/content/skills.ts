@@ -52,7 +52,7 @@ export const skillGroups: readonly SkillGroup[] = [
     ],
   },
   {
-    label: "XR",
+    label: "VR / AR",
     items: ["Unity 6 (URP)", "XR Interaction Toolkit", "OpenXR", "WebXR"],
     tone: "accent",
   },

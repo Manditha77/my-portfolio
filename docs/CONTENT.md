@@ -46,15 +46,7 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 - **Status note:** Planned for Microsoft Azure deployment with security enhancements (do not claim it is deployed).
 - **Media:** TODO: 2–3 screenshots (admin dashboard, storefront, inventory), plus an architecture diagram from `diagrams/`.
 
-### 2. Employee Management System
-- **Year:** 2025 · **Type:** Team project
-- **Repo:** https://github.com/SenudaJK/Employee-Management
-- **Stack:** Java, Spring Boot, JavaScript, HTML, Docker, Microsoft Azure
-- **Card blurb:** A full-stack employee records system with full CRUD, containerised with Docker and deployed on Microsoft Azure.
-- **My role:** Handled the Docker containerisation and Azure deployment, and contributed to parts of the Spring Boot backend.
-- **Media:** TODO: screenshot(s); optional deployment diagram.
-
-### 3. PPCH Framework: Predictive and Proactive Code Health (dissertation)
+### 2. PPCH Framework: Predictive and Proactive Code Health (dissertation)
 - **Year:** 2026 · **Type:** Final-year dissertation · **Status:** Completed
 - **Repo:** https://github.com/Manditha77/ppch-framework
 - **Stack:** Python, scikit-learn, XGBoost, GitHub REST API, SonarQube (SonarScanner), GitHub Actions, Java (Apache Commons)
@@ -65,6 +57,14 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
   - **Act:** an ILP-based Extract Method engine proposes refactorings behind four safety checks; every applied suggestion was re-verified safe by a real SonarQube scan
   - **Deployed:** a GitHub Action (Random Forest + XGBoost) that comments on real PRs at submission. A reactive scanner took a mean 82 hours (median 13) to flag complexity-increasing PRs; the Action caught 42% of them (22 of 52) before merge
 - **Connection:** Grew out of refactoring and SonarQube work during my internship.
+
+### 3. Employee Management System
+- **Year:** 2025 · **Type:** Team project
+- **Repo:** https://github.com/SenudaJK/Employee-Management
+- **Stack:** Java, Spring Boot, JavaScript, HTML, Docker, Microsoft Azure
+- **Card blurb:** A full-stack employee records system with full CRUD, containerised with Docker and deployed on Microsoft Azure.
+- **My role:** Handled the Docker containerisation and Azure deployment, and contributed to parts of the Spring Boot backend.
+- **Media:** TODO: screenshot(s); optional deployment diagram.
 
 **More on GitHub:** link to https://github.com/Manditha77?tab=repositories
 
@@ -175,7 +175,7 @@ Third-party 3D models, textures and audio from Poly Haven (CC0), Poly Pizza, Ske
 - **Frontend & Mobile:** React.js, Next.js, HTML, CSS, Bootstrap, Android (Java), Flutter, Firebase
 - **Databases:** PostgreSQL, MySQL
 - **DevOps & Tools:** Git, GitHub, Bitbucket, Docker, Microsoft Azure, SonarQube, Postman
-- **XR:** Unity 6 (URP), XR Interaction Toolkit, OpenXR, WebXR
+- **VR / AR:** Unity 6 (URP), XR Interaction Toolkit, OpenXR, WebXR
 - **Practices:** OOP, Unit testing, Refactoring, Agile/Scrum
 
 ---
@@ -194,4 +194,4 @@ I'm looking for an Associate Software Engineer role where I can keep building re
 
 ## Contact copy
 **Heading:** Let's talk
-**Line:** I'm open to Associate Software Engineer roles, and to XR collaborations. The fastest way to reach me is by email.
+**Line:** I'm open to Associate Software Engineer roles, and to VR/AR collaborations. The fastest way to reach me is by email.

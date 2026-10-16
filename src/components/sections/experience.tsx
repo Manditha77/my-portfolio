@@ -17,9 +17,7 @@ export function Experience() {
               >
                 <p className="font-mono text-xs text-text-muted">
                   <DateRange start={job.start} end={job.end} presentLabel={experienceCopy.present} />
-                  <span aria-hidden="true"> · </span>
-                  <span className="sr-only">, </span>
-                  {job.location}
+                  {job.location ? <> · {job.location}</> : null}
                 </p>
 
                 <h3 id={headingId} className="mt-3 text-xl font-semibold tracking-tight">
