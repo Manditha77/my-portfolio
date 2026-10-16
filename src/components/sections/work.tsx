@@ -1,4 +1,5 @@
-import { moreOnGitHub, projects, workCopy } from "@/content/projects";
+import { moreOnGitHub, projects, thisPortfolio, workCopy } from "@/content/projects";
+import { CompactProjectCard } from "@/components/ui/compact-project-card";
 import { GitHubIcon } from "@/components/ui/icons";
 import { ProjectCard } from "@/components/ui/project-card";
 import { Section } from "@/components/ui/section";
@@ -15,6 +16,10 @@ export function Work() {
           </li>
         ))}
       </ul>
+
+      <div className="mt-6">
+        <CompactProjectCard project={thisPortfolio} />
+      </div>
 
       <p className="mt-8">
         <a

@@ -66,6 +66,21 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 - **My role:** Handled the Docker containerisation and Azure deployment, and contributed to parts of the Spring Boot backend.
 - **Media:** TODO: screenshot(s); optional deployment diagram.
 
+### 4. This portfolio (compact entry)
+Compact card after 1–3 and before "More on GitHub"; visually secondary to the main cards.
+- **Year:** 2026 · **Type:** Personal project · **Status:** Live
+- **Repo:** https://github.com/Manditha77/my-portfolio (link label: "View source on GitHub")
+- **Stack:** Next.js, TypeScript, Tailwind CSS, React Three Fiber, three.js, Motion, Vercel
+- **Card blurb:** The site you're reading, built to be fast, accessible and honest: every fact comes from one content file, and the single 3D element only loads where it won't slow anyone down.
+- **Highlights:**
+  - Next.js (App Router), strict TypeScript and Tailwind, with all content in typed data files kept separate from components
+  - One lazy-loaded React Three Fiber scene: phones and reduced-motion users never download it; a static poster keeps layout shift at zero
+  - Lighthouse on mobile (Oct 2026): 99 Performance, 100 Accessibility, 100 Best Practices, 100 SEO
+  - WCAG AA contrast in both themes, full keyboard support, and reduced motion respected
+  - Generated share images, sitemap, JSON-LD and Google Search Console for SEO
+  - Built with Claude Code as an AI pair programmer, driven by a written design brief and a plan → build → verify → commit loop, one section at a time
+- **Note:** Lighthouse figures are from a mobile run in Oct 2026; re-run before changing them.
+
 **More on GitHub:** link to https://github.com/Manditha77?tab=repositories
 
 ---
