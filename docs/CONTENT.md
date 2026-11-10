@@ -176,6 +176,16 @@ The player must scan at least one summon card (marker-based AR) before the battl
 fire-summon-card.png, water-summon-card.png, earth-summon-card.png, air-summon-card.png
 Alt text: "Fire summon card", "Water summon card", "Earth summon card", "Air summon card".
 
+#### Creatures (models in public/models/ar/, Quaternius, credited below)
+| Element | Name | Model |
+|---|---|---|
+| Fire | Ember Drake | fire.glb |
+| Water | Tide Serpent | water.glb |
+| Earth | Stone Golem | earth.glb |
+| Air | Storm Falcon | air.glb |
+
+Home card creature viewer (desktop only) caption: "<Name> from AR Elemental Arena: drag to rotate, click to animate".
+
 #### Screenshots (public/images/xr/ar-elemental-arena/), portrait phone screenshots, 720×1600
 | File | In gallery | Alt text |
 |---|---|---|

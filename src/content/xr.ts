@@ -74,12 +74,27 @@ export type ElectricalSafetyVrProject = XrProjectBase & {
   };
 };
 
+export type ArElement = "Fire" | "Water" | "Earth" | "Air";
+
+/** A creature in the home card's 3D viewer. */
+export type ArCreature = {
+  element: ArElement;
+  name: string;
+  /** glTF binary under public/, loaded only when first chosen. */
+  model: string;
+  /** The looping clip it rests in, matched against the end of the model's clip names. */
+  restClip: string;
+  card: ContentImage;
+};
+
 export type ArElementalArenaProject = XrProjectBase & {
   liveDemoUrl: string;
   /** Where the live demo runs. */
   runsOn: string;
   /** Markers for the summon (image tracking) mode, to scan from the screen or print. */
   summonCards: readonly ContentImage[];
+  /** The home card's creature viewer, in chip order. */
+  creatures: readonly ArCreature[];
   caseStudy: {
     idea: string;
     howItPlays: readonly NumberedStep[];
@@ -223,7 +238,7 @@ function phoneShot(file: string, alt: string): ContentImage {
   return { src: `${arImageDir}/${file}`, alt, width: 720, height: 1600 };
 }
 
-function summonCard(element: string): ContentImage {
+function summonCard(element: ArElement): ContentImage {
   return {
     src: `${arImageDir}/cards/${element.toLowerCase()}-summon-card.png`,
     alt: `${element} summon card`,
@@ -255,6 +270,12 @@ const arGallery: readonly ContentImage[] = [
   ),
   battle,
 ];
+
+const arElements: readonly ArElement[] = ["Fire", "Water", "Earth", "Air"];
+
+function creature(element: ArElement, name: string, restClip: string): ArCreature {
+  return { element, name, model: `/models/ar/${element.toLowerCase()}.glb`, restClip, card: summonCard(element) };
+}
 
 // The summon card art was generated with the setup from this article.
 const gpuArticle = articles[0];
@@ -290,7 +311,13 @@ export const arElementalArena: ArElementalArenaProject = {
     gallery: arGallery,
     share: battle,
   },
-  summonCards: ["Fire", "Water", "Earth", "Air"].map(summonCard),
+  summonCards: arElements.map(summonCard),
+  creatures: [
+    creature("Fire", "Ember Drake", "Flying_Idle"),
+    creature("Water", "Tide Serpent", "Idle"),
+    creature("Earth", "Stone Golem", "Idle"),
+    creature("Air", "Storm Falcon", "Bat_Flying"),
+  ],
   caseStudy: {
     idea: "The assignment required both marker-based and markerless AR, plus a data-driven feature and complex interaction. Rather than build two separate demos, I made them one game: image tracking collects creatures from physical cards, surface detection hosts the battle, both share the same roster, and live weather changes the outcome of a fight rather than being a cosmetic label.",
     howItPlays: [
@@ -386,6 +413,11 @@ export const xrCopy = {
   previousCaseStudy: "Previous case study",
   nextCaseStudy: "Next case study",
   builtWith: "Built with",
+  viewer: {
+    caption: (name: string) => `${name} from AR Elemental Arena: drag to rotate, click to animate`,
+    animate: "Animate",
+    chooseLabel: "Choose a creature",
+  },
   headings: {
     problem: "The problem",
     traineeSteps: "What trainees do",

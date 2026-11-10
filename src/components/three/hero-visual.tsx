@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMotionOn } from "@/lib/use-motion-on";
+import { CAPABLE_QUERY, SilentBoundary, hasWebGL2, saveDataOn, watchActive, whenIdle } from "./gate";
 import type { PointerState } from "./parts-cube";
 
 /*
@@ -16,65 +17,7 @@ const PartsCube = dynamic(() => import("./parts-cube").then((m) => m.PartsCube),
   loading: () => null,
 });
 
-// Tailwind's lg breakpoint (64rem) plus a mouse/trackpad-class pointer.
-const CAPABLE_QUERY = "(min-width: 64rem) and (hover: hover) and (pointer: fine)";
-
 const ACTIVITY_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "scroll"] as const;
-
-type NavigatorWithConnection = Navigator & { connection?: { saveData?: boolean } };
-
-function saveDataOn(): boolean {
-  return (navigator as NavigatorWithConnection).connection?.saveData === true;
-}
-
-/** three.js requires WebGL2. The probe context is released straight away. */
-function hasWebGL2(): boolean {
-  try {
-    const gl = document.createElement("canvas").getContext("webgl2");
-    gl?.getExtension("WEBGL_lose_context")?.loseContext();
-    return gl !== null;
-  } catch {
-    return false;
-  }
-}
-
-/** Runs `callback` once the page has loaded and the main thread is idle. Returns a cancel function. */
-function whenIdle(callback: () => void): () => void {
-  let idleId: number | undefined;
-  let timeoutId: number | undefined;
-
-  const schedule = () => {
-    // Safari has no requestIdleCallback; a short timeout after load is close enough.
-    if (typeof window.requestIdleCallback === "function") idleId = window.requestIdleCallback(callback, { timeout: 2000 });
-    else timeoutId = window.setTimeout(callback, 200);
-  };
-
-  if (document.readyState === "complete") schedule();
-  else window.addEventListener("load", schedule, { once: true });
-
-  return () => {
-    window.removeEventListener("load", schedule);
-    if (idleId !== undefined) window.cancelIdleCallback(idleId);
-    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-  };
-}
-
-/** Any failure inside the 3D tree (chunk load, WebGL) renders nothing, so the poster stays. */
-class SilentBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
-  state = { failed: false };
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  componentDidCatch() {
-    this.props.onError();
-  }
-
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
 
 type HeroVisualProps = {
   children: ReactNode;
@@ -128,14 +71,7 @@ export function HeroVisual({ children }: HeroVisualProps) {
     const wrapper = wrapperRef.current;
     if (!enabled || !wrapper) return;
 
-    let onScreen = true;
-    const update = () => setActive(onScreen && !document.hidden);
-    const observer = new IntersectionObserver(([entry]) => {
-      onScreen = entry.isIntersecting;
-      update();
-    });
-    observer.observe(wrapper);
-    document.addEventListener("visibilitychange", update);
+    const stopWatching = watchActive(wrapper, setActive);
 
     const pointer = pointerRef.current;
     const onMove = (event: PointerEvent) => {
@@ -158,8 +94,7 @@ export function HeroVisual({ children }: HeroVisualProps) {
     for (const type of ACTIVITY_EVENTS) window.addEventListener(type, onActivity, { passive: true });
 
     return () => {
-      observer.disconnect();
-      document.removeEventListener("visibilitychange", update);
+      stopWatching();
       wrapper.removeEventListener("pointermove", onMove);
       wrapper.removeEventListener("pointerleave", onLeave);
       for (const type of ACTIVITY_EVENTS) window.removeEventListener(type, onActivity);

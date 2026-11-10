@@ -210,7 +210,8 @@
    first enters view with motion on: a single accent line sweeps down it. The line is invisible at rest
    and at the end, so a cut-short sweep (motion switched off) never leaves it behind. */
 
-.scan-line {
+.scan-line,
+.lock-line {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -219,7 +220,8 @@
 }
 
 /* A faint trail just above the line. */
-.scan-line::before {
+.scan-line::before,
+.lock-line::before {
   content: "";
   position: absolute;
   inset-inline: 0;
@@ -228,7 +230,8 @@
   background: linear-gradient(to top, color-mix(in oklab, var(--accent) 14%, transparent), transparent);
 }
 
-:root[data-motion="on"] [data-scan-play="run"] .scan-line {
+:root[data-motion="on"] [data-scan-play="run"] .scan-line,
+:root[data-motion="on"] .lock-line[data-run] {
   animation: scan-sweep 600ms ease-out 250ms both;
 }
 
@@ -262,13 +265,17 @@
 
 .scan-corners {
   --c-len: 18px;
-  --c-w: 2px;
   position: absolute;
   inset: -6px;
   opacity: 0;
   transition:
     opacity 180ms ease-out,
     --c-len 180ms ease-out;
+}
+
+.scan-corners,
+.lock-corners {
+  --c-w: 2px;
   background:
     linear-gradient(var(--accent), var(--accent)) top left / var(--c-len) var(--c-w),
     linear-gradient(var(--accent), var(--accent)) top left / var(--c-w) var(--c-len),
@@ -295,6 +302,21 @@
 }
 
 [data-scan]:has(:focus-visible) .scan-corners {
+  --c-len: 18px;
+  opacity: 1;
+}
+
+/* Creature viewer (AR card): its own corners frame the summon card. Short and faint while a model
+   loads, full once it's tracked. CreatureViewer plays the grow-in itself, so a cached switch still
+   shows a lock-on. Separate classes from the card's, so the card's hover and sweep never reach them. */
+.lock-corners {
+  --c-len: 6px;
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+}
+
+.lock-corners[data-lock="locked"] {
   --c-len: 18px;
   opacity: 1;
 }
