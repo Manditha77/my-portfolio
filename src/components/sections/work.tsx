@@ -8,7 +8,9 @@ import { StaggerItem, StaggerList } from "@/components/ui/stagger";
 export function Work() {
   return (
     <Section id="work">
-      <p className="mt-3 max-w-measure text-text-muted sm:text-lg">{workCopy.intro}</p>
+      <p data-build-clear className="mt-3 max-w-measure text-text-muted sm:text-lg">
+        {workCopy.intro}
+      </p>
 
       <StaggerList role="list" className="mt-10 flex flex-col gap-6">
         {projects.map((project) => (
@@ -22,7 +24,7 @@ export function Work() {
         <CompactProjectCard project={thisPortfolio} />
       </div>
 
-      <p className="mt-8">
+      <p data-build-clear className="mt-8">
         <a
           href={moreOnGitHub.href}
           className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 font-medium text-text transition-colors duration-150 ease-out hover:text-accent"

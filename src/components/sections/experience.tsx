@@ -58,10 +58,12 @@ export function Experience() {
           })}
         </StaggerList>
 
-        <h3 className={`mt-10 ${subheading}`}>{experienceCopy.leadershipHeading}</h3>
+        <h3 data-build-clear className={`mt-10 ${subheading}`}>
+          {experienceCopy.leadershipHeading}
+        </h3>
         <StaggerList as="ol" role="list" className="mt-4 space-y-6">
           {leadership.map((item) => (
-            <StaggerItem key={`${item.event}-${item.role}`} className="relative">
+            <StaggerItem key={`${item.event}-${item.role}`} data-build-clear className="relative">
               {/* Centred on the year line. */}
               <span
                 aria-hidden="true"
@@ -80,7 +82,7 @@ export function Experience() {
       </div>
 
       {/* Off the timeline (no dot), but indented to the same content column as the entries above. */}
-      <div className="mt-12 pl-6 sm:pl-8 lg:w-1/2 lg:pr-5">
+      <div data-build-clear className="mt-12 pl-6 sm:pl-8 lg:w-1/2 lg:pr-5">
         <h3 className={subheading}>{experienceCopy.educationHeading}</h3>
         <ul role="list" className="mt-4 divide-y divide-border border-y border-border">
           {education.map((entry) => (

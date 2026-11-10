@@ -16,7 +16,7 @@ export function Writing() {
             <StaggerItem key={article.url}>
               <article
                 aria-labelledby={headingId}
-                className="h-full rounded-lg border border-border p-5 transition-colors duration-150 focus-within:border-accent hover:border-accent"
+                className="h-full rounded-lg border border-border bg-surface p-5 transition-colors duration-150 focus-within:border-accent hover:border-accent"
               >
                 <p className="font-mono text-xs text-text-muted">
                   <time dateTime={article.published}>{formatMonth(article.published)}</time>

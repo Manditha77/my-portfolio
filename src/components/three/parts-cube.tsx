@@ -1,22 +1,27 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { Color, MathUtils, Matrix4, type Group, type InstancedMesh, type ShaderMaterial } from "three";
+import { createPortal } from "react-dom";
+import { Color, MathUtils, Matrix4, Vector3, type InstancedMesh, type ShaderMaterial } from "three";
+import { BLOCKS, blendPoses, createPoses, fillLayout, type LayoutInput } from "./build-layouts";
+import { buildProgress, measureBuild, type BuildMap } from "./build-scroll";
 
 /*
- * "Systems from parts": a 3×3×3 cube of blocks (26 instances, the hidden centre is dropped) drawn in
- * one draw call with no textures. It starts at the poster's exact orientation so the crossfade is
- * seamless, turns slowly, and separates into its modules while the pointer moves over it. After a few
- * seconds with no interaction anywhere on the page, it gently separates and reassembles on a slow cycle.
- * Renders on demand: every frame while something eases (separation, tilt), but only ~30 fps while
- * the slow spin is the only change. Only loaded lazily by HeroVisual.
+ * "The Build": the hero's "systems from parts" cube as a scroll companion. A 3×3×3 cube of blocks
+ * (26 instances, the hidden centre is dropped) drawn in one draw call with no textures, in one fixed
+ * canvas on the right of the viewport, behind the page content. At scroll 0 it sits exactly over the
+ * hero poster; as the page scrolls, its blocks rearrange into one layout per section (build-layouts.ts),
+ * scrubbed by scroll and reversible (build-scroll.ts). In the hero it turns slowly, separates under the
+ * pointer, and gently separates and reassembles after a few seconds without interaction.
+ * Renders on demand: every frame while something eases, ~30 fps while only the hero spin or the About
+ * float moves, and not at all while a section's layout is at rest. Only loaded lazily by HeroVisual.
  */
 
 export type PointerState = {
-  /** -1..1 across the visual, +y up. */
+  /** -1..1 across the hero visual, +y up. */
   x: number;
   y: number;
   inside: boolean;
-  /** performance.now() of the last pointermove over the visual. */
+  /** performance.now() of the last pointermove over the hero visual. */
   lastMove: number;
   /** performance.now() of the last interaction anywhere on the page (pointer, key, scroll). */
   lastActivity: number;
@@ -24,15 +29,7 @@ export type PointerState = {
   wake?: () => void;
 };
 
-// Must match HeroPoster's projection (YAW, PITCH) and outer cube (half-size 1 at ¼ of the width).
-const YAW = 0.6;
-const PITCH = 0.45;
-const VIEW_UNITS = 4;
-
 const BLOCK = 0.6;
-const SPACING = 0.667;
-// Kept small so a fully separated cube's diagonal still fits inside the canvas.
-const SPREAD = 0.25;
 const SPIN_SPEED = 0.15; // rad/s
 const MAX_TILT = 0.15; // rad
 const EASE = 6; // damp lambda: ~95% of the way in 0.5s
@@ -45,25 +42,23 @@ const IDLE_APART_MS = 1600;
 const IDLE_SPREAD = 0.6; // share of a full separation
 const IDLE_EASE = 2.5; // softer than EASE: ~95% of the way in 1.2s
 
-// While only the spin changes: 0.15 rad/s is 0.3° a frame at 30 fps, too little to see as a step.
-const SPIN_ONLY_FRAME_MS = 33;
+// Scroll progress follows the page with a ~125ms time constant, so wheel steps don't snap.
+const PROGRESS_EASE = 8;
+const PROGRESS_SETTLED = 1e-3; // of one move: well under a pixel
+const RING_RAD_PER_PX = 0.0008;
+
+// While only the spin or float moves: small enough steps at 30 fps not to read as stutter.
+const TIMED_FRAME_MS = 33;
 // "Close enough" for the eased values: under ~0.1px of block movement for separation, ~0.2px for tilt.
 const SEPARATION_SETTLED = 5e-3;
 const TILT_SETTLED = 1e-3;
-
-const GRID: [number, number, number][] = [];
-for (const x of [-1, 0, 1]) {
-  for (const y of [-1, 0, 1]) {
-    for (const z of [-1, 0, 1]) if (x || y || z) GRID.push([x * SPACING, y * SPACING, z * SPACING]);
-  }
-}
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
   varying vec3 vNormal;
   void main() {
     vUv = uv;
-    vNormal = normalize(normalMatrix * normal);
+    vNormal = normalize(normalMatrix * mat3(instanceMatrix) * normal);
     gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
   }
 `;
@@ -87,6 +82,16 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
+// Reused every frame (there is only ever one companion), so a frame allocates nothing.
+const scratch = {
+  from: createPoses(),
+  to: createPoses(),
+  out: createPoses(),
+  matrix: new Matrix4(),
+  position: new Vector3(),
+  scale: new Vector3(),
+};
+
 function readTokenColors(target: { uAccent: { value: Color }; uSurface: { value: Color } }) {
   const styles = getComputedStyle(document.documentElement);
   target.uAccent.value.setStyle(styles.getPropertyValue("--accent").trim());
@@ -105,21 +110,20 @@ function isEasing(m: MotionState, separation: number, tiltX: number, tiltY: numb
 }
 
 type BlocksProps = {
+  mapRef: RefObject<BuildMap | null>;
   pointerRef: RefObject<PointerState>;
+  visible: boolean;
   onReady: () => void;
 };
 
-function Blocks({ pointerRef, onReady, active }: BlocksProps & { active: boolean }) {
+function Blocks({ mapRef, pointerRef, visible, onReady }: BlocksProps) {
   const invalidate = useThree((state) => state.invalidate);
-  const activeRef = useRef(active);
-  const spinTimer = useRef<number | undefined>(undefined);
-  const tiltRef = useRef<Group>(null);
-  const spinRef = useRef<Group>(null);
+  const visibleRef = useRef(visible);
+  const timer = useRef<number | undefined>(undefined);
   const meshRef = useRef<InstancedMesh>(null);
   const themeDirty = useRef(true);
-  const motion = useRef({ separation: -1, tiltX: 0, tiltY: 0, frames: 0 });
+  const motion = useRef({ separation: 0, tiltX: 0, tiltY: 0, spin: 0, progress: -1, frames: 0 });
   const [uniforms] = useState(() => ({ uAccent: { value: new Color() }, uSurface: { value: new Color() } }));
-  const [matrix] = useState(() => new Matrix4());
 
   // Recolour when the theme toggle (or the OS theme) changes data-theme on <html>.
   useEffect(() => {
@@ -131,33 +135,48 @@ function Blocks({ pointerRef, onReady, active }: BlocksProps & { active: boolean
     return () => observer.disconnect();
   }, [invalidate]);
 
-  // Pointer moves over the visual ask for a frame at once, rather than waiting for the next spin frame.
+  // Pointer moves over the hero visual and re-measures ask for a frame at once.
   useEffect(() => {
     const pointer = pointerRef.current;
     pointer.wake = invalidate;
     return () => {
       pointer.wake = undefined;
-      window.clearTimeout(spinTimer.current);
+      window.clearTimeout(timer.current);
     };
   }, [pointerRef, invalidate]);
 
-  // Back on screen (or the tab visible again): restart the frame chain.
+  // Scroll asks for at most one frame per animation frame; the frame reads scrollY itself.
   useEffect(() => {
-    activeRef.current = active;
-    if (active) invalidate();
-    else window.clearTimeout(spinTimer.current);
-  }, [active, invalidate]);
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        invalidate();
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [invalidate]);
+
+  // The tab visible again: restart the frame chain.
+  useEffect(() => {
+    visibleRef.current = visible;
+    if (visible) invalidate();
+    else window.clearTimeout(timer.current);
+  }, [visible, invalidate]);
 
   useFrame((state, rawDelta) => {
     const mesh = meshRef.current;
-    const tilt = tiltRef.current;
-    const spin = spinRef.current;
-    if (!mesh || !tilt || !spin) return;
+    const map = mapRef.current;
+    if (!mesh || !map || map.stops.length === 0) return;
 
-    // Orthographic zoom is px per world unit: keep VIEW_UNITS across the canvas, like the poster.
-    const zoom = state.size.width / VIEW_UNITS;
-    if (state.camera.zoom !== zoom) {
-      state.camera.zoom = zoom;
+    // Orthographic zoom is px per world unit: the hero cube keeps the poster's size.
+    if (state.camera.zoom !== map.zoom) {
+      state.camera.zoom = map.zoom;
       state.camera.updateProjectionMatrix();
     }
 
@@ -171,79 +190,167 @@ function Blocks({ pointerRef, onReady, active }: BlocksProps & { active: boolean
     const m = motion.current;
     const pointer = pointerRef.current;
     const now = performance.now();
+    const { stops } = map;
+
+    // Where the page is between section layouts.
+    const target = buildProgress(window.scrollY, map);
+    m.progress = m.progress < 0 ? target : MathUtils.damp(m.progress, target, PROGRESS_EASE, delta);
+    if (Math.abs(m.progress - target) < PROGRESS_SETTLED) m.progress = target;
+    const index = Math.min(Math.floor(m.progress), stops.length - 1);
+    const t = m.progress - index;
+    const from = stops[index];
+    const to = stops[Math.min(index + 1, stops.length - 1)];
+    const heroWeight = index === 0 ? 1 - t : 0;
+    const floating = from.layout === "cluster" || (to.layout === "cluster" && t > 0);
+
+    // Hero only: pointer separation and tilt, the idle breathing and the spin fade out as it leaves.
     const moving = pointer.inside && now - pointer.lastMove < SETTLE_AFTER_MS;
     const idleFor = now - pointer.lastActivity - IDLE_AFTER_MS;
-    const breathing = !moving && idleFor > 0;
+    const breathing = heroWeight === 1 && !moving && idleFor > 0;
 
-    let target = moving ? 1 : 0;
-    if (breathing) target = idleFor % IDLE_CYCLE_MS < IDLE_APART_MS ? IDLE_SPREAD : 0;
-    const tiltXTarget = pointer.inside ? -pointer.y * MAX_TILT : 0;
-    const tiltYTarget = pointer.inside ? pointer.x * MAX_TILT : 0;
+    let separation = moving ? heroWeight : 0;
+    if (breathing) separation = idleFor % IDLE_CYCLE_MS < IDLE_APART_MS ? IDLE_SPREAD : 0;
+    const tiltXTarget = pointer.inside ? -pointer.y * MAX_TILT * heroWeight : 0;
+    const tiltYTarget = pointer.inside ? pointer.x * MAX_TILT * heroWeight : 0;
 
-    const previous = m.separation;
-    m.separation = MathUtils.damp(Math.max(previous, 0), target, breathing ? IDLE_EASE : EASE, delta);
+    m.separation = MathUtils.damp(m.separation, separation, breathing ? IDLE_EASE : EASE, delta);
     m.tiltX = MathUtils.damp(m.tiltX, tiltXTarget, EASE, delta);
     m.tiltY = MathUtils.damp(m.tiltY, tiltYTarget, EASE, delta);
+    m.spin += SPIN_SPEED * delta * heroWeight;
 
-    // Rotate around Y, then X (as the poster does): outer group pitches, inner group yaws.
-    tilt.rotation.x = PITCH + m.tiltX;
-    spin.rotation.y += SPIN_SPEED * delta;
-    tilt.rotation.y = m.tiltY;
+    const input: LayoutInput = {
+      spin: m.spin,
+      tiltX: m.tiltX,
+      tiltY: m.tiltY,
+      separation: m.separation,
+      ringAngle: window.scrollY * RING_RAD_PER_PX,
+      time: now / 1000,
+    };
+    fillLayout(from.layout, scratch.from, input);
+    fillLayout(to.layout, scratch.to, input);
+    blendPoses(scratch.from, scratch.to, t, scratch.out);
 
-    if (Math.abs(m.separation - previous) > 1e-4) {
-      const scale = 1 + SPREAD * m.separation;
-      GRID.forEach(([x, y, z], i) => mesh.setMatrixAt(i, matrix.makeTranslation(x * scale, y * scale, z * scale)));
-      mesh.instanceMatrix.needsUpdate = true;
+    // The companion's centre (layer px → world units) and size move with the same eased t.
+    const eased = MathUtils.smoothstep(t, 0, 1);
+    const size = MathUtils.lerp(from.scale, to.scale, eased);
+    const centreX = (MathUtils.lerp(from.x, to.x, eased) - state.size.width / 2) / map.zoom;
+    const centreY = -(MathUtils.lerp(from.y, to.y, eased) - state.size.height / 2) / map.zoom;
+
+    const { matrix, position, scale } = scratch;
+    for (let i = 0; i < BLOCKS; i++) {
+      const pose = scratch.out[i];
+      position.copy(pose.position).multiplyScalar(size);
+      position.x += centreX;
+      position.y += centreY;
+      scale.copy(pose.scale).multiplyScalar(size);
+      mesh.setMatrixAt(i, matrix.compose(position, pose.quaternion, scale));
     }
+    mesh.instanceMatrix.needsUpdate = true;
 
     // Report ready once a real frame has been drawn.
     if (m.frames < 2 && ++m.frames === 2) onReady();
 
-    // Next frame: straight away while anything eases, else a spin-only frame a little later.
-    window.clearTimeout(spinTimer.current);
-    if (m.frames < 2 || isEasing(m, target, tiltXTarget, tiltYTarget)) {
+    // Next frame: straight away while anything eases; a timed frame while the hero spins or About
+    // floats; otherwise none until scroll, resize or the pointer asks.
+    window.clearTimeout(timer.current);
+    if (m.frames < 2 || m.progress !== target || isEasing(m, separation, tiltXTarget, tiltYTarget)) {
       state.invalidate();
-    } else {
-      spinTimer.current = window.setTimeout(() => {
-        if (activeRef.current) invalidate();
-      }, SPIN_ONLY_FRAME_MS);
+    } else if (heroWeight > 0 || floating) {
+      timer.current = window.setTimeout(() => {
+        if (visibleRef.current) invalidate();
+      }, TIMED_FRAME_MS);
     }
   });
 
   return (
-    <group ref={tiltRef} rotation={[PITCH, 0, 0]}>
-      <group ref={spinRef} rotation={[0, YAW, 0]}>
-        <instancedMesh ref={meshRef} args={[undefined, undefined, GRID.length]} frustumCulled={false}>
-          <boxGeometry args={[BLOCK, BLOCK, BLOCK]} />
-          <shaderMaterial uniforms={uniforms} vertexShader={vertexShader} fragmentShader={fragmentShader} />
-        </instancedMesh>
-      </group>
-    </group>
+    <instancedMesh ref={meshRef} args={[undefined, undefined, BLOCKS]} frustumCulled={false}>
+      <boxGeometry args={[BLOCK, BLOCK, BLOCK]} />
+      <shaderMaterial uniforms={uniforms} vertexShader={vertexShader} fragmentShader={fragmentShader} />
+    </instancedMesh>
   );
 }
 
-type PartsCubeProps = BlocksProps & {
-  /** False when off-screen or the tab is hidden: rendering stops entirely. */
-  active: boolean;
+type PartsCubeProps = {
+  /** The hero visual's box: the cube's position and size at scroll 0. */
+  heroRef: RefObject<HTMLElement | null>;
+  pointerRef: RefObject<PointerState>;
+  onReady: () => void;
   onFail: () => void;
 };
 
-export function PartsCube({ active, pointerRef, onReady, onFail }: PartsCubeProps) {
-  return (
-    <Canvas
+export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubeProps) {
+  const mapRef = useRef<BuildMap | null>(null);
+  const [layerLeft, setLayerLeft] = useState<number | null>(null);
+  const [visible, setVisible] = useState(() => !document.hidden);
+  const [ready, setReady] = useState(false);
+
+  // Measure the sections (and the hero box) now and whenever the layout or content changes size.
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const map = measureBuild(hero);
+      mapRef.current = map;
+      setLayerLeft(map.layerLeft);
+      pointerRef.current.wake?.();
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(hero);
+    const main = document.querySelector("main");
+    if (main) observer.observe(main);
+    window.addEventListener("resize", schedule);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", schedule);
+      cancelAnimationFrame(frame);
+    };
+  }, [heroRef, pointerRef]);
+
+  // Rendering stops entirely while the tab is hidden.
+  useEffect(() => {
+    const update = () => setVisible(!document.hidden);
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
+
+  if (layerLeft === null) return null;
+
+  // Fixed on the right, behind all page content (the body's background is the viewport's, so the
+  // layer still paints above it). Cards pass over it; marked text never sits in front of it.
+  return createPortal(
+    <div
       aria-hidden="true"
-      orthographic
-      camera={{ position: [0, 0, 10], zoom: 100 }}
-      dpr={[1, 1.5]}
-      flat
-      frameloop={active ? "demand" : "never"}
-      gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
-      style={{ pointerEvents: "none" }}
-      onCreated={({ gl }) => {
-        gl.domElement.addEventListener("webglcontextlost", onFail, { once: true });
-      }}
+      data-ready={ready || undefined}
+      className="pointer-events-none fixed inset-y-0 right-0 -z-1 opacity-0 transition-opacity duration-400 data-ready:opacity-100"
+      style={{ left: layerLeft }}
     >
-      <Blocks pointerRef={pointerRef} onReady={onReady} active={active} />
-    </Canvas>
+      <Canvas
+        orthographic
+        camera={{ position: [0, 0, 10], zoom: 100 }}
+        dpr={[1, 1.5]}
+        flat
+        frameloop={visible ? "demand" : "never"}
+        gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener("webglcontextlost", onFail, { once: true });
+        }}
+      >
+        <Blocks
+          mapRef={mapRef}
+          pointerRef={pointerRef}
+          visible={visible}
+          onReady={() => {
+            setReady(true);
+            onReady();
+          }}
+        />
+      </Canvas>
+    </div>,
+    document.body,
   );
 }
