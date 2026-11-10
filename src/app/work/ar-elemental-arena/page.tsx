@@ -13,6 +13,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import { GitHubIcon } from "@/components/ui/icons";
 import { LiveDemoLink } from "@/components/ui/live-demo-link";
+import { ScanObserver } from "@/components/ui/scan-observer";
 import { baseOpenGraph } from "@/lib/seo";
 
 const { caseStudy, images } = project;
@@ -106,7 +107,7 @@ export default function ArElementalArenaPage() {
         </CaseStudySection>
 
         <CaseStudySection id="challenges" heading={xrCopy.headings.challenges} prominent>
-          <ChallengeCards challenges={caseStudy.technicalChallenges} />
+          <ChallengeCards challenges={caseStudy.technicalChallenges} idPrefix={project.slug} />
         </CaseStudySection>
 
         <CaseStudySection id="learned" heading={xrCopy.headings.learned}>
@@ -114,7 +115,7 @@ export default function ArElementalArenaPage() {
         </CaseStudySection>
 
         <CaseStudySection id="gallery" heading={xrCopy.headings.gallery}>
-          <CaseStudyGallery images={images.gallery} shape={project.screenshotShape} />
+          <CaseStudyGallery images={images.gallery} shape={project.screenshotShape} idPrefix={project.slug} />
         </CaseStudySection>
 
         <CaseStudySection id="credits" heading={xrCopy.headings.credits}>
@@ -143,6 +144,7 @@ export default function ArElementalArenaPage() {
         </CaseStudySection>
 
         <CaseStudyPager slug={project.slug} />
+        <ScanObserver />
       </Container>
     </article>
   );

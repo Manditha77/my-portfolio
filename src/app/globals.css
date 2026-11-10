@@ -249,17 +249,26 @@
   }
 }
 
-/* AR tracking corners: four L-brackets just outside the card's rounded border, drawn as gradients. */
+/* AR tracking corners: four L-brackets drawn as gradients, a clear 6px outside the card's border
+   (the ScanFrame overlay covers the border box), so they read as separate from the hover border.
+   A hover/focus state, not motion: with motion off they still appear, just without the lock-on.
+   Registered so the bracket length can transition. Geometry never changes (no transform), so the
+   corners can't widen the page at narrow widths. */
+@property --c-len {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 18px;
+}
+
 .scan-corners {
-  --c-len: 14px;
+  --c-len: 18px;
   --c-w: 2px;
   position: absolute;
-  inset: -5px;
+  inset: -6px;
   opacity: 0;
-  transform: scale(1.03);
   transition:
-    opacity 150ms ease-out,
-    transform 150ms ease-out;
+    opacity 180ms ease-out,
+    --c-len 180ms ease-out;
   background:
     linear-gradient(var(--accent), var(--accent)) top left / var(--c-len) var(--c-w),
     linear-gradient(var(--accent), var(--accent)) top left / var(--c-w) var(--c-len),
@@ -272,17 +281,22 @@
   background-repeat: no-repeat;
 }
 
+/* Lock-on: the brackets grow out from each corner as they appear. */
+:root[data-motion="on"] .scan-corners {
+  --c-len: 6px;
+}
+
 /* Pointer hover on devices that really hover; keyboard focus everywhere (not a tap's focus). */
 @media (hover: hover) and (pointer: fine) {
   [data-scan]:hover .scan-corners {
+    --c-len: 18px;
     opacity: 1;
-    transform: none;
   }
 }
 
 [data-scan]:has(:focus-visible) .scan-corners {
+  --c-len: 18px;
   opacity: 1;
-  transform: none;
 }
 
 /* Hero reticle (HeroReticle): a soft round patch of dot "surface" around the pointer. Faint, and

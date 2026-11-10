@@ -144,6 +144,7 @@ export function HeroVisual({ children }: HeroVisualProps) {
       pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
       pointer.inside = true;
       pointer.lastMove = performance.now();
+      pointer.wake?.();
     };
     const onLeave = () => {
       pointer.inside = false;

@@ -71,13 +71,13 @@ The structure must make it easy to add `/xr` later as a separate XR showcase (a 
 
 The site's motion is drawn from Manditha's own projects. New motion must use one of these three motifs, or not exist.
 
-- **ASSEMBLE** (from the hero cube, "systems from parts"): elements snap together from parts. Used by: section labels ("01 / Work") assembling character by character (`AssembleText`).
-- **SCAN** (from AR Elemental Arena): AR tracking corners, a single scan sweep, the ring reticle. Not used yet; the next candidate for VR/AR surfaces.
+- **ASSEMBLE** (from the hero cube, "systems from parts"): elements snap together from parts. Used by: section labels ("01 / Work") assembling character by character (`AssembleText`), and the hero cube's idle pulse (it separates and reassembles every few seconds after ~4 s without input; `parts-cube.tsx`).
+- **SCAN** (from AR Elemental Arena): AR tracking corners, a single scan sweep, the ring reticle. Used by: a one-time scan sweep and hover/keyboard-focus tracking corners (`ScanFrame` + `ScanObserver`) on the home page's project, VR/AR and experience cards and on the case studies' challenge cards and gallery tiles; the hero's ring reticle over a dot "surface" (`HeroReticle`, desktop only).
 - **PIPELINE** (from PPCH, Sense → Analyze → Act): small steps that check, then resolve. Used by: the hero status line (`PipelineStatus`) and count-up measured numbers (`CountUp`, values listed per item in `countUp` in the content files).
 
 Global rules for every effect:
 - No new dependencies (Motion, CSS and small client islands only).
-- Off when site motion is off. `data-motion="on" | "off"` on `<html>` is the single switch (`src/lib/motion-pref.ts`, hook in `src/lib/use-motion-on.ts`). It is set before first paint from the stored choice, else `prefers-reduced-motion`. An explicit click on the Motion toggle wins over the OS default and is saved in `localStorage` (try/catch). CSS uses the `motion-on:` variant, never `motion-safe:`.
+- Off when site motion is off (one exception: SCAN tracking corners are a hover/focus state, not motion, so they still appear with motion off, static, with no lock-on). `data-motion="on" | "off"` on `<html>` is the single switch (`src/lib/motion-pref.ts`, hook in `src/lib/use-motion-on.ts`). It is set before first paint from the stored choice, else `prefers-reduced-motion`. An explicit click on the Motion toggle wins over the OS default and is saved in `localStorage` (try/catch). CSS uses the `motion-on:` variant, never `motion-safe:`.
 - Nothing delays or hides the hero h1 or intro (LCP).
 - Real text is always in the DOM for screen readers and SEO; animated copies are `aria-hidden` overlays that never change layout.
 - One-shot effects play once per page load.

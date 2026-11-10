@@ -7,7 +7,8 @@ import { currentMotion, subscribeMotion } from "@/lib/motion-pref";
  * PIPELINE (from PPCH's Sense → Analyze → Act): the hero status line first ticks through its steps,
  * then types itself out once. The real status text is always in the DOM and sizes the box; the
  * animated copy is an aria-hidden overlay on top of it, so assistive tech reads the status once and
- * nothing shifts. Plays once per page load, only with site motion on, paused while off-screen or
+ * nothing shifts. The caret is positioned out of flow and moved with a transform, so typing never
+ * counts as a layout shift. Plays once per page load, only with site motion on, paused while off-screen or
  * while the tab is hidden. Not the LCP element: the h1 and intro never wait for it.
  */
 
@@ -28,6 +29,7 @@ type PipelineStatusProps = {
 
 export function PipelineStatus({ status, steps }: PipelineStatusProps) {
   const rootRef = useRef<HTMLSpanElement>(null);
+  const overlayRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const caretRef = useRef<HTMLSpanElement>(null);
   // A remount after client-side navigation starts finished (played is false during the first hydration).
@@ -42,9 +44,25 @@ export function PipelineStatus({ status, steps }: PipelineStatusProps) {
     }
 
     const root = rootRef.current;
+    const overlay = overlayRef.current;
     const text = textRef.current;
     const caret = caretRef.current;
-    if (!root || !text || !caret) return;
+    if (!root || !overlay || !text || !caret) return;
+
+    // Puts the caret just after the last typed character, on whichever line it wrapped to.
+    const range = document.createRange();
+    const placeCaret = () => {
+      const node = text.firstChild;
+      const length = node?.textContent?.length ?? 0;
+      if (!node || length === 0) return;
+      range.setStart(node, length - 1);
+      range.setEnd(node, length);
+      const rects = range.getClientRects();
+      const char = rects[rects.length - 1];
+      if (!char) return;
+      const origin = overlay.getBoundingClientRect();
+      caret.style.transform = `translate(${char.right - origin.left + 1}px, ${char.top - origin.top}px)`;
+    };
 
     const stepsEnd = steps.length * STEP_MS;
     const typeStart = stepsEnd + HOLD_MS;
@@ -87,7 +105,10 @@ export function PipelineStatus({ status, steps }: PipelineStatusProps) {
       }
       const { copy, typing } = frameAt(elapsed);
       // Direct DOM writes: no React re-render per character.
-      if (text.textContent !== copy) text.textContent = copy;
+      if (text.textContent !== copy) {
+        text.textContent = copy;
+        if (typing) placeCaret();
+      }
       caret.hidden = !typing;
       frame = requestAnimationFrame(tick);
     };
@@ -112,9 +133,9 @@ export function PipelineStatus({ status, steps }: PipelineStatusProps) {
     <span ref={rootRef} data-pipeline={done ? "done" : "pending"} className="relative">
       <span data-pipeline-real="">{status}</span>
       {!done && (
-        <span aria-hidden="true" className="absolute inset-0">
+        <span ref={overlayRef} aria-hidden="true" className="absolute inset-0">
           <span ref={textRef} />
-          <span ref={caretRef} hidden className="ml-px animate-caret text-accent">
+          <span ref={caretRef} hidden className="absolute top-0 left-0 animate-caret text-accent">
             ▍
           </span>
         </span>

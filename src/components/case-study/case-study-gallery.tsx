@@ -2,11 +2,14 @@ import Image from "next/image";
 import type { ContentImage } from "@/content/types";
 import type { ScreenshotShape } from "@/content/xr";
 import { PhoneFrame } from "@/components/ui/phone-frame";
+import { ScanFrame } from "@/components/ui/scan-frame";
 import { cx } from "@/lib/cx";
 
 type CaseStudyGalleryProps = {
   images: readonly ContentImage[];
   shape: ScreenshotShape;
+  /** Keeps each tile's SCAN id unique across pages (the project slug). */
+  idPrefix: string;
 };
 
 const layouts = {
@@ -21,13 +24,16 @@ const layouts = {
   },
 } as const;
 
-/** Captioned screenshots: 16:9 tiles, or phone-shaped tiles for portrait phone captures. */
-export function CaseStudyGallery({ images, shape }: CaseStudyGalleryProps) {
+/**
+ * Captioned screenshots: 16:9 tiles, or phone-shaped tiles for portrait phone captures. Each visual
+ * gets the SCAN frame on an unclipped wrapper (the image box itself clips), so the corners can sit outside it.
+ */
+export function CaseStudyGallery({ images, shape, idPrefix }: CaseStudyGalleryProps) {
   const layout = layouts[shape];
 
   return (
     <ul role="list" className={cx("mt-6 grid gap-6", layout.grid)}>
-      {images.map((image) => {
+      {images.map((image, index) => {
         const picture = (
           <Image
             src={image.src}
@@ -42,11 +48,14 @@ export function CaseStudyGallery({ images, shape }: CaseStudyGalleryProps) {
         return (
           <li key={image.src}>
             <figure>
-              {shape === "phone" ? (
-                <PhoneFrame>{picture}</PhoneFrame>
-              ) : (
-                <div className="aspect-video overflow-hidden rounded-md border border-border bg-bg">{picture}</div>
-              )}
+              <div data-scan={`${idPrefix}-shot-${index + 1}`} className={cx("relative", shape === "phone" ? "rounded-[1.75rem]" : "rounded-md")}>
+                {shape === "phone" ? (
+                  <PhoneFrame>{picture}</PhoneFrame>
+                ) : (
+                  <div className="aspect-video overflow-hidden rounded-md border border-border bg-bg">{picture}</div>
+                )}
+                <ScanFrame />
+              </div>
               <figcaption className="mt-2 text-sm text-text-muted">{image.alt}</figcaption>
             </figure>
           </li>

@@ -1,4 +1,4 @@
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { Color, MathUtils, Matrix4, type Group, type InstancedMesh, type ShaderMaterial } from "three";
 
@@ -7,7 +7,8 @@ import { Color, MathUtils, Matrix4, type Group, type InstancedMesh, type ShaderM
  * one draw call with no textures. It starts at the poster's exact orientation so the crossfade is
  * seamless, turns slowly, and separates into its modules while the pointer moves over it. After a few
  * seconds with no interaction anywhere on the page, it gently separates and reassembles on a slow cycle.
- * Only loaded lazily by HeroVisual.
+ * Renders on demand: every frame while something eases (separation, tilt), but only ~30 fps while
+ * the slow spin is the only change. Only loaded lazily by HeroVisual.
  */
 
 export type PointerState = {
@@ -19,6 +20,8 @@ export type PointerState = {
   lastMove: number;
   /** performance.now() of the last interaction anywhere on the page (pointer, key, scroll). */
   lastActivity: number;
+  /** Requests a frame straight away (set by the canvas while it's mounted). */
+  wake?: () => void;
 };
 
 // Must match HeroPoster's projection (YAW, PITCH) and outer cube (half-size 1 at ¼ of the width).
@@ -41,6 +44,12 @@ const IDLE_CYCLE_MS = 5000;
 const IDLE_APART_MS = 1600;
 const IDLE_SPREAD = 0.6; // share of a full separation
 const IDLE_EASE = 2.5; // softer than EASE: ~95% of the way in 1.2s
+
+// While only the spin changes: 0.15 rad/s is 0.3° a frame at 30 fps, too little to see as a step.
+const SPIN_ONLY_FRAME_MS = 33;
+// "Close enough" for the eased values: under ~0.1px of block movement for separation, ~0.2px for tilt.
+const SEPARATION_SETTLED = 5e-3;
+const TILT_SETTLED = 1e-3;
 
 const GRID: [number, number, number][] = [];
 for (const x of [-1, 0, 1]) {
@@ -84,12 +93,26 @@ function readTokenColors(target: { uAccent: { value: Color }; uSurface: { value:
   target.uSurface.value.setStyle(styles.getPropertyValue("--surface").trim());
 }
 
+type MotionState = { separation: number; tiltX: number; tiltY: number };
+
+/** True while any eased value is still visibly short of its target. */
+function isEasing(m: MotionState, separation: number, tiltX: number, tiltY: number): boolean {
+  return (
+    Math.abs(m.separation - separation) > SEPARATION_SETTLED ||
+    Math.abs(m.tiltX - tiltX) > TILT_SETTLED ||
+    Math.abs(m.tiltY - tiltY) > TILT_SETTLED
+  );
+}
+
 type BlocksProps = {
   pointerRef: RefObject<PointerState>;
   onReady: () => void;
 };
 
-function Blocks({ pointerRef, onReady }: BlocksProps) {
+function Blocks({ pointerRef, onReady, active }: BlocksProps & { active: boolean }) {
+  const invalidate = useThree((state) => state.invalidate);
+  const activeRef = useRef(active);
+  const spinTimer = useRef<number | undefined>(undefined);
   const tiltRef = useRef<Group>(null);
   const spinRef = useRef<Group>(null);
   const meshRef = useRef<InstancedMesh>(null);
@@ -102,10 +125,28 @@ function Blocks({ pointerRef, onReady }: BlocksProps) {
   useEffect(() => {
     const observer = new MutationObserver(() => {
       themeDirty.current = true;
+      invalidate();
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => observer.disconnect();
-  }, []);
+  }, [invalidate]);
+
+  // Pointer moves over the visual ask for a frame at once, rather than waiting for the next spin frame.
+  useEffect(() => {
+    const pointer = pointerRef.current;
+    pointer.wake = invalidate;
+    return () => {
+      pointer.wake = undefined;
+      window.clearTimeout(spinTimer.current);
+    };
+  }, [pointerRef, invalidate]);
+
+  // Back on screen (or the tab visible again): restart the frame chain.
+  useEffect(() => {
+    activeRef.current = active;
+    if (active) invalidate();
+    else window.clearTimeout(spinTimer.current);
+  }, [active, invalidate]);
 
   useFrame((state, rawDelta) => {
     const mesh = meshRef.current;
@@ -136,11 +177,13 @@ function Blocks({ pointerRef, onReady }: BlocksProps) {
 
     let target = moving ? 1 : 0;
     if (breathing) target = idleFor % IDLE_CYCLE_MS < IDLE_APART_MS ? IDLE_SPREAD : 0;
+    const tiltXTarget = pointer.inside ? -pointer.y * MAX_TILT : 0;
+    const tiltYTarget = pointer.inside ? pointer.x * MAX_TILT : 0;
 
     const previous = m.separation;
     m.separation = MathUtils.damp(Math.max(previous, 0), target, breathing ? IDLE_EASE : EASE, delta);
-    m.tiltX = MathUtils.damp(m.tiltX, pointer.inside ? -pointer.y * MAX_TILT : 0, EASE, delta);
-    m.tiltY = MathUtils.damp(m.tiltY, pointer.inside ? pointer.x * MAX_TILT : 0, EASE, delta);
+    m.tiltX = MathUtils.damp(m.tiltX, tiltXTarget, EASE, delta);
+    m.tiltY = MathUtils.damp(m.tiltY, tiltYTarget, EASE, delta);
 
     // Rotate around Y, then X (as the poster does): outer group pitches, inner group yaws.
     tilt.rotation.x = PITCH + m.tiltX;
@@ -155,6 +198,16 @@ function Blocks({ pointerRef, onReady }: BlocksProps) {
 
     // Report ready once a real frame has been drawn.
     if (m.frames < 2 && ++m.frames === 2) onReady();
+
+    // Next frame: straight away while anything eases, else a spin-only frame a little later.
+    window.clearTimeout(spinTimer.current);
+    if (m.frames < 2 || isEasing(m, target, tiltXTarget, tiltYTarget)) {
+      state.invalidate();
+    } else {
+      spinTimer.current = window.setTimeout(() => {
+        if (activeRef.current) invalidate();
+      }, SPIN_ONLY_FRAME_MS);
+    }
   });
 
   return (
@@ -183,14 +236,14 @@ export function PartsCube({ active, pointerRef, onReady, onFail }: PartsCubeProp
       camera={{ position: [0, 0, 10], zoom: 100 }}
       dpr={[1, 1.5]}
       flat
-      frameloop={active ? "always" : "never"}
+      frameloop={active ? "demand" : "never"}
       gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
       style={{ pointerEvents: "none" }}
       onCreated={({ gl }) => {
         gl.domElement.addEventListener("webglcontextlost", onFail, { once: true });
       }}
     >
-      <Blocks pointerRef={pointerRef} onReady={onReady} />
+      <Blocks pointerRef={pointerRef} onReady={onReady} active={active} />
     </Canvas>
   );
 }
