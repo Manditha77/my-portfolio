@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Project } from "@/content/projects";
 import { workCopy } from "@/content/projects";
+import { withCountUp } from "@/lib/measured";
 import { Badge } from "./badge";
 import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
@@ -34,7 +35,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         </h3>
         {project.subtitle ? <p className="mt-1 text-sm text-text-muted">{project.subtitle}</p> : null}
 
-        <p className="mt-3 max-w-measure">{project.blurb}</p>
+        <p className="mt-3 max-w-measure">{withCountUp(project.blurb, project.countUp)}</p>
 
         {project.role ? (
           <p className="mt-3 max-w-measure text-sm">
@@ -62,7 +63,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         {project.highlights && project.highlights.length > 0 ? (
           <ul className="max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
             {project.highlights.map((highlight) => (
-              <li key={highlight}>{highlight}</li>
+              <li key={highlight}>{withCountUp(highlight, project.countUp)}</li>
             ))}
           </ul>
         ) : null}
@@ -73,7 +74,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <ul className="mt-2 max-w-measure space-y-1.5 text-sm">
               {project.approach.map((step) => (
                 <li key={step.label}>
-                  <span className="font-medium text-accent">{step.label}:</span> {step.text}
+                  <span className="font-medium text-accent">{step.label}:</span> {withCountUp(step.text, project.countUp)}
                 </li>
               ))}
             </ul>

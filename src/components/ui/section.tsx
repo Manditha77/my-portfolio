@@ -2,6 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 import type { SectionId } from "@/content/navigation";
 import { sectionEyebrow, sectionHeading } from "@/content/navigation";
 import { cx } from "@/lib/cx";
+import { AssembleText } from "./assemble-text";
 import { Container } from "./container";
 import { Reveal } from "./reveal";
 
@@ -30,12 +31,8 @@ export function Section({ id, heading, anchorAliases, children, className, ...re
       ))}
       <Container>
         <Reveal>
-          {/* Hidden from assistive tech: it repeats the heading below. */}
-          {eyebrow && (
-            <p aria-hidden="true" className="mb-2 font-mono text-xs text-text-muted">
-              {eyebrow}
-            </p>
-          )}
+          {/* Decorative numbered label (aria-hidden inside AssembleText); the h2 names the section. */}
+          {eyebrow && <AssembleText text={eyebrow} className="mb-2 font-mono text-xs text-text-muted" />}
           <h2 id={headingId} className="text-h2 font-semibold tracking-tight">
             {heading ?? sectionHeading(id)}
           </h2>

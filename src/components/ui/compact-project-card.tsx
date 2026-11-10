@@ -1,4 +1,5 @@
 import type { CompactProject } from "@/content/projects";
+import { withCountUp } from "@/lib/measured";
 import { Badge } from "./badge";
 import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
@@ -36,7 +37,7 @@ export function CompactProjectCard({ project }: CompactProjectCardProps) {
       <div className="mt-4 flex flex-col gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
         <ul className="max-w-measure list-disc space-y-1 pl-5 text-sm marker:text-accent">
           {project.highlights.map((highlight) => (
-            <li key={highlight}>{highlight}</li>
+            <li key={highlight}>{withCountUp(highlight, project.countUp)}</li>
           ))}
         </ul>
 

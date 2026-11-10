@@ -65,13 +65,31 @@ The structure must make it easy to add `/xr` later as a separate XR showcase (a 
 - **Typography:** one sans for UI and body (e.g. Inter or Geist via `next/font`), and one mono for small labels and tech tags (e.g. Geist Mono / JetBrains Mono). Fluid type with `clamp()`.
 - **Layout:** mobile-first; max content width ~1100px; 16px side gutter on mobile; no horizontal scroll at 320px.
 - **The VR / AR Projects section gets a subtle visual shift** (e.g. a faint grid/scanline background and accent glow) so it feels like entering a different "mode", while still clearly belonging to the same site.
-- **Motion:** short (150–400ms), purposeful; reveal-on-scroll at most once per element. Nothing loops in the UI except the 3D element.
+- **Motion:** short (150–400ms), purposeful; reveal-on-scroll at most once per element. Nothing loops in the UI except the 3D element (the PIPELINE caret blinks only while it types). Every effect follows the site motion switch and the Signature language (§5a).
+
+## 5a. Signature language
+
+The site's motion is drawn from Manditha's own projects. New motion must use one of these three motifs, or not exist.
+
+- **ASSEMBLE** (from the hero cube, "systems from parts"): elements snap together from parts. Used by: section labels ("01 / Work") assembling character by character (`AssembleText`).
+- **SCAN** (from AR Elemental Arena): AR tracking corners, a single scan sweep, the ring reticle. Not used yet; the next candidate for VR/AR surfaces.
+- **PIPELINE** (from PPCH, Sense → Analyze → Act): small steps that check, then resolve. Used by: the hero status line (`PipelineStatus`) and count-up measured numbers (`CountUp`, values listed per item in `countUp` in the content files).
+
+Global rules for every effect:
+- No new dependencies (Motion, CSS and small client islands only).
+- Off when site motion is off. `data-motion="on" | "off"` on `<html>` is the single switch (`src/lib/motion-pref.ts`, hook in `src/lib/use-motion-on.ts`). It is set before first paint from the stored choice, else `prefers-reduced-motion`. An explicit click on the Motion toggle wins over the OS default and is saved in `localStorage` (try/catch). CSS uses the `motion-on:` variant, never `motion-safe:`.
+- Nothing delays or hides the hero h1 or intro (LCP).
+- Real text is always in the DOM for screen readers and SEO; animated copies are `aria-hidden` overlays that never change layout.
+- One-shot effects play once per page load.
+- Pause when off-screen or the tab is hidden.
+- Desktop-only effects also need `(hover: hover)` and `(pointer: fine)`.
+- The Motion toggle has a fixed accessible name ("Pause animations"), and `aria-pressed` carries the state.
 
 ## 6. The 3D element (one only)
 
 - Lives in the hero. Lightweight and **procedural**: geometry built in code (e.g. an abstract wireframe/solid form or low-poly object that reacts to the pointer). No heavy GLB models; any model must be < 500 KB (Draco/meshopt compressed).
 - Loaded with `next/dynamic` (`ssr: false`) **after first paint / when idle**. A static poster (SVG/AVIF) renders first and is the LCP-safe fallback.
-- **`prefers-reduced-motion: reduce` → no animation;** show the static poster, or a frozen frame.
+- **Motion off → no animation;** show the static poster. "Motion off" means `data-motion="off"` on `<html>` (the Motion toggle), which defaults from `prefers-reduced-motion: reduce`.
 - Low-power / small screens: cap DPR at 1.5, use `frameloop="demand"` or pause when off-screen (IntersectionObserver), and drop to the poster when WebGL is unavailable.
 - The canvas is decorative: `aria-hidden`, never traps focus or scroll, and the page is fully usable without it.
 

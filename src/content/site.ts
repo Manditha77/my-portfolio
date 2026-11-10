@@ -20,6 +20,8 @@ export type Site = {
   hero: {
     intro: string;
     statusPill: string;
+    /** PIPELINE steps that tick through before the status types out (decorative; hidden from assistive tech). */
+    pipeline: readonly string[];
     ctas: {
       viewWork: string;
       downloadCv: string;
@@ -87,6 +89,7 @@ export const site: Site = {
     intro:
       "Final-year IT undergraduate at the University of Kelaniya. I build full-stack systems with Java, Spring Boot and React, most recently as a Software Engineer Intern on aeroPORT, a Departure Control System used by Air Arabia.",
     statusPill: "Open to Associate Software Engineer roles",
+    pipeline: ["sense", "analyze", "act"],
     ctas: {
       viewWork: "View my work",
       downloadCv: "Download CV",

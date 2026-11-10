@@ -5,6 +5,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import { IconLink } from "@/components/ui/icon-link";
 import { GitHubIcon, LinkedInIcon } from "@/components/ui/icons";
+import { PipelineStatus } from "@/components/ui/pipeline-status";
 import { StatusPill } from "@/components/ui/status-pill";
 
 export function Hero() {
@@ -14,7 +15,9 @@ export function Hero() {
     <section id="top" aria-labelledby="top-heading" className="pt-8 pb-section lg:pt-16">
       <Container className="grid items-center gap-10 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
         <div>
-          <StatusPill>{hero.statusPill}</StatusPill>
+          <StatusPill>
+            <PipelineStatus status={hero.statusPill} steps={hero.pipeline} />
+          </StatusPill>
           <h1 id="top-heading" className="mt-5 text-display font-semibold tracking-tight">
             {site.name}
           </h1>
@@ -41,7 +44,7 @@ export function Hero() {
         {/* Fixed aspect ratio: the poster renders first and the 3D canvas (desktop only) overlays it, so nothing shifts. */}
         <div
           aria-hidden="true"
-          className="relative mx-auto aspect-square w-full max-w-xs motion-safe:animate-hero-in sm:max-w-sm lg:max-w-none"
+          className="relative mx-auto aspect-square w-full max-w-xs motion-on:animate-hero-in sm:max-w-sm lg:max-w-none"
         >
           <HeroVisual>
             <HeroPoster />

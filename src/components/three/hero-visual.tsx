@@ -2,12 +2,13 @@
 
 import dynamic from "next/dynamic";
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { useMotionOn } from "@/lib/use-motion-on";
 import type { PointerState } from "./parts-cube";
 
 /*
  * Gate for the hero's 3D element. The server-rendered poster (children) always renders and is the
  * fallback and loading state. The 3D chunk is only requested on large screens with a fine hover
- * pointer, no reduced motion, no Save-Data and WebGL2, and only once the browser is idle.
+ * pointer, site motion on (data-motion), no Save-Data and WebGL2, and only once the browser is idle.
  */
 
 const PartsCube = dynamic(() => import("./parts-cube").then((m) => m.PartsCube), {
@@ -17,7 +18,6 @@ const PartsCube = dynamic(() => import("./parts-cube").then((m) => m.PartsCube),
 
 // Tailwind's lg breakpoint (64rem) plus a mouse/trackpad-class pointer.
 const CAPABLE_QUERY = "(min-width: 64rem) and (hover: hover) and (pointer: fine)";
-const MOTION_QUERY = "(prefers-reduced-motion: no-preference)";
 
 type NavigatorWithConnection = Navigator & { connection?: { saveData?: boolean } };
 
@@ -85,13 +85,14 @@ export function HeroVisual({ children }: HeroVisualProps) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [active, setActive] = useState(true);
+  const motionOn = useMotionOn();
 
   // Decide whether to load 3D at all, and unload it if the conditions stop holding.
+  // Re-runs when site motion changes: off unmounts the canvas (the poster stays), on loads it when idle.
   useEffect(() => {
-    if (saveDataOn() || !hasWebGL2()) return;
+    if (!motionOn || saveDataOn() || !hasWebGL2()) return;
 
     const capable = window.matchMedia(CAPABLE_QUERY);
-    const motion = window.matchMedia(MOTION_QUERY);
     let cancelIdle: (() => void) | undefined;
 
     const scheduleLoad = () => {
@@ -101,7 +102,7 @@ export function HeroVisual({ children }: HeroVisualProps) {
     const onChange = () => {
       cancelIdle?.();
       cancelIdle = undefined;
-      if (capable.matches && motion.matches) {
+      if (capable.matches) {
         scheduleLoad();
       } else {
         setEnabled(false);
@@ -109,15 +110,15 @@ export function HeroVisual({ children }: HeroVisualProps) {
       }
     };
 
-    if (capable.matches && motion.matches) scheduleLoad();
+    if (capable.matches) scheduleLoad();
     capable.addEventListener("change", onChange);
-    motion.addEventListener("change", onChange);
     return () => {
       cancelIdle?.();
       capable.removeEventListener("change", onChange);
-      motion.removeEventListener("change", onChange);
+      setEnabled(false);
+      setReady(false);
     };
-  }, []);
+  }, [motionOn]);
 
   // While 3D is mounted: pause when off-screen or the tab is hidden, and track the pointer.
   useEffect(() => {
