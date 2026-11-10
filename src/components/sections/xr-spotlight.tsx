@@ -13,8 +13,8 @@ import { cx } from "@/lib/cx";
 
 export function XrSpotlight() {
   return (
-    <Section id="vr-ar" anchorAliases={["xr"]} heading={xrCopy.heading} data-mode="xr">
-      <p className="mt-3 max-w-prose text-text-muted sm:text-lg">{xrCopy.subtitle}</p>
+    <Section id="vr-ar" anchorAliases={["xr"]} data-mode="xr">
+      <p className="mt-3 max-w-measure text-text-muted sm:text-lg">{xrCopy.subtitle}</p>
 
       <StaggerList role="list" className="mt-10 space-y-8">
         {xrProjects.map((project) => (

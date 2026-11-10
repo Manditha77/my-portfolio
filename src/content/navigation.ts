@@ -14,17 +14,19 @@ export type HomeSection = {
   inNav: boolean;
   /** Small mono label shown above the section heading (numbered automatically); none for the hero. */
   eyebrow?: string;
+  /** The section's h2, when it should differ from the nav label. */
+  heading?: string;
 };
 
 /** Home page sections, in page order. Ids double as anchor targets. */
 export const homeSections = [
   { id: "top", label: "Intro", inNav: false },
-  { id: "work", label: "Work", inNav: true, eyebrow: "Work" },
-  { id: "vr-ar", label: "VR/AR", inNav: true, eyebrow: "VR / AR" },
-  { id: "experience", label: "Experience", inNav: true, eyebrow: "Experience" },
-  { id: "writing", label: "Writing", inNav: false, eyebrow: "Writing" },
-  { id: "skills", label: "Skills", inNav: false, eyebrow: "Skills" },
-  { id: "about", label: "About", inNav: true, eyebrow: "About" },
+  { id: "work", label: "Work", inNav: true, eyebrow: "Work", heading: "Selected projects" },
+  { id: "vr-ar", label: "VR/AR", inNav: true, eyebrow: "VR / AR", heading: "Building in VR & AR" },
+  { id: "experience", label: "Experience", inNav: true, eyebrow: "Experience", heading: "Where I've worked" },
+  { id: "writing", label: "Writing", inNav: false, eyebrow: "Writing", heading: "Things I've written" },
+  { id: "skills", label: "Skills", inNav: false, eyebrow: "Skills", heading: "Tools I work with" },
+  { id: "about", label: "About", inNav: true, eyebrow: "About", heading: "A bit about me" },
   { id: "contact", label: "Contact", inNav: true, eyebrow: "Contact" },
 ] as const satisfies readonly HomeSection[];
 
@@ -36,8 +38,9 @@ export const primaryNav: NavItem[] = homeSections
   .filter((section) => section.inNav)
   .map((section) => ({ id: section.id, label: section.label, href: `/#${section.id}` }));
 
-export function sectionLabel(id: SectionId): string {
-  return homeSections.find((section) => section.id === id)?.label ?? id;
+export function sectionHeading(id: SectionId): string {
+  const section = (homeSections as readonly HomeSection[]).find((entry) => entry.id === id);
+  return section?.heading ?? section?.label ?? id;
 }
 
 /** "01 / Work", numbered by position among the labelled sections, so reordering keeps numbers right. */

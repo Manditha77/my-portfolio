@@ -1,13 +1,13 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import type { SectionId } from "@/content/navigation";
-import { sectionEyebrow, sectionLabel } from "@/content/navigation";
+import { sectionEyebrow, sectionHeading } from "@/content/navigation";
 import { cx } from "@/lib/cx";
 import { Container } from "./container";
 import { Reveal } from "./reveal";
 
 type SectionProps = Omit<HTMLAttributes<HTMLElement>, "id"> & {
   id: SectionId;
-  /** Overrides the h2 text; defaults to the section's navigation label. */
+  /** Overrides the h2 text; defaults to the section's heading from the navigation content. */
   heading?: string;
   /** Old anchor ids that should still land on this section, rendered as empty targets at its top. */
   anchorAliases?: readonly string[];
@@ -37,7 +37,7 @@ export function Section({ id, heading, anchorAliases, children, className, ...re
             </p>
           )}
           <h2 id={headingId} className="text-h2 font-semibold tracking-tight">
-            {heading ?? sectionLabel(id)}
+            {heading ?? sectionHeading(id)}
           </h2>
           {children}
         </Reveal>

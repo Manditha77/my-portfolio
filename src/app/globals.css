@@ -61,8 +61,9 @@
 
 @theme {
   --container-content: 68.75rem;
-  /* Comfortable line length for text inside wide cards (max-w-measure). */
-  --container-measure: 75ch;
+  /* Comfortable line length for body text (max-w-measure): about 75 characters of Geist at any size.
+     In em, not ch: ch is the width of "0", which is wide in Geist, so 75ch ran ~100 characters. */
+  --container-measure: 36em;
 
   /* Vertical padding on each side of a home section (py-section); the gap between sections is twice this. */
   --spacing-section: clamp(2.25rem, 1.75rem + 2vw, 3.5rem);

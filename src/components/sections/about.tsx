@@ -25,7 +25,7 @@ export function About() {
           </div>
         )}
 
-        <div className="max-w-[65ch]">
+        <div className="max-w-measure">
           <div className="space-y-4">
             {about.paragraphs.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>

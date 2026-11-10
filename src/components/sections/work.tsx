@@ -8,7 +8,7 @@ import { StaggerItem, StaggerList } from "@/components/ui/stagger";
 export function Work() {
   return (
     <Section id="work">
-      <p className="mt-3 max-w-prose text-text-muted sm:text-lg">{workCopy.intro}</p>
+      <p className="mt-3 max-w-measure text-text-muted sm:text-lg">{workCopy.intro}</p>
 
       <StaggerList role="list" className="mt-10 flex flex-col gap-6">
         {projects.map((project) => (

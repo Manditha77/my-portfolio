@@ -9,6 +9,8 @@ import { StaggerItem, StaggerList } from "@/components/ui/stagger";
  * Dots are positioned against each li, offset back by the wrapper's padding so they sit on the line.
  */
 const dot = "absolute rounded-full";
+/** Shared by the Leadership and Education sub-headings. */
+const subheading = "text-lg font-semibold tracking-tight";
 
 export function Experience() {
   return (
@@ -37,7 +39,7 @@ export function Experience() {
                     {job.role}
                   </h3>
                   <p className="mt-1 font-medium">{job.company}</p>
-                  <p className="mt-3 max-w-prose text-text-muted">{job.product}</p>
+                  <p className="mt-3 max-w-measure text-text-muted">{job.product}</p>
 
                   <ul className="mt-5 max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
                     {job.bullets.map((bullet) => (
@@ -52,7 +54,7 @@ export function Experience() {
           })}
         </StaggerList>
 
-        <h3 className="mt-10 font-mono text-xs text-text-muted">{experienceCopy.leadershipHeading}</h3>
+        <h3 className={`mt-10 ${subheading}`}>{experienceCopy.leadershipHeading}</h3>
         <StaggerList as="ol" role="list" className="mt-4 space-y-6">
           {leadership.map((item) => (
             <StaggerItem key={`${item.event}-${item.role}`} className="relative">
@@ -73,8 +75,9 @@ export function Experience() {
         </StaggerList>
       </div>
 
-      <div className="mt-12 lg:w-1/2 lg:pr-5">
-        <h3 className="text-lg font-semibold tracking-tight">{experienceCopy.educationHeading}</h3>
+      {/* Off the timeline (no dot), but indented to the same content column as the entries above. */}
+      <div className="mt-12 pl-6 sm:pl-8 lg:w-1/2 lg:pr-5">
+        <h3 className={subheading}>{experienceCopy.educationHeading}</h3>
         <ul role="list" className="mt-4 divide-y divide-border border-y border-border">
           {education.map((entry) => (
             <li key={entry.degree} className="py-4">
