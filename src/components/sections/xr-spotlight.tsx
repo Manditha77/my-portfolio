@@ -10,6 +10,7 @@ import { ScanFrame } from "@/components/ui/scan-frame";
 import { Section } from "@/components/ui/section";
 import { StaggerItem, StaggerList } from "@/components/ui/stagger";
 import { CollapsibleTagList } from "@/components/ui/collapsible-tag-list";
+import { CreatureStage } from "@/components/three/creature-stage";
 import { cx } from "@/lib/cx";
 
 export function XrSpotlight() {
@@ -33,6 +34,7 @@ function XrProjectCard({ project }: { project: XrProject }) {
   const headingId = `project-${project.slug}`;
   const phone = project.screenshotShape === "phone";
   const liveDemoUrl = "liveDemoUrl" in project ? project.liveDemoUrl : undefined;
+  const creatures = "creatures" in project ? project.creatures : undefined;
 
   const picture = (
     <Image
@@ -40,7 +42,7 @@ function XrProjectCard({ project }: { project: XrProject }) {
       alt={image.alt}
       width={image.width}
       height={image.height}
-      sizes={phone ? "192px" : "(min-width: 1024px) 520px, 100vw"}
+      sizes={phone ? "(min-width: 1024px) 224px, 192px" : "(min-width: 1024px) 520px, 100vw"}
       className="size-full object-cover"
     />
   );
@@ -56,7 +58,22 @@ function XrProjectCard({ project }: { project: XrProject }) {
       )}
     >
       {phone ? (
-        <PhoneFrame className="mx-auto w-40 sm:col-start-2 sm:row-start-1 sm:w-48">{picture}</PhoneFrame>
+        <PhoneFrame className="mx-auto w-40 sm:col-start-2 sm:row-start-1 sm:w-48 lg:w-56">
+          {creatures ? (
+            <CreatureStage
+              creatures={creatures}
+              labels={{
+                captions: creatures.map((creature) => xrCopy.viewer.caption(creature.name)),
+                animate: xrCopy.viewer.animate,
+                chooseLabel: xrCopy.viewer.chooseLabel,
+              }}
+            >
+              {picture}
+            </CreatureStage>
+          ) : (
+            picture
+          )}
+        </PhoneFrame>
       ) : (
         <div className="relative aspect-video overflow-hidden rounded-md border border-border bg-bg lg:col-start-2 lg:row-start-1">
           {picture}

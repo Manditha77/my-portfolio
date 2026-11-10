@@ -40,7 +40,7 @@ Single-page home (`/`), with anchor sections in this order:
 
 1. **Hero**: name, "Software Engineer · building VR/AR on the side", a short intro, an "Open to Associate SE roles" status, CTAs (View work, Download CV), GitHub and LinkedIn icons. Contains the one 3D element.
 2. **Selected Work (SE)**: 3 full-width stacked project cards (GroceryEase, PPCH Framework, Employee Management System).
-3. **VR / AR Projects** (nav "VR/AR", anchor `#vr-ar`; the old `#xr` still resolves via a hidden alias): ElectricalSafetyVR and AR Elemental Arena cards (in that order), each linking to its case study.
+3. **VR / AR Projects** (nav "VR/AR", anchor `#vr-ar`; the old `#xr` still resolves via a hidden alias): ElectricalSafetyVR and AR Elemental Arena cards (in that order), each linking to its case study. On capable desktops the AR card's phone screenshot becomes the creature viewer (§6).
 4. **Experience**: the aeroPORT internship (prominent) and leadership roles.
 5. **Writing**: 2 Medium articles (small strip).
 6. **Skills**: grouped, not progress bars, no percentages.
@@ -65,14 +65,14 @@ The structure must make it easy to add `/xr` later as a separate XR showcase (a 
 - **Typography:** one sans for UI and body (e.g. Inter or Geist via `next/font`), and one mono for small labels and tech tags (e.g. Geist Mono / JetBrains Mono). Fluid type with `clamp()`.
 - **Layout:** mobile-first; max content width ~1100px; 16px side gutter on mobile; no horizontal scroll at 320px.
 - **The VR / AR Projects section gets a subtle visual shift** (e.g. a faint grid/scanline background and accent glow) so it feels like entering a different "mode", while still clearly belonging to the same site.
-- **Motion:** short (150–400ms), purposeful; reveal-on-scroll at most once per element. Nothing loops in the UI except the 3D element (the PIPELINE caret blinks only while it types). Every effect follows the site motion switch and the Signature language (§5a).
+- **Motion:** short (150–400ms), purposeful; reveal-on-scroll at most once per element. Nothing loops in the UI except the 3D elements (the PIPELINE caret blinks only while it types). Every effect follows the site motion switch and the Signature language (§5a).
 
 ## 5a. Signature language
 
 The site's motion is drawn from Manditha's own projects. New motion must use one of these three motifs, or not exist.
 
 - **ASSEMBLE** (from the hero cube, "systems from parts"): elements snap together from parts. Used by: section labels ("01 / Work") assembling character by character (`AssembleText`), and the hero cube's idle pulse (it separates and reassembles every few seconds after ~4 s without input; `parts-cube.tsx`).
-- **SCAN** (from AR Elemental Arena): AR tracking corners, a single scan sweep, the ring reticle. Used by: a one-time scan sweep and hover/keyboard-focus tracking corners (`ScanFrame` + `ScanObserver`) on the home page's project, VR/AR and experience cards and on the case studies' challenge cards and gallery tiles; the hero's ring reticle over a dot "surface" (`HeroReticle`, desktop only).
+- **SCAN** (from AR Elemental Arena): AR tracking corners, a single scan sweep, the ring reticle. Used by: a one-time scan sweep and hover/keyboard-focus tracking corners (`ScanFrame` + `ScanObserver`) on the home page's project, VR/AR and experience cards and on the case studies' challenge cards and gallery tiles; the hero's ring reticle over a dot "surface" (`HeroReticle`, desktop only); the creature viewer's lock-on, where corners grow in around the summon card on each summon and one sweep runs the first time (`.lock-corners` / `.lock-line`, separate from the card's own `.scan-*` so the card's hover and sweep never reach them).
 - **PIPELINE** (from PPCH, Sense → Analyze → Act): small steps that check, then resolve. Used by: the hero status line (`PipelineStatus`) and count-up measured numbers (`CountUp`, values listed per item in `countUp` in the content files).
 
 Global rules for every effect:
@@ -85,13 +85,22 @@ Global rules for every effect:
 - Desktop-only effects also need `(hover: hover)` and `(pointer: fine)`.
 - The Motion toggle has a fixed accessible name ("Pause animations"), and `aria-pressed` carries the state.
 
-## 6. The 3D element (one only)
+## 6. 3D elements
 
-- Lives in the hero. Lightweight and **procedural**: geometry built in code (e.g. an abstract wireframe/solid form or low-poly object that reacts to the pointer). No heavy GLB models; any model must be < 500 KB (Draco/meshopt compressed).
-- Loaded with `next/dynamic` (`ssr: false`) **after first paint / when idle**. A static poster (SVG/AVIF) renders first and is the LCP-safe fallback.
-- **Motion off → no animation;** show the static poster. "Motion off" means `data-motion="off"` on `<html>` (the Motion toggle), which defaults from `prefers-reduced-motion: reduce`.
-- Low-power / small screens: cap DPR at 1.5, use `frameloop="demand"` or pause when off-screen (IntersectionObserver), and drop to the poster when WebGL is unavailable.
-- The canvas is decorative: `aria-hidden`, never traps focus or scroll, and the page is fully usable without it.
+3D is allowed only where it shows my real work. Every piece follows these rules:
+
+- **Lazy and gated.** Load it with `next/dynamic` (`ssr: false`), and only when the gate passes: large screen with a fine hover pointer (`CAPABLE_QUERY`), site motion on, WebGL2 available and no Save-Data (helpers in `src/components/three/gate.tsx`). Phones, Motion off (`data-motion="off"`, which defaults from `prefers-reduced-motion`) and no WebGL never download the chunk or any model.
+- **Poster first.** A server-rendered poster (SVG or a screenshot) renders first. It is the LCP-safe loading state and the fallback for any failure (chunk, WebGL, context loss, model fetch). The canvas overlays the poster at the same size, so there is no layout shift.
+- **Cheap to run.** DPR capped at 1.5, `frameloop="demand"` (render only while something moves), paused when off-screen or the tab is hidden, and geometries, materials and textures disposed on unmount.
+- **Small assets.** Procedural where possible. Any model must be < 500 KB, load only when needed and be cached after. Use `GLTFLoader` from `three/examples/jsm`; no drei and no new dependencies.
+- **Decorative canvas.** `aria-hidden`, never traps focus or scroll, and the page is fully usable without it. Any interaction also has a keyboard path through real buttons.
+
+The pieces:
+
+1. **Hero parts cube** (`parts-cube.tsx`, gate `hero-visual.tsx`): procedural, loads when the browser is idle after first paint.
+2. **AR creature viewer** in the AR Elemental Arena card (`creature-viewer.tsx`, gate `creature-stage.tsx`, models `public/models/ar/*.glb`, Quaternius). It loads the first time the card scrolls into view, not on page load. The four creatures sit over their summon cards: drag to rotate, click or "Animate" to play the next clip, and Fire/Water/Earth/Air chips (each model loads when first chosen). Its controls sit inside the phone frame, so nothing shifts.
+
+The structure must stay ready for a future `/xr` showcase (§4).
 
 ## 7. Quality bars (definition of done for every task)
 
