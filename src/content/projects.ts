@@ -22,6 +22,8 @@ export type Project = {
   connection?: string;
   statusNote?: string;
   media?: readonly ContentImage[];
+  /** Measured values in this card's copy that count up once on view (exact text, e.g. "0.78", "42%"). */
+  countUp?: readonly string[];
   todos: readonly Todo[];
 };
 
@@ -87,6 +89,7 @@ export const projects: readonly Project[] = [
     ],
     connection:
       "Grew out of refactoring and SonarQube work during my internship.",
+    countUp: ["334", "0.78", "42%"],
     todos: [],
   },
   {
@@ -121,6 +124,8 @@ export type CompactProject = {
   highlights: readonly string[];
   stack: readonly string[];
   link: ExternalLink;
+  /** Measured values in the highlights that count up once on view. */
+  countUp?: readonly string[];
 };
 
 export const thisPortfolio: CompactProject = {
@@ -139,6 +144,7 @@ export const thisPortfolio: CompactProject = {
   ],
   stack: ["Next.js", "TypeScript", "Tailwind CSS", "React Three Fiber", "three.js", "Motion", "Vercel"],
   link: { label: "View source on GitHub", href: site.links.portfolioRepo.href },
+  countUp: ["99", "100"],
 };
 
 export const moreOnGitHub: ExternalLink = site.links.githubRepos;

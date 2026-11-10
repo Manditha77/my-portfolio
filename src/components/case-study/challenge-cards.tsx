@@ -1,11 +1,14 @@
 import type { TechnicalChallenge } from "@/content/xr";
+import { ScanFrame } from "@/components/ui/scan-frame";
 
 type ChallengeCardsProps = {
   challenges: readonly TechnicalChallenge[];
+  /** Keeps each card's SCAN id unique across pages (the project slug). */
+  idPrefix: string;
 };
 
-/** The technical challenges as numbered cards, three across on large screens. */
-export function ChallengeCards({ challenges }: ChallengeCardsProps) {
+/** The technical challenges as numbered cards, three across on large screens. Each gets the SCAN frame. */
+export function ChallengeCards({ challenges, idPrefix }: ChallengeCardsProps) {
   return (
     <ol role="list" className="mt-6 grid gap-6 lg:grid-cols-3">
       {challenges.map((challenge, index) => {
@@ -14,7 +17,8 @@ export function ChallengeCards({ challenges }: ChallengeCardsProps) {
           <li key={challenge.title}>
             <article
               aria-labelledby={headingId}
-              className="h-full rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out hover:border-accent/60 sm:p-6"
+              data-scan={`${idPrefix}-challenge-${index + 1}`}
+              className="relative h-full rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out hover:border-accent/60 sm:p-6"
             >
               <p aria-hidden="true" className="font-mono text-xs text-accent">
                 {String(index + 1).padStart(2, "0")}
@@ -23,6 +27,8 @@ export function ChallengeCards({ challenges }: ChallengeCardsProps) {
                 {challenge.title}
               </h3>
               <p className="mt-3 max-w-measure text-sm">{challenge.body}</p>
+
+              <ScanFrame />
             </article>
           </li>
         );

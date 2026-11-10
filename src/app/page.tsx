@@ -7,6 +7,7 @@ import { Skills } from "@/components/sections/skills";
 import { Work } from "@/components/sections/work";
 import { Writing } from "@/components/sections/writing";
 import { XrSpotlight } from "@/components/sections/xr-spotlight";
+import { ScanObserver } from "@/components/ui/scan-observer";
 import { personJsonLd, serializeJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export default function Home() {
       <Skills />
       <About />
       <Contact />
+      <ScanObserver />
     </>
   );
 }

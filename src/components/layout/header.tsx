@@ -3,6 +3,7 @@ import { primaryNav, shellCopy } from "@/content/navigation";
 import { site } from "@/content/site";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
+import { MotionToggle } from "@/components/ui/motion-toggle";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DesktopNav } from "./desktop-nav";
 import { MobileMenu } from "./mobile-menu";
@@ -24,6 +25,7 @@ export function Header() {
               {shellCopy.cv}
             </ButtonLink>
           </div>
+          <MotionToggle />
           <ThemeToggle />
           <div className="md:hidden">
             <MobileMenu items={primaryNav} cvHref={site.cvHref} />

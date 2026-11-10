@@ -11,6 +11,7 @@ import { XrVideo } from "@/components/case-study/xr-video";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import { GitHubIcon } from "@/components/ui/icons";
+import { ScanObserver } from "@/components/ui/scan-observer";
 import { baseOpenGraph } from "@/lib/seo";
 
 const { caseStudy, images } = project;
@@ -80,7 +81,7 @@ export default function ElectricalSafetyVrPage() {
         </CaseStudySection>
 
         <CaseStudySection id="challenges" heading={xrCopy.headings.challenges} prominent>
-          <ChallengeCards challenges={caseStudy.technicalChallenges} />
+          <ChallengeCards challenges={caseStudy.technicalChallenges} idPrefix={project.slug} />
         </CaseStudySection>
 
         <CaseStudySection id="outcome" heading={xrCopy.headings.outcome}>
@@ -88,7 +89,7 @@ export default function ElectricalSafetyVrPage() {
         </CaseStudySection>
 
         <CaseStudySection id="gallery" heading={xrCopy.headings.gallery}>
-          <CaseStudyGallery images={images.gallery} shape={project.screenshotShape} />
+          <CaseStudyGallery images={images.gallery} shape={project.screenshotShape} idPrefix={project.slug} />
         </CaseStudySection>
 
         <CaseStudySection id="credits" heading={xrCopy.headings.credits}>
@@ -104,6 +105,7 @@ export default function ElectricalSafetyVrPage() {
         </CaseStudySection>
 
         <CaseStudyPager slug={project.slug} />
+        <ScanObserver />
       </Container>
     </article>
   );

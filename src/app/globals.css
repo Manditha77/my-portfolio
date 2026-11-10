@@ -4,6 +4,9 @@
    The inline theme script always sets data-theme, so this is reliable when JS runs. */
 @custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
 
+/* Styles that apply only while site motion is on (replaces motion-safe:, which only sees the OS setting). */
+@custom-variant motion-on (&:where([data-motion="on"], [data-motion="on"] *));
+
 /* ---------- Design tokens ---------- */
 
 /* Dark is the default theme. */
@@ -73,8 +76,17 @@
   --text-h2: clamp(1.5rem, 1.25rem + 1.25vw, 2.25rem);
   --text-h2--line-height: 1.15;
 
-  /* Hero poster entrance. Used with motion-safe: only; never applied to hero text (LCP). */
+  /* Hero poster entrance. Used with motion-on: only; never applied to hero text (LCP). */
   --animate-hero-in: hero-in 400ms ease-out both;
+
+  /* PIPELINE typing caret. Blinks only while the status types out; removed when typing ends. */
+  --animate-caret: caret-blink 0.9s steps(1) infinite;
+
+  @keyframes caret-blink {
+    50% {
+      opacity: 0;
+    }
+  }
 
   @keyframes hero-in {
     from {
@@ -118,16 +130,27 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
+/* ---------- Motion switch ----------
+   data-motion="on" | "off" on <html> is the single switch (see src/lib/motion-pref.ts). The init script
+   sets it before first paint from the stored choice, else prefers-reduced-motion; the Motion toggle
+   changes it. Without the script (no JS), fall back to the OS preference. */
+
+:root[data-motion="on"] {
+  scroll-behavior: smooth;
+}
+
+:root[data-motion="off"] *,
+:root[data-motion="off"] *::before,
+:root[data-motion="off"] *::after {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  :root:not([data-motion]) *,
+  :root:not([data-motion]) *::before,
+  :root:not([data-motion]) *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -135,17 +158,16 @@
 }
 
 /* Reveal-on-scroll is server-rendered hidden (inline styles from Motion). Show it straight away
-   under reduced motion, and when JS never ran (the inline theme script always sets data-theme). */
-@media (prefers-reduced-motion: reduce) {
-  [data-reveal] {
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
-
-:root:not([data-theme]) [data-reveal] {
+   with motion off, and when JS never ran (no data-motion attribute). */
+:root[data-motion="off"] [data-reveal],
+:root:not([data-motion]) [data-reveal] {
   opacity: 1 !important;
   transform: none !important;
+}
+
+/* PIPELINE status: the real text is hidden only while the animated copy plays over it. */
+:root[data-motion="on"] [data-pipeline="pending"] [data-pipeline-real] {
+  opacity: 0;
 }
 
 /* ---------- VR / AR "mode shift" ---------- */
@@ -181,4 +203,113 @@
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--accent) 12%, transparent),
     0 0 48px -8px color-mix(in oklab, var(--accent) 28%, transparent);
+}
+
+/* ---------- SCAN (from AR Elemental Arena) ----------
+   Cards carry data-scan and a ScanFrame overlay. ScanObserver sets data-scan-play="run" once, when a card
+   first enters view with motion on: a single accent line sweeps down it. The line is invisible at rest
+   and at the end, so a cut-short sweep (motion switched off) never leaves it behind. */
+
+.scan-line {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  border-top: 1px solid var(--accent);
+  transform: translateY(-1px);
+}
+
+/* A faint trail just above the line. */
+.scan-line::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: 3rem;
+  background: linear-gradient(to top, color-mix(in oklab, var(--accent) 14%, transparent), transparent);
+}
+
+:root[data-motion="on"] [data-scan-play="run"] .scan-line {
+  animation: scan-sweep 600ms ease-out 250ms both;
+}
+
+@keyframes scan-sweep {
+  0% {
+    opacity: 0;
+    transform: translateY(-1px);
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+/* AR tracking corners: four L-brackets drawn as gradients, a clear 6px outside the card's border
+   (the ScanFrame overlay covers the border box), so they read as separate from the hover border.
+   A hover/focus state, not motion: with motion off they still appear, just without the lock-on.
+   Registered so the bracket length can transition. Geometry never changes (no transform), so the
+   corners can't widen the page at narrow widths. */
+@property --c-len {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 18px;
+}
+
+.scan-corners {
+  --c-len: 18px;
+  --c-w: 2px;
+  position: absolute;
+  inset: -6px;
+  opacity: 0;
+  transition:
+    opacity 180ms ease-out,
+    --c-len 180ms ease-out;
+  background:
+    linear-gradient(var(--accent), var(--accent)) top left / var(--c-len) var(--c-w),
+    linear-gradient(var(--accent), var(--accent)) top left / var(--c-w) var(--c-len),
+    linear-gradient(var(--accent), var(--accent)) top right / var(--c-len) var(--c-w),
+    linear-gradient(var(--accent), var(--accent)) top right / var(--c-w) var(--c-len),
+    linear-gradient(var(--accent), var(--accent)) bottom left / var(--c-len) var(--c-w),
+    linear-gradient(var(--accent), var(--accent)) bottom left / var(--c-w) var(--c-len),
+    linear-gradient(var(--accent), var(--accent)) bottom right / var(--c-len) var(--c-w),
+    linear-gradient(var(--accent), var(--accent)) bottom right / var(--c-w) var(--c-len);
+  background-repeat: no-repeat;
+}
+
+/* Lock-on: the brackets grow out from each corner as they appear. */
+:root[data-motion="on"] .scan-corners {
+  --c-len: 6px;
+}
+
+/* Pointer hover on devices that really hover; keyboard focus everywhere (not a tap's focus). */
+@media (hover: hover) and (pointer: fine) {
+  [data-scan]:hover .scan-corners {
+    --c-len: 18px;
+    opacity: 1;
+  }
+}
+
+[data-scan]:has(:focus-visible) .scan-corners {
+  --c-len: 18px;
+  opacity: 1;
+}
+
+/* Hero reticle (HeroReticle): a soft round patch of dot "surface" around the pointer. Faint, and
+   behind all hero content. The 24px step must match DOT_STEP in hero-reticle.tsx. */
+.reticle-spot {
+  mask-image: radial-gradient(closest-side, #000 25%, transparent);
+}
+
+.reticle-dots {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--text-muted) 40%, transparent) 1px,
+    transparent 1.5px
+  );
+  background-size: 24px 24px;
 }

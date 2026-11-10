@@ -2,12 +2,13 @@
 
 import dynamic from "next/dynamic";
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { useMotionOn } from "@/lib/use-motion-on";
 import type { PointerState } from "./parts-cube";
 
 /*
  * Gate for the hero's 3D element. The server-rendered poster (children) always renders and is the
  * fallback and loading state. The 3D chunk is only requested on large screens with a fine hover
- * pointer, no reduced motion, no Save-Data and WebGL2, and only once the browser is idle.
+ * pointer, site motion on (data-motion), no Save-Data and WebGL2, and only once the browser is idle.
  */
 
 const PartsCube = dynamic(() => import("./parts-cube").then((m) => m.PartsCube), {
@@ -17,7 +18,8 @@ const PartsCube = dynamic(() => import("./parts-cube").then((m) => m.PartsCube),
 
 // Tailwind's lg breakpoint (64rem) plus a mouse/trackpad-class pointer.
 const CAPABLE_QUERY = "(min-width: 64rem) and (hover: hover) and (pointer: fine)";
-const MOTION_QUERY = "(prefers-reduced-motion: no-preference)";
+
+const ACTIVITY_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "scroll"] as const;
 
 type NavigatorWithConnection = Navigator & { connection?: { saveData?: boolean } };
 
@@ -80,18 +82,19 @@ type HeroVisualProps = {
 
 export function HeroVisual({ children }: HeroVisualProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const pointerRef = useRef<PointerState>({ x: 0, y: 0, inside: false, lastMove: 0 });
+  const pointerRef = useRef<PointerState>({ x: 0, y: 0, inside: false, lastMove: 0, lastActivity: 0 });
   const [enabled, setEnabled] = useState(false);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [active, setActive] = useState(true);
+  const motionOn = useMotionOn();
 
   // Decide whether to load 3D at all, and unload it if the conditions stop holding.
+  // Re-runs when site motion changes: off unmounts the canvas (the poster stays), on loads it when idle.
   useEffect(() => {
-    if (saveDataOn() || !hasWebGL2()) return;
+    if (!motionOn || saveDataOn() || !hasWebGL2()) return;
 
     const capable = window.matchMedia(CAPABLE_QUERY);
-    const motion = window.matchMedia(MOTION_QUERY);
     let cancelIdle: (() => void) | undefined;
 
     const scheduleLoad = () => {
@@ -101,7 +104,7 @@ export function HeroVisual({ children }: HeroVisualProps) {
     const onChange = () => {
       cancelIdle?.();
       cancelIdle = undefined;
-      if (capable.matches && motion.matches) {
+      if (capable.matches) {
         scheduleLoad();
       } else {
         setEnabled(false);
@@ -109,17 +112,18 @@ export function HeroVisual({ children }: HeroVisualProps) {
       }
     };
 
-    if (capable.matches && motion.matches) scheduleLoad();
+    if (capable.matches) scheduleLoad();
     capable.addEventListener("change", onChange);
-    motion.addEventListener("change", onChange);
     return () => {
       cancelIdle?.();
       capable.removeEventListener("change", onChange);
-      motion.removeEventListener("change", onChange);
+      setEnabled(false);
+      setReady(false);
     };
-  }, []);
+  }, [motionOn]);
 
-  // While 3D is mounted: pause when off-screen or the tab is hidden, and track the pointer.
+  // While 3D is mounted: pause when off-screen or the tab is hidden, track the pointer, and note any
+  // interaction on the page (the cube only "breathes" once nothing has happened for a few seconds).
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!enabled || !wrapper) return;
@@ -140,18 +144,25 @@ export function HeroVisual({ children }: HeroVisualProps) {
       pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
       pointer.inside = true;
       pointer.lastMove = performance.now();
+      pointer.wake?.();
     };
     const onLeave = () => {
       pointer.inside = false;
     };
+    const onActivity = () => {
+      pointer.lastActivity = performance.now();
+    };
+    onActivity();
     wrapper.addEventListener("pointermove", onMove, { passive: true });
     wrapper.addEventListener("pointerleave", onLeave, { passive: true });
+    for (const type of ACTIVITY_EVENTS) window.addEventListener(type, onActivity, { passive: true });
 
     return () => {
       observer.disconnect();
       document.removeEventListener("visibilitychange", update);
       wrapper.removeEventListener("pointermove", onMove);
       wrapper.removeEventListener("pointerleave", onLeave);
+      for (const type of ACTIVITY_EVENTS) window.removeEventListener(type, onActivity);
     };
   }, [enabled]);
 

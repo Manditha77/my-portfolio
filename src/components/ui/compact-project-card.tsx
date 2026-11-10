@@ -1,7 +1,9 @@
 import type { CompactProject } from "@/content/projects";
+import { withCountUp } from "@/lib/measured";
 import { Badge } from "./badge";
 import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
+import { ScanFrame } from "./scan-frame";
 
 type CompactProjectCardProps = {
   project: CompactProject;
@@ -17,7 +19,8 @@ export function CompactProjectCard({ project }: CompactProjectCardProps) {
   return (
     <article
       aria-labelledby={headingId}
-      className="rounded-lg border border-border p-4 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-5 lg:grid lg:grid-cols-2 lg:gap-x-10"
+      data-scan={project.slug}
+      className="relative rounded-lg border border-border p-4 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-5 lg:grid lg:grid-cols-2 lg:gap-x-10"
     >
       <div className="lg:col-start-1 lg:row-start-1">
         <div className="flex flex-wrap gap-2">
@@ -36,7 +39,7 @@ export function CompactProjectCard({ project }: CompactProjectCardProps) {
       <div className="mt-4 flex flex-col gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
         <ul className="max-w-measure list-disc space-y-1 pl-5 text-sm marker:text-accent">
           {project.highlights.map((highlight) => (
-            <li key={highlight}>{highlight}</li>
+            <li key={highlight}>{withCountUp(highlight, project.countUp)}</li>
           ))}
         </ul>
 
@@ -55,6 +58,8 @@ export function CompactProjectCard({ project }: CompactProjectCardProps) {
           </span>
         </a>
       </p>
+
+      <ScanFrame />
     </article>
   );
 }

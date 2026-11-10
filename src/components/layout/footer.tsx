@@ -3,6 +3,7 @@ import { shellCopy } from "@/content/navigation";
 import { site } from "@/content/site";
 import { Container } from "@/components/ui/container";
 import { SocialLinks } from "@/components/ui/social-links";
+import { LocalTime } from "./local-time";
 
 const textLink = "inline-flex min-h-11 items-center transition-colors duration-150 ease-out hover:text-text";
 
@@ -25,7 +26,7 @@ export async function Footer() {
             © {year} {site.name}
           </p>
           <p>
-            {site.footer.builtWith} ·{" "}
+            {site.footer.credit} ·{" "}
             <a
               href={repo.href}
               target="_blank"
@@ -36,6 +37,7 @@ export async function Footer() {
               <span className="sr-only"> {site.contact.opensNewTab}</span>
             </a>
           </p>
+          <LocalTime />
         </div>
 
         <div className="-ml-3 flex flex-wrap items-center gap-x-4 sm:ml-0">

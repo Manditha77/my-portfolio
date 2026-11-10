@@ -20,6 +20,8 @@ export type Site = {
   hero: {
     intro: string;
     statusPill: string;
+    /** PIPELINE steps that tick through before the status types out (decorative; hidden from assistive tech). */
+    pipeline: readonly string[];
     ctas: {
       viewWork: string;
       downloadCv: string;
@@ -38,7 +40,22 @@ export type Site = {
     opensNewTab: string;
   };
   footer: {
-    builtWith: string;
+    credit: string;
+    localTime: {
+      /** Visible label before the time. */
+      city: string;
+      /** IANA zone the clock shows. */
+      timeZone: string;
+      /** Read by screen readers before the city. */
+      srLabel: string;
+    };
+  };
+  /** One styled message in the browser console. The repo link and email are appended from `links` and `email`. */
+  consoleNote: {
+    greeting: string;
+    line: string;
+    sourceLabel: string;
+    emailLabel: string;
   };
   seo: {
     defaultTitle: string;
@@ -87,6 +104,7 @@ export const site: Site = {
     intro:
       "Final-year IT undergraduate at the University of Kelaniya. I build full-stack systems with Java, Spring Boot and React, most recently as a Software Engineer Intern on aeroPORT, a Departure Control System used by Air Arabia.",
     statusPill: "Open to Associate Software Engineer roles",
+    pipeline: ["sense", "analyze", "act"],
     ctas: {
       viewWork: "View my work",
       downloadCv: "Download CV",
@@ -105,7 +123,18 @@ export const site: Site = {
     opensNewTab: "(opens in new tab)",
   },
   footer: {
-    builtWith: "Built with Next.js",
+    credit: "Designed & built by Manditha Madushanka",
+    localTime: {
+      city: "Colombo",
+      timeZone: "Asia/Colombo",
+      srLabel: "Local time in",
+    },
+  },
+  consoleNote: {
+    greeting: "Hi, I'm Manditha.",
+    line: "You found the console, so you probably like seeing how things are built.",
+    sourceLabel: "The source for this site is on GitHub:",
+    emailLabel: "If you'd like to talk about a role, email me at",
   },
   seo: {
     defaultTitle: "Manditha Madushanka · Software Engineer",
