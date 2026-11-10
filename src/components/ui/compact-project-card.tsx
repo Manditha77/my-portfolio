@@ -1,7 +1,7 @@
 import type { CompactProject } from "@/content/projects";
 import { Badge } from "./badge";
+import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
-import { TagList } from "./tag";
 
 type CompactProjectCardProps = {
   project: CompactProject;
@@ -30,17 +30,17 @@ export function CompactProjectCard({ project }: CompactProjectCardProps) {
           {project.title}
         </h3>
 
-        <p className="mt-2 text-sm text-text-muted">{project.blurb}</p>
+        <p className="mt-2 max-w-measure text-sm text-text-muted">{project.blurb}</p>
       </div>
 
       <div className="mt-4 flex flex-col gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
-        <ul className="list-disc space-y-1 pl-5 text-sm marker:text-accent">
+        <ul className="max-w-measure list-disc space-y-1 pl-5 text-sm marker:text-accent">
           {project.highlights.map((highlight) => (
             <li key={highlight}>{highlight}</li>
           ))}
         </ul>
 
-        <TagList tags={project.stack} />
+        <CollapsibleTagList tags={project.stack} />
       </div>
 
       <p className="pt-4 lg:col-start-1 lg:row-start-2 lg:self-end">

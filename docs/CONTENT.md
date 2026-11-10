@@ -32,6 +32,9 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 
 ## Selected Work (SE)
 
+> Each home section shows a small mono label ("01 / Work") above its heading. Nav labels and these mono labels stay as they are; the headings below are what the big h2 says.
+
+**Heading:** Selected projects
 **Section intro:** Two full-stack Java and Spring Boot systems, and the research from my final-year dissertation.
 
 ### 1. GroceryEase: Web-based grocery management system
@@ -73,12 +76,10 @@ Compact card after 1–3 and before "More on GitHub"; visually secondary to the 
 - **Stack:** Next.js, TypeScript, Tailwind CSS, React Three Fiber, three.js, Motion, Vercel
 - **Card blurb:** The site you're reading, built to be fast, accessible and honest: every fact comes from one content file, and the single 3D element only loads where it won't slow anyone down.
 - **Highlights:**
-  - Next.js (App Router), strict TypeScript and Tailwind, with all content in typed data files kept separate from components
-  - One lazy-loaded React Three Fiber scene: phones and reduced-motion users never download it; a static poster keeps layout shift at zero
-  - Lighthouse on mobile (Oct 2026): 99 Performance, 100 Accessibility, 100 Best Practices, 100 SEO
-  - WCAG AA contrast in both themes, full keyboard support, and reduced motion respected
-  - Generated share images, sitemap, JSON-LD and Google Search Console for SEO
-  - Built with Claude Code as an AI pair programmer, driven by a written design brief and a plan → build → verify → commit loop, one section at a time
+  - Next.js, strict TypeScript and Tailwind, with content kept in typed data files
+  - Lazy-loaded 3D that phones and reduced-motion users never download
+  - Lighthouse on mobile (Oct 2026): 99 / 100 / 100 / 100, with WCAG AA in both themes
+  - Built with Claude Code from a written design brief, one reviewed step at a time
 - **Note:** Lighthouse figures are from a mobile run in Oct 2026; re-run before changing them.
 
 **More on GitHub:** link to https://github.com/Manditha77?tab=repositories
@@ -88,6 +89,7 @@ Compact card after 1–3 and before "More on GitHub"; visually secondary to the 
 ## VR / AR Projects
 
 - **Nav label:** VR/AR (anchor `#vr-ar`)
+- **Heading:** Building in VR & AR (the case-study pages keep "VR / AR Projects" as their small label)
 - **Subtitle:** Side work in virtual and augmented reality, built with Unity, OpenXR and WebXR.
 - **Order:** ElectricalSafetyVR first, then AR Elemental Arena. Each case study links to the other (previous/next).
 
@@ -236,6 +238,8 @@ AR bugs rarely show up as errors: a black screen, a silently ignored animation o
 
 ## Experience
 
+**Heading:** Where I've worked
+
 ### Software Engineer Intern: Information Systems Associates (Pvt) Ltd
 - **Dates:** Jul 2025 – Jan 2026 · Colombo, Sri Lanka
 - **Product:** aeroPORT, a microservices-based Departure Control System (DCS) used by Air Arabia for check-in, boarding, baggage and passenger operations
@@ -246,7 +250,7 @@ AR bugs rarely show up as errors: a black screen, a silently ignored animation o
   - Refactored backend services for readability and maintainability
   - Raised frontend unit-test coverage to meet SonarQube quality standards
   - Worked in an Agile/Scrum team (sprint planning, stand-ups, reviews, retrospectives)
-- **Tech:** Java, Spring Boot, React.js, Next.js, PostgreSQL, Apache Kafka, gRPC, REST, Microservices, SonarQube, Git, Bitbucket
+- **Tech (most relevant first; cards show the first six):** Java, Spring Boot, Apache Kafka, gRPC, Microservices, React.js, Next.js, PostgreSQL, REST, SonarQube, Git, Bitbucket
 
 ### Leadership & activities
 - Technical Team Member, International Research Conference on Smart Computing and Systems Engineering (SCSE), Dept. of Industrial Management, University of Kelaniya, 2025
@@ -259,12 +263,14 @@ AR bugs rarely show up as errors: a black screen, a silently ignored animation o
 ---
 
 ## Writing (Medium)
+**Heading:** Things I've written
 - **I Turned My Laptop's Gaming GPU Into an AI Image Studio** (Aug 2026): Running Stable Diffusion locally on an NVIDIA RTX 4060, including the errors and fixes. URL: https://medium.com/@manditha77madushanka/i-turned-my-laptops-gaming-gpu-into-an-ai-image-studio-ee851474d6eb
 - **Building My Own VPN on Microsoft Azure as a University Student** (Jun 2026): WireGuard on Azure, including debugging iptables rules. URL: https://medium.com/@manditha77madushanka/building-my-own-vpn-on-microsoft-azure-as-a-university-student-9f8fd0577aea
 
 ---
 
 ## Skills (grouped; no percentages)
+**Heading:** Tools I work with
 - **Languages:** Java, JavaScript, TypeScript, Python, C#, C++, SQL
 - **Backend:** Spring Boot, REST APIs, gRPC, Apache Kafka, Microservices, Event-Driven Architecture
 - **Frontend & Mobile:** React.js, Next.js, HTML, CSS, Bootstrap, Android (Java), Flutter, Firebase
@@ -276,6 +282,8 @@ AR bugs rarely show up as errors: a black screen, a silently ignored animation o
 ---
 
 ## About (draft)
+
+**Heading:** A bit about me
 
 I'm Manditha, a final-year Management and Information Technology undergraduate at the University of Kelaniya, Sri Lanka.
 

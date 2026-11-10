@@ -34,7 +34,7 @@ type SimpleStepsProps = {
 /** Short one-line instructions, numbered the same way. */
 export function SimpleSteps({ steps }: SimpleStepsProps) {
   return (
-    <ol role="list" className="mt-5 max-w-prose space-y-3">
+    <ol role="list" className="mt-5 max-w-measure space-y-3">
       {steps.map((step, index) => (
         <li key={step} className="flex gap-4">
           <span aria-hidden="true" className="shrink-0 pt-0.5 font-mono text-sm text-accent">

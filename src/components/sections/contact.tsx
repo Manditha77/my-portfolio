@@ -10,7 +10,7 @@ export function Contact() {
 
   return (
     <Section id="contact" heading={contact.heading}>
-      <p className="mt-4 max-w-prose text-text-muted sm:text-lg">{contact.line}</p>
+      <p className="mt-4 max-w-measure text-text-muted sm:text-lg">{contact.line}</p>
 
       <div className="mt-7 flex flex-wrap gap-3">
         <ButtonLink href={`mailto:${email}`}>

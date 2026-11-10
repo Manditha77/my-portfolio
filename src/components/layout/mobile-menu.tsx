@@ -7,6 +7,7 @@ import { shellCopy } from "@/content/navigation";
 import { ButtonLink } from "@/components/ui/button-link";
 import { CloseIcon, MenuIcon } from "@/components/ui/icons";
 import { cx } from "@/lib/cx";
+import { useActiveSection } from "@/lib/use-active-section";
 
 type MobileMenuProps = {
   items: NavItem[];
@@ -19,6 +20,7 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
+  const active = useActiveSection();
 
   useEffect(() => {
     if (!open) return;
@@ -87,7 +89,8 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
                 <Link
                   href={item.href}
                   onClick={close}
-                  className="flex min-h-11 items-center border-b border-border text-base text-text transition-colors duration-150 ease-out hover:text-accent"
+                  aria-current={item.id === active ? "true" : undefined}
+                  className="flex min-h-11 items-center gap-2 border-b border-border text-base text-text transition-colors duration-150 ease-out before:size-1.5 before:shrink-0 before:rounded-full before:bg-accent before:opacity-0 hover:text-accent aria-current:text-accent aria-current:before:opacity-100"
                 >
                   {item.label}
                 </Link>

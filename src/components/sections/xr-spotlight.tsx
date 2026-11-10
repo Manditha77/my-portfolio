@@ -7,21 +7,22 @@ import { GitHubIcon } from "@/components/ui/icons";
 import { LiveDemoLink } from "@/components/ui/live-demo-link";
 import { PhoneFrame } from "@/components/ui/phone-frame";
 import { Section } from "@/components/ui/section";
-import { TagList } from "@/components/ui/tag";
+import { StaggerItem, StaggerList } from "@/components/ui/stagger";
+import { CollapsibleTagList } from "@/components/ui/collapsible-tag-list";
 import { cx } from "@/lib/cx";
 
 export function XrSpotlight() {
   return (
-    <Section id="vr-ar" anchorAliases={["xr"]} heading={xrCopy.heading} data-mode="xr">
-      <p className="mt-3 max-w-prose text-text-muted sm:text-lg">{xrCopy.subtitle}</p>
+    <Section id="vr-ar" anchorAliases={["xr"]} data-mode="xr">
+      <p className="mt-3 max-w-measure text-text-muted sm:text-lg">{xrCopy.subtitle}</p>
 
-      <ul role="list" className="mt-10 space-y-8">
+      <StaggerList role="list" className="mt-10 space-y-8">
         {xrProjects.map((project) => (
-          <li key={project.slug}>
+          <StaggerItem key={project.slug}>
             <XrProjectCard project={project} />
-          </li>
+          </StaggerItem>
         ))}
-      </ul>
+      </StaggerList>
     </Section>
   );
 }
@@ -66,9 +67,9 @@ function XrProjectCard({ project }: { project: XrProject }) {
         </h3>
         <p className="mt-1 text-sm text-text-muted">{project.fullTitle}</p>
 
-        <p className="mt-3">{project.spotlightBlurb}</p>
+        <p className="mt-3 max-w-measure">{project.spotlightBlurb}</p>
 
-        <TagList tags={project.stack} label={xrCopy.stackLabel} tone="accent" className="mt-5" />
+        <CollapsibleTagList tags={project.stack} label={xrCopy.stackLabel} tone="accent" className="mt-5" />
 
         <div className="mt-6 flex flex-wrap gap-3">
           {liveDemoUrl && <LiveDemoLink href={liveDemoUrl} />}

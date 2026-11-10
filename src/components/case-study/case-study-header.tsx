@@ -33,8 +33,8 @@ export function CaseStudyHeader({ project, note, actions }: CaseStudyHeaderProps
             {camelCaseBreaks(project.title)}
           </h1>
           <p className="mt-3 text-lg text-text-muted sm:text-xl">{project.fullTitle}</p>
-          <p className="mt-5 max-w-prose">{project.context}</p>
-          <p className="mt-2 max-w-prose text-sm text-text-muted">{note}</p>
+          <p className="mt-5 max-w-measure">{project.context}</p>
+          <p className="mt-2 max-w-measure text-sm text-text-muted">{note}</p>
           <TagList tags={project.stack} label={xrCopy.stackLabel} tone="accent" className="mt-6" />
           <div className="mt-6 flex flex-wrap gap-3">{actions}</div>
         </header>

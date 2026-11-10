@@ -59,7 +59,7 @@ export default function ArElementalArenaPage() {
         <XrVideo video={project.video} poster={images.overview} shape={project.screenshotShape} />
 
         <CaseStudySection id="idea" heading={xrCopy.headings.idea}>
-          <p className="mt-4 max-w-prose sm:text-lg">{caseStudy.idea}</p>
+          <p className="mt-4 max-w-measure sm:text-lg">{caseStudy.idea}</p>
         </CaseStudySection>
 
         <CaseStudySection id="how-it-plays" heading={xrCopy.headings.howItPlays}>
@@ -67,7 +67,7 @@ export default function ArElementalArenaPage() {
         </CaseStudySection>
 
         <CaseStudySection id="try-it" heading={xrCopy.headings.tryIt}>
-          <p className="mt-4 max-w-prose">{caseStudy.tryItYourself.requirement}</p>
+          <p className="mt-4 max-w-measure">{caseStudy.tryItYourself.requirement}</p>
           <SimpleSteps steps={caseStudy.tryItYourself.steps} />
           <div className="mt-6">
             <LiveDemoLink href={project.liveDemoUrl} />
@@ -102,7 +102,7 @@ export default function ArElementalArenaPage() {
         </CaseStudySection>
 
         <CaseStudySection id="built" heading={xrCopy.headings.built} prominent>
-          <p className="mt-6 max-w-prose sm:text-lg">{caseStudy.built}</p>
+          <p className="mt-6 max-w-measure sm:text-lg">{caseStudy.built}</p>
         </CaseStudySection>
 
         <CaseStudySection id="challenges" heading={xrCopy.headings.challenges} prominent>
@@ -110,7 +110,7 @@ export default function ArElementalArenaPage() {
         </CaseStudySection>
 
         <CaseStudySection id="learned" heading={xrCopy.headings.learned}>
-          <p className="mt-4 max-w-prose sm:text-lg">{caseStudy.learned}</p>
+          <p className="mt-4 max-w-measure sm:text-lg">{caseStudy.learned}</p>
         </CaseStudySection>
 
         <CaseStudySection id="gallery" heading={xrCopy.headings.gallery}>
@@ -118,7 +118,7 @@ export default function ArElementalArenaPage() {
         </CaseStudySection>
 
         <CaseStudySection id="credits" heading={xrCopy.headings.credits}>
-          <ul className="mt-4 max-w-prose list-disc space-y-2 pl-5 text-sm marker:text-accent">
+          <ul className="mt-4 max-w-measure list-disc space-y-2 pl-5 text-sm marker:text-accent">
             {caseStudy.credits.map((credit) => (
               <li key={credit.text}>
                 {credit.text}

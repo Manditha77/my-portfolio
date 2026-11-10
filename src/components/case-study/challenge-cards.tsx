@@ -22,7 +22,7 @@ export function ChallengeCards({ challenges }: ChallengeCardsProps) {
               <h3 id={headingId} className="mt-2 text-lg font-semibold tracking-tight">
                 {challenge.title}
               </h3>
-              <p className="mt-3 text-sm">{challenge.body}</p>
+              <p className="mt-3 max-w-measure text-sm">{challenge.body}</p>
             </article>
           </li>
         );

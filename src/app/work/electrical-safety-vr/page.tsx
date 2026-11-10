@@ -63,16 +63,16 @@ export default function ElectricalSafetyVrPage() {
         <XrVideo video={project.video} poster={images.overview} shape={project.screenshotShape} />
 
         <CaseStudySection id="problem" heading={xrCopy.headings.problem}>
-          <p className="mt-4 max-w-prose sm:text-lg">{caseStudy.problem}</p>
+          <p className="mt-4 max-w-measure sm:text-lg">{caseStudy.problem}</p>
         </CaseStudySection>
 
         <CaseStudySection id="trainee-steps" heading={xrCopy.headings.traineeSteps}>
           <NumberedSteps steps={caseStudy.traineeSteps} />
-          <p className="mt-6 max-w-prose text-sm">{caseStudy.alsoIncluded}</p>
+          <p className="mt-6 max-w-measure text-sm">{caseStudy.alsoIncluded}</p>
         </CaseStudySection>
 
         <CaseStudySection id="role" heading={xrCopy.headings.role} prominent>
-          <ul className="mt-6 max-w-prose list-disc space-y-2 pl-5 marker:text-accent sm:text-lg">
+          <ul className="mt-6 max-w-measure list-disc space-y-2 pl-5 marker:text-accent sm:text-lg">
             {caseStudy.role.map((item) => (
               <li key={item}>{item}</li>
             ))}
@@ -84,7 +84,7 @@ export default function ElectricalSafetyVrPage() {
         </CaseStudySection>
 
         <CaseStudySection id="outcome" heading={xrCopy.headings.outcome}>
-          <p className="mt-4 max-w-prose sm:text-lg">{caseStudy.outcome}</p>
+          <p className="mt-4 max-w-measure sm:text-lg">{caseStudy.outcome}</p>
         </CaseStudySection>
 
         <CaseStudySection id="gallery" heading={xrCopy.headings.gallery}>
@@ -92,11 +92,11 @@ export default function ElectricalSafetyVrPage() {
         </CaseStudySection>
 
         <CaseStudySection id="credits" heading={xrCopy.headings.credits}>
-          <p className="mt-4 max-w-prose">
+          <p className="mt-4 max-w-measure">
             {xrCopy.builtWith} {teamLine(project.team)}.
           </p>
-          <p className="mt-3 max-w-prose text-sm text-text-muted">{caseStudy.credits.assets}</p>
-          <p className="mt-2">
+          <p className="mt-3 max-w-measure text-sm text-text-muted">{caseStudy.credits.assets}</p>
+          <p className="mt-2 max-w-measure">
             <a href={caseStudy.credits.creditsFile.href} className={caseStudyAccentLink}>
               {caseStudy.credits.creditsFile.label}
             </a>

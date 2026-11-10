@@ -1,18 +1,19 @@
 import { articles, writingCopy } from "@/content/writing";
 import { Section } from "@/components/ui/section";
+import { StaggerItem, StaggerList } from "@/components/ui/stagger";
 import { formatMonth } from "@/lib/dates";
 
 export function Writing() {
   return (
     <Section id="writing">
-      <ol role="list" className="mt-6 grid gap-4 md:grid-cols-2">
+      <StaggerList as="ol" role="list" className="mt-6 grid gap-4 md:grid-cols-2">
         {articles.map((article, index) => {
           const headingId = `article-${index}`;
           const splitAt = article.title.lastIndexOf(" ") + 1;
           const leading = article.title.slice(0, splitAt);
           const lastWord = article.title.slice(splitAt);
           return (
-            <li key={article.url}>
+            <StaggerItem key={article.url}>
               <article
                 aria-labelledby={headingId}
                 className="h-full rounded-lg border border-border p-5 transition-colors duration-150 focus-within:border-accent hover:border-accent"
@@ -40,10 +41,10 @@ export function Writing() {
                 </h3>
                 <p className="mt-1 text-sm text-text-muted">{article.summary}</p>
               </article>
-            </li>
+            </StaggerItem>
           );
         })}
-      </ol>
+      </StaggerList>
     </Section>
   );
 }
