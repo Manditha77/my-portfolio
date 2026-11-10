@@ -298,3 +298,12 @@ I'm looking for an Associate Software Engineer role where I can keep building re
 ## Contact copy
 **Heading:** Let's talk
 **Line:** I'm open to Associate Software Engineer roles, and to VR/AR collaborations. The fastest way to reach me is by email.
+
+---
+
+## Footer
+**Credit:** Designed & built by Manditha Madushanka · Source on GitHub (links to the portfolio repo)
+**Local time:** Colombo · {current time} (Asia/Colombo, e.g. "Colombo · 7:38 PM")
+
+## Console note
+One message in the browser console: **Hi, I'm Manditha.** You found the console, so you probably like seeing how things are built. The source for this site is on GitHub: {portfolio repo}. If you'd like to talk about a role, email me at {email}.

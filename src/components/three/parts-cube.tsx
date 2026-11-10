@@ -5,7 +5,8 @@ import { Color, MathUtils, Matrix4, type Group, type InstancedMesh, type ShaderM
 /*
  * "Systems from parts": a 3×3×3 cube of blocks (26 instances, the hidden centre is dropped) drawn in
  * one draw call with no textures. It starts at the poster's exact orientation so the crossfade is
- * seamless, turns slowly, and separates into its modules while the pointer moves over it.
+ * seamless, turns slowly, and separates into its modules while the pointer moves over it. After a few
+ * seconds with no interaction anywhere on the page, it gently separates and reassembles on a slow cycle.
  * Only loaded lazily by HeroVisual.
  */
 
@@ -14,8 +15,10 @@ export type PointerState = {
   x: number;
   y: number;
   inside: boolean;
-  /** performance.now() of the last pointermove. */
+  /** performance.now() of the last pointermove over the visual. */
   lastMove: number;
+  /** performance.now() of the last interaction anywhere on the page (pointer, key, scroll). */
+  lastActivity: number;
 };
 
 // Must match HeroPoster's projection (YAW, PITCH) and outer cube (half-size 1 at ¼ of the width).
@@ -31,6 +34,13 @@ const SPIN_SPEED = 0.15; // rad/s
 const MAX_TILT = 0.15; // rad
 const EASE = 6; // damp lambda: ~95% of the way in 0.5s
 const SETTLE_AFTER_MS = 1200;
+
+// Idle "breathing" (ASSEMBLE): apart for the first part of each cycle, then back together and rest.
+const IDLE_AFTER_MS = 4000;
+const IDLE_CYCLE_MS = 5000;
+const IDLE_APART_MS = 1600;
+const IDLE_SPREAD = 0.6; // share of a full separation
+const IDLE_EASE = 2.5; // softer than EASE: ~95% of the way in 1.2s
 
 const GRID: [number, number, number][] = [];
 for (const x of [-1, 0, 1]) {
@@ -119,10 +129,16 @@ function Blocks({ pointerRef, onReady }: BlocksProps) {
     const delta = Math.min(rawDelta, 0.1);
     const m = motion.current;
     const pointer = pointerRef.current;
-    const moving = pointer.inside && performance.now() - pointer.lastMove < SETTLE_AFTER_MS;
+    const now = performance.now();
+    const moving = pointer.inside && now - pointer.lastMove < SETTLE_AFTER_MS;
+    const idleFor = now - pointer.lastActivity - IDLE_AFTER_MS;
+    const breathing = !moving && idleFor > 0;
+
+    let target = moving ? 1 : 0;
+    if (breathing) target = idleFor % IDLE_CYCLE_MS < IDLE_APART_MS ? IDLE_SPREAD : 0;
 
     const previous = m.separation;
-    m.separation = MathUtils.damp(Math.max(previous, 0), moving ? 1 : 0, EASE, delta);
+    m.separation = MathUtils.damp(Math.max(previous, 0), target, breathing ? IDLE_EASE : EASE, delta);
     m.tiltX = MathUtils.damp(m.tiltX, pointer.inside ? -pointer.y * MAX_TILT : 0, EASE, delta);
     m.tiltY = MathUtils.damp(m.tiltY, pointer.inside ? pointer.x * MAX_TILT : 0, EASE, delta);
 

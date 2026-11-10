@@ -1,6 +1,7 @@
 import { education, experience, experienceCopy, leadership } from "@/content/experience";
 import { CollapsibleTagList } from "@/components/ui/collapsible-tag-list";
 import { DateRange } from "@/components/ui/date-range";
+import { ScanFrame } from "@/components/ui/scan-frame";
 import { Section } from "@/components/ui/section";
 import { StaggerItem, StaggerList } from "@/components/ui/stagger";
 
@@ -28,7 +29,8 @@ export function Experience() {
                 />
                 <article
                   aria-labelledby={headingId}
-                  className="rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6"
+                  data-scan={headingId}
+                  className="relative rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6"
                 >
                   <p className="font-mono text-xs text-text-muted">
                     <DateRange start={job.start} end={job.end} presentLabel={experienceCopy.present} />
@@ -48,6 +50,8 @@ export function Experience() {
                   </ul>
 
                   <CollapsibleTagList tags={job.tech} label={experienceCopy.techLabel} className="mt-5" />
+
+                  <ScanFrame />
                 </article>
               </StaggerItem>
             );

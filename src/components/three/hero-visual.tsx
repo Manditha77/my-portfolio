@@ -19,6 +19,8 @@ const PartsCube = dynamic(() => import("./parts-cube").then((m) => m.PartsCube),
 // Tailwind's lg breakpoint (64rem) plus a mouse/trackpad-class pointer.
 const CAPABLE_QUERY = "(min-width: 64rem) and (hover: hover) and (pointer: fine)";
 
+const ACTIVITY_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "scroll"] as const;
+
 type NavigatorWithConnection = Navigator & { connection?: { saveData?: boolean } };
 
 function saveDataOn(): boolean {
@@ -80,7 +82,7 @@ type HeroVisualProps = {
 
 export function HeroVisual({ children }: HeroVisualProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const pointerRef = useRef<PointerState>({ x: 0, y: 0, inside: false, lastMove: 0 });
+  const pointerRef = useRef<PointerState>({ x: 0, y: 0, inside: false, lastMove: 0, lastActivity: 0 });
   const [enabled, setEnabled] = useState(false);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -120,7 +122,8 @@ export function HeroVisual({ children }: HeroVisualProps) {
     };
   }, [motionOn]);
 
-  // While 3D is mounted: pause when off-screen or the tab is hidden, and track the pointer.
+  // While 3D is mounted: pause when off-screen or the tab is hidden, track the pointer, and note any
+  // interaction on the page (the cube only "breathes" once nothing has happened for a few seconds).
   useEffect(() => {
     const wrapper = wrapperRef.current;
     if (!enabled || !wrapper) return;
@@ -145,14 +148,20 @@ export function HeroVisual({ children }: HeroVisualProps) {
     const onLeave = () => {
       pointer.inside = false;
     };
+    const onActivity = () => {
+      pointer.lastActivity = performance.now();
+    };
+    onActivity();
     wrapper.addEventListener("pointermove", onMove, { passive: true });
     wrapper.addEventListener("pointerleave", onLeave, { passive: true });
+    for (const type of ACTIVITY_EVENTS) window.addEventListener(type, onActivity, { passive: true });
 
     return () => {
       observer.disconnect();
       document.removeEventListener("visibilitychange", update);
       wrapper.removeEventListener("pointermove", onMove);
       wrapper.removeEventListener("pointerleave", onLeave);
+      for (const type of ACTIVITY_EVENTS) window.removeEventListener(type, onActivity);
     };
   }, [enabled]);
 

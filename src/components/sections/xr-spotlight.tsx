@@ -6,6 +6,7 @@ import { ButtonLink, buttonBase, buttonVariants } from "@/components/ui/button-l
 import { GitHubIcon } from "@/components/ui/icons";
 import { LiveDemoLink } from "@/components/ui/live-demo-link";
 import { PhoneFrame } from "@/components/ui/phone-frame";
+import { ScanFrame } from "@/components/ui/scan-frame";
 import { Section } from "@/components/ui/section";
 import { StaggerItem, StaggerList } from "@/components/ui/stagger";
 import { CollapsibleTagList } from "@/components/ui/collapsible-tag-list";
@@ -47,8 +48,9 @@ function XrProjectCard({ project }: { project: XrProject }) {
   return (
     <article
       aria-labelledby={headingId}
+      data-scan={project.slug}
       className={cx(
-        "xr-glow grid gap-6 rounded-lg border border-accent/30 bg-surface p-5 sm:p-6",
+        "xr-glow relative grid gap-6 rounded-lg border border-accent/30 bg-surface p-5 sm:p-6",
         // A phone screenshot sits beside the text from tablet width; a 16:9 one only on large screens.
         phone ? "sm:grid-cols-[1fr_auto] sm:items-center sm:gap-10" : "lg:grid-cols-2 lg:items-center lg:gap-10",
       )}
@@ -86,6 +88,8 @@ function XrProjectCard({ project }: { project: XrProject }) {
           </ButtonLink>
         </div>
       </div>
+
+      <ScanFrame />
     </article>
   );
 }

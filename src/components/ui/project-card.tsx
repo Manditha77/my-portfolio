@@ -5,6 +5,7 @@ import { withCountUp } from "@/lib/measured";
 import { Badge } from "./badge";
 import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
+import { ScanFrame } from "./scan-frame";
 
 type ProjectCardProps = {
   project: Project;
@@ -21,7 +22,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <article
       aria-labelledby={headingId}
-      className="rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6 lg:grid lg:grid-cols-2 lg:gap-x-10"
+      data-scan={project.slug}
+      className="relative rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6 lg:grid lg:grid-cols-2 lg:gap-x-10"
     >
       <div className="lg:col-start-1 lg:row-start-1">
         <div className="flex flex-wrap gap-2">
@@ -99,6 +101,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </span>
         </a>
       </p>
+
+      <ScanFrame />
     </article>
   );
 }
