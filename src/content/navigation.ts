@@ -46,4 +46,7 @@ export const shellCopy = {
   switchToLight: "Switch to light theme",
   switchToDark: "Switch to dark theme",
   backToTop: "Back to top",
+  tagsMore: (count: number) => `+${count} more`,
+  tagsShowMore: (count: number) => `Show ${count} more technologies`,
+  tagsShowLess: "Show less",
 };

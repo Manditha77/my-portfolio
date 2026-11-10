@@ -122,5 +122,5 @@ export const site: Site = {
     line: "That page doesn't exist or has moved.",
     cta: "Back to home",
   },
-  todos: ["TODO: set NEXT_PUBLIC_SITE_URL on Vercel to the production URL"],
+  todos: [],
 };

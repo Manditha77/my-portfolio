@@ -246,7 +246,7 @@ AR bugs rarely show up as errors: a black screen, a silently ignored animation o
   - Refactored backend services for readability and maintainability
   - Raised frontend unit-test coverage to meet SonarQube quality standards
   - Worked in an Agile/Scrum team (sprint planning, stand-ups, reviews, retrospectives)
-- **Tech:** Java, Spring Boot, React.js, Next.js, PostgreSQL, Apache Kafka, gRPC, REST, Microservices, SonarQube, Git, Bitbucket
+- **Tech (most relevant first; cards show the first six):** Java, Spring Boot, Apache Kafka, gRPC, Microservices, React.js, Next.js, PostgreSQL, REST, SonarQube, Git, Bitbucket
 
 ### Leadership & activities
 - Technical Team Member, International Research Conference on Smart Computing and Systems Engineering (SCSE), Dept. of Industrial Management, University of Kelaniya, 2025

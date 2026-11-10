@@ -96,7 +96,7 @@ export default function ElectricalSafetyVrPage() {
             {xrCopy.builtWith} {teamLine(project.team)}.
           </p>
           <p className="mt-3 max-w-prose text-sm text-text-muted">{caseStudy.credits.assets}</p>
-          <p className="mt-2">
+          <p className="mt-2 max-w-measure">
             <a href={caseStudy.credits.creditsFile.href} className={caseStudyAccentLink}>
               {caseStudy.credits.creditsFile.label}
             </a>

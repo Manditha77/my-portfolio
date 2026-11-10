@@ -61,6 +61,8 @@
 
 @theme {
   --container-content: 68.75rem;
+  /* Comfortable line length for text inside wide cards (max-w-measure). */
+  --container-measure: 75ch;
 
   /* Vertical padding on each side of a home section (py-section); the gap between sections is twice this. */
   --spacing-section: clamp(2.25rem, 1.75rem + 2vw, 3.5rem);

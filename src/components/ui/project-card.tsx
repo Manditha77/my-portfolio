@@ -2,8 +2,8 @@ import Image from "next/image";
 import type { Project } from "@/content/projects";
 import { workCopy } from "@/content/projects";
 import { Badge } from "./badge";
+import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
-import { TagList } from "./tag";
 
 type ProjectCardProps = {
   project: Project;
@@ -34,15 +34,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
         </h3>
         {project.subtitle ? <p className="mt-1 text-sm text-text-muted">{project.subtitle}</p> : null}
 
-        <p className="mt-3">{project.blurb}</p>
+        <p className="mt-3 max-w-measure">{project.blurb}</p>
 
         {project.role ? (
-          <p className="mt-3 text-sm">
+          <p className="mt-3 max-w-measure text-sm">
             <span className="font-medium">{workCopy.roleLabel}</span> {project.role}
           </p>
         ) : null}
 
-        {project.statusNote ? <p className="mt-3 text-sm text-text-muted">{project.statusNote}</p> : null}
+        {project.statusNote ? <p className="mt-3 max-w-measure text-sm text-text-muted">{project.statusNote}</p> : null}
       </div>
 
       <div className="mt-5 flex flex-col gap-5 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
@@ -60,7 +60,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         ) : null}
 
         {project.highlights && project.highlights.length > 0 ? (
-          <ul className="list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
+          <ul className="max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
             {project.highlights.map((highlight) => (
               <li key={highlight}>{highlight}</li>
             ))}
@@ -70,7 +70,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         {project.approach && project.approach.length > 0 ? (
           <div>
             <p className="font-mono text-xs text-text-muted">{workCopy.approachHeading}</p>
-            <ul className="mt-2 space-y-1.5 text-sm">
+            <ul className="mt-2 max-w-measure space-y-1.5 text-sm">
               {project.approach.map((step) => (
                 <li key={step.label}>
                   <span className="font-medium text-accent">{step.label}:</span> {step.text}
@@ -80,7 +80,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
         ) : null}
 
-        <TagList tags={project.stack} />
+        <CollapsibleTagList tags={project.stack} />
       </div>
 
       <p className="pt-5 lg:col-start-1 lg:row-start-2 lg:self-end">
