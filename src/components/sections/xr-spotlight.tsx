@@ -7,6 +7,7 @@ import { GitHubIcon } from "@/components/ui/icons";
 import { LiveDemoLink } from "@/components/ui/live-demo-link";
 import { PhoneFrame } from "@/components/ui/phone-frame";
 import { Section } from "@/components/ui/section";
+import { StaggerItem, StaggerList } from "@/components/ui/stagger";
 import { CollapsibleTagList } from "@/components/ui/collapsible-tag-list";
 import { cx } from "@/lib/cx";
 
@@ -15,13 +16,13 @@ export function XrSpotlight() {
     <Section id="vr-ar" anchorAliases={["xr"]} heading={xrCopy.heading} data-mode="xr">
       <p className="mt-3 max-w-prose text-text-muted sm:text-lg">{xrCopy.subtitle}</p>
 
-      <ul role="list" className="mt-10 space-y-8">
+      <StaggerList role="list" className="mt-10 space-y-8">
         {xrProjects.map((project) => (
-          <li key={project.slug}>
+          <StaggerItem key={project.slug}>
             <XrProjectCard project={project} />
-          </li>
+          </StaggerItem>
         ))}
-      </ul>
+      </StaggerList>
     </Section>
   );
 }

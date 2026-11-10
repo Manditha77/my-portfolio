@@ -2,6 +2,7 @@ import { education, experience, experienceCopy, leadership } from "@/content/exp
 import { CollapsibleTagList } from "@/components/ui/collapsible-tag-list";
 import { DateRange } from "@/components/ui/date-range";
 import { Section } from "@/components/ui/section";
+import { StaggerItem, StaggerList } from "@/components/ui/stagger";
 
 /*
  * Timeline: one thin line on the left (the wrapper's ::before, centred 6px in) with a dot per entry.
@@ -13,11 +14,11 @@ export function Experience() {
   return (
     <Section id="experience">
       <div className="relative mt-10 pl-6 before:absolute before:top-6 before:bottom-0 before:left-1.5 before:w-px before:-translate-x-1/2 before:bg-linear-to-b before:from-border before:from-90% before:to-transparent sm:pl-8">
-        <ol role="list" className="space-y-6">
+        <StaggerList as="ol" role="list" className="space-y-6">
           {experience.map((job, index) => {
             const headingId = `job-${index}`;
             return (
-              <li key={`${job.company}-${job.start}`} className="relative">
+              <StaggerItem key={`${job.company}-${job.start}`} className="relative">
                 {/* Centred on the card's date line (border + padding + half a line of text-xs). */}
                 <span
                   aria-hidden="true"
@@ -46,15 +47,15 @@ export function Experience() {
 
                   <CollapsibleTagList tags={job.tech} label={experienceCopy.techLabel} className="mt-5" />
                 </article>
-              </li>
+              </StaggerItem>
             );
           })}
-        </ol>
+        </StaggerList>
 
         <h3 className="mt-10 font-mono text-xs text-text-muted">{experienceCopy.leadershipHeading}</h3>
-        <ol role="list" className="mt-4 space-y-6">
+        <StaggerList as="ol" role="list" className="mt-4 space-y-6">
           {leadership.map((item) => (
-            <li key={`${item.event}-${item.role}`} className="relative">
+            <StaggerItem key={`${item.event}-${item.role}`} className="relative">
               {/* Centred on the year line. */}
               <span
                 aria-hidden="true"
@@ -67,9 +68,9 @@ export function Experience() {
               <p className="mt-0.5 max-w-measure text-sm text-text-muted">
                 {item.event}, {item.organisation}
               </p>
-            </li>
+            </StaggerItem>
           ))}
-        </ol>
+        </StaggerList>
       </div>
 
       <div className="mt-12 lg:w-1/2 lg:pr-5">

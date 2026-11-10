@@ -3,19 +3,20 @@ import { CompactProjectCard } from "@/components/ui/compact-project-card";
 import { GitHubIcon } from "@/components/ui/icons";
 import { ProjectCard } from "@/components/ui/project-card";
 import { Section } from "@/components/ui/section";
+import { StaggerItem, StaggerList } from "@/components/ui/stagger";
 
 export function Work() {
   return (
     <Section id="work">
       <p className="mt-3 max-w-prose text-text-muted sm:text-lg">{workCopy.intro}</p>
 
-      <ul role="list" className="mt-10 flex flex-col gap-6">
+      <StaggerList role="list" className="mt-10 flex flex-col gap-6">
         {projects.map((project) => (
-          <li key={project.slug}>
+          <StaggerItem key={project.slug}>
             <ProjectCard project={project} />
-          </li>
+          </StaggerItem>
         ))}
-      </ul>
+      </StaggerList>
 
       <div className="mt-6">
         <CompactProjectCard project={thisPortfolio} />

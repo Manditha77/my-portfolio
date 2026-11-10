@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import type { SectionId } from "@/content/navigation";
-import { sectionLabel } from "@/content/navigation";
+import { sectionEyebrow, sectionLabel } from "@/content/navigation";
 import { cx } from "@/lib/cx";
 import { Container } from "./container";
 import { Reveal } from "./reveal";
@@ -20,6 +20,7 @@ type SectionProps = Omit<HTMLAttributes<HTMLElement>, "id"> & {
  */
 export function Section({ id, heading, anchorAliases, children, className, ...rest }: SectionProps) {
   const headingId = `${id}-heading`;
+  const eyebrow = sectionEyebrow(id);
 
   return (
     <section id={id} aria-labelledby={headingId} className={cx("py-section", className)} {...rest}>
@@ -29,6 +30,12 @@ export function Section({ id, heading, anchorAliases, children, className, ...re
       ))}
       <Container>
         <Reveal>
+          {/* Hidden from assistive tech: it repeats the heading below. */}
+          {eyebrow && (
+            <p aria-hidden="true" className="mb-2 font-mono text-xs text-text-muted">
+              {eyebrow}
+            </p>
+          )}
           <h2 id={headingId} className="text-h2 font-semibold tracking-tight">
             {heading ?? sectionLabel(id)}
           </h2>
