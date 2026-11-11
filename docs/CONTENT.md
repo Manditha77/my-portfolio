@@ -28,6 +28,11 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 **Status pill:** Open to Associate Software Engineer roles
 **CTAs:** View my work · Download CV · GitHub · LinkedIn
 
+### Hero visual
+- **What it is:** a portrait of Manditha built from about 3,000 small blocks (a pin-art relief), in the site's accent colour. On capable desktops it is live 3D: it turns slightly towards the pointer and, on scroll, crumbles into the blocks that build each section's model. Everywhere else it is a still image of the same portrait.
+- **Source:** made offline from his own photo by `scripts/portrait/`. The photo is never published or committed; only the block data (depth and shade per block) and the rendered posters ship.
+- **Alt text:** Manditha Madushanka, portrait built from blocks
+
 ---
 
 ## Selected Work (SE)

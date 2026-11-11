@@ -1,52 +1,61 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { MathUtils, Matrix4, Vector3, type InstancedMesh, type ShaderMaterial } from "three";
+import { MathUtils, Matrix4, type InstancedMesh, type ShaderMaterial } from "three";
 import { createBlockUniforms, fragmentShader, readTokenColors, vertexShader, type BlockUniforms } from "./build-material";
 import { BLOCK, BLOCKS, REST, createPoses, fillShape, placePoses, streamPoses, type Pose, type PoseInput } from "./build-poses";
-import { BETWEEN, ENTERING, EXITING, FORMED, buildProgress, measureBuild, type BuildMap, type Rect } from "./build-scroll";
+import { PORTRAIT_BLOCKS, PORTRAIT_REST, portraitEdge, portraitExit } from "./build-portrait";
+import {
+  BETWEEN,
+  ENTERING,
+  EXITING,
+  FORMED,
+  VIEW_UNITS,
+  buildProgress,
+  measureBuild,
+  type BuildMap,
+  type Rect,
+} from "./build-scroll";
 
 /*
- * "The Build": the hero's "systems from parts" cube as one continuous scroll companion. 100 instanced
- * blocks in one draw call with no textures. Each home section has a free box beside its heading
+ * "The Build": the hero's block portrait as one continuous scroll companion. One instanced mesh, one draw
+ * call, no textures. In the hero, ~3,000 blocks form the portrait (build-portrait.ts) exactly where its
+ * poster sits; it turns slightly towards the pointer and sways very slowly. As the hero scrolls away the
+ * portrait crumbles: most blocks fall a little and fade, and 100 of them fall out of the box as plain
+ * blocks. From there those 100 are the companion: each home section has a free box beside its heading
  * (build-scroll.ts). As a box scrolls in, the blocks stream down into it and assemble that section's
  * shape (build-shapes.ts), bottom first; the shape holds while the heading is in view, then its blocks
  * stream down out of the box as it scrolls away, and the next box takes them in. Scrubbed by scroll and
- * reversible. While a shape is formed and on screen it plays its live actions (build-live.ts). In the
- * hero the cube turns slowly, separates under the pointer, and gently separates and reassembles after a
- * few seconds without interaction.
+ * reversible. While a shape is formed and on screen it plays its live actions (build-live.ts).
  * The canvas sits in the document behind all content, so it scrolls with the page natively. Its clipped
  * box follows the blocks, cut to the stop's band, so it can never draw over text or a card, even on a
  * frame that lags the scroll.
- * Renders on demand: every frame while scroll moves it or something eases, ~30 fps while only the hero
- * cube turns or a shape's live actions play (and only while it is on screen), and not at all otherwise.
+ * Renders on demand: every frame while scroll moves it or the turn eases, ~30 fps while only the portrait
+ * sways or a shape's live actions play (and only while it is on screen), and not at all otherwise.
  * Only loaded lazily by HeroVisual.
  */
 
 export type PointerState = {
-  /** -1..1 across the hero visual, +y up. */
+  /** -1..1 from the portrait's centre to the viewport's edges, +y up. */
   x: number;
   y: number;
+  /** False once the pointer has left the page. */
   inside: boolean;
-  /** performance.now() of the last pointermove over the hero visual. */
-  lastMove: number;
-  /** performance.now() of the last interaction anywhere on the page (pointer, key, scroll). */
-  lastActivity: number;
   /** Requests a frame straight away (set by the canvas while it's mounted). */
   wake?: () => void;
 };
 
-const SPIN_SPEED = 0.15; // rad/s
-const MAX_TILT = 0.15; // rad
+// The portrait turns towards the pointer, at most this far (rad: ~10° and ~6°).
+const TURN_YAW = 0.175;
+const TURN_PITCH = 0.105;
 const EASE = 6; // damp lambda: ~95% of the way in 0.5s
-const SETTLE_AFTER_MS = 1200;
 
-// Idle "breathing" (ASSEMBLE): apart for the first part of each cycle, then back together and rest.
-const IDLE_AFTER_MS = 4000;
-const IDLE_CYCLE_MS = 5000;
-const IDLE_APART_MS = 1600;
-const IDLE_SPREAD = 0.6; // share of a full separation
-const IDLE_EASE = 2.5; // softer than EASE: ~95% of the way in 1.2s
+// A very slow sway while it holds (rad, s), starting once the poster has handed over.
+const SWAY_YAW = 0.044;
+const SWAY_PITCH = 0.0175;
+const SWAY_YAW_PERIOD = 14;
+const SWAY_PITCH_PERIOD = 11;
+const SWAY_AFTER = 0.8;
 
 // Scroll progress follows the page with a ~200ms time constant, so wheel steps glide rather than snap.
 const PROGRESS_EASE = 5;
@@ -56,11 +65,10 @@ const PROGRESS_SETTLED = 1e-3; // of one phase: well under a pixel
 const LIVE_EASE = 5;
 const LIVE_SETTLED = 1e-3;
 
-// While only the cube turns or live actions play: small enough steps at 30 fps not to read as stutter.
+// While only the portrait sways or live actions play: small enough steps at 30 fps not to read as stutter.
 const TIMED_FRAME_MS = 33;
-// "Close enough" for the eased values: under ~0.1px of block movement for separation, ~0.2px for tilt.
-const SEPARATION_SETTLED = 5e-3;
-const TILT_SETTLED = 1e-3;
+// "Close enough" for the eased turn: under ~0.2px of block movement.
+const TURN_SETTLED = 1e-3;
 
 // Around the blocks' bounds, for their antialiased edges, px.
 const BOX_PAD = 2;
@@ -69,30 +77,22 @@ const BOX_PAD = 2;
 const scratch = {
   placed: createPoses(),
   out: createPoses(),
-  cube: { ...REST } as PoseInput,
+  /** The next stop's shape at rest, sized for its box: what the handoff blocks grow into. */
+  next: createPoses(),
+  portrait: createPoses(PORTRAIT_BLOCKS),
   shape: { ...REST } as PoseInput,
   matrix: new Matrix4(),
-  position: new Vector3(),
 };
 
 const EMPTY: Rect = { left: 0, top: 0, right: 0, bottom: 0 };
 
-type MotionState = { separation: number; tiltX: number; tiltY: number };
-
-/** True while any eased value is still visibly short of its target. */
-function isEasing(m: MotionState, separation: number, tiltX: number, tiltY: number): boolean {
-  return (
-    Math.abs(m.separation - separation) > SEPARATION_SETTLED ||
-    Math.abs(m.tiltX - tiltX) > TILT_SETTLED ||
-    Math.abs(m.tiltY - tiltY) > TILT_SETTLED
-  );
-}
+const wave = (time: number, period: number) => Math.sin((2 * Math.PI * time) / period);
 
 /**
  * The blocks' bounds in document px (whole pixels, padded), cut to `safe` and to the canvas size.
  * Empty when nothing is left: then the box has no size and draws nothing.
  */
-function clipBox(poses: Pose[], zoom: number, safe: Rect, maxWidth: number, maxHeight: number): Rect {
+function clipBox(poses: readonly Pose[], zoom: number, safe: Rect, maxWidth: number, maxHeight: number): Rect {
   let left = Infinity;
   let right = -Infinity;
   let top = Infinity;
@@ -107,11 +107,16 @@ function clipBox(poses: Pose[], zoom: number, safe: Rect, maxWidth: number, maxH
     top = Math.min(top, (y - radius) * zoom);
     bottom = Math.max(bottom, (y + radius) * zoom);
   }
+  return cut({ left: left - BOX_PAD, top: top - BOX_PAD, right: right + BOX_PAD, bottom: bottom + BOX_PAD }, safe, maxWidth, maxHeight);
+}
+
+/** `rect` in whole pixels, cut to `safe` and to the canvas size; empty when nothing is left. */
+function cut(rect: Rect, safe: Rect, maxWidth: number, maxHeight: number): Rect {
   const clip = {
-    left: Math.max(Math.floor(left - BOX_PAD), Math.ceil(safe.left)),
-    top: Math.max(Math.floor(top - BOX_PAD), Math.ceil(safe.top)),
-    right: Math.min(Math.ceil(right + BOX_PAD), Math.floor(safe.right)),
-    bottom: Math.min(Math.ceil(bottom + BOX_PAD), Math.floor(safe.bottom)),
+    left: Math.max(Math.floor(rect.left), Math.ceil(safe.left)),
+    top: Math.max(Math.floor(rect.top), Math.ceil(safe.top)),
+    right: Math.min(Math.ceil(rect.right), Math.floor(safe.right)),
+    bottom: Math.min(Math.ceil(rect.bottom), Math.floor(safe.bottom)),
   };
   clip.right = Math.min(clip.right, clip.left + maxWidth);
   clip.bottom = Math.min(clip.bottom, clip.top + maxHeight);
@@ -144,10 +149,13 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
   const meshRef = useRef<InstancedMesh>(null);
   const themeDirty = useRef(true);
   const motion = useRef({
-    separation: 0,
-    tiltX: 0,
-    tiltY: 0,
-    spin: 0,
+    /** The portrait's turn towards the pointer, rad. */
+    turnX: 0,
+    turnY: 0,
+    /** Seconds the portrait has held (drives its sway). */
+    holdTime: 0,
+    /** The instances hold the portrait at rest, so a frame that only turns it writes none. */
+    restWritten: false,
     progress: -1,
     frames: 0,
     /** The clipped box as last placed, document px. */
@@ -160,7 +168,7 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     sleeping: false,
   });
   const [uniforms] = useState(createBlockUniforms);
-  const [glowArray] = useState(() => new Float32Array(BLOCKS));
+  const [lookArray] = useState(() => new Float32Array(4 * PORTRAIT_BLOCKS));
 
   // Recolour when the theme toggle (or the OS theme) changes data-theme on <html>.
   useEffect(() => {
@@ -172,7 +180,7 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     return () => observer.disconnect();
   }, [invalidate]);
 
-  // Pointer moves over the hero visual and re-measures ask for a frame at once.
+  // Pointer moves and re-measures ask for a frame at once.
   useEffect(() => {
     const pointer = pointerRef.current;
     pointer.wake = invalidate;
@@ -219,14 +227,16 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     if (!mesh || !box || !map || map.stops.length === 0) return;
     const { stops, zoom } = map;
 
-    // Orthographic zoom is px per world unit: the hero cube keeps the poster's size.
+    // Orthographic zoom is px per world unit: the portrait keeps its poster's size.
+    const material = mesh.material as ShaderMaterial;
     if (state.camera.zoom !== zoom) {
       state.camera.zoom = zoom;
       state.camera.updateProjectionMatrix();
+      material.uniforms.uEdge.value = portraitEdge(zoom * VIEW_UNITS);
     }
 
     if (themeDirty.current) {
-      readTokenColors((mesh.material as ShaderMaterial).uniforms as BlockUniforms);
+      readTokenColors(material.uniforms as BlockUniforms);
       themeDirty.current = false;
     }
 
@@ -234,7 +244,6 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const delta = Math.min(rawDelta, 0.1);
     const m = motion.current;
     const pointer = pointerRef.current;
-    const now = performance.now();
 
     // Which stop, which phase of it (entering, formed, exiting, between stops), and how far through.
     const target = buildProgress(window.scrollY, map);
@@ -247,25 +256,15 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const stop = stops[index];
     const hero = index === 0;
 
-    // Hero only: pointer separation and tilt, and the idle breathing, fade out as it streams away.
-    let heroWeight = 0;
-    if (hero && phase < EXITING) heroWeight = 1;
-    else if (hero && phase === EXITING) heroWeight = 1 - k;
-    const moving = pointer.inside && now - pointer.lastMove < SETTLE_AFTER_MS;
-    const idleFor = now - pointer.lastActivity - IDLE_AFTER_MS;
-    const breathing = heroWeight === 1 && !moving && idleFor > 0;
-
-    let separation = moving ? heroWeight : 0;
-    if (breathing) separation = idleFor % IDLE_CYCLE_MS < IDLE_APART_MS ? IDLE_SPREAD : 0;
-    const tiltXTarget = pointer.inside ? -pointer.y * MAX_TILT * heroWeight : 0;
-    const tiltYTarget = pointer.inside ? pointer.x * MAX_TILT * heroWeight : 0;
-
-    m.separation = MathUtils.damp(m.separation, separation, breathing ? IDLE_EASE : EASE, delta);
-    m.tiltX = MathUtils.damp(m.tiltX, tiltXTarget, EASE, delta);
-    m.tiltY = MathUtils.damp(m.tiltY, tiltYTarget, EASE, delta);
-    // The hero cube turns until it has streamed away.
-    const cubeShows = hero && phase !== BETWEEN;
-    if (cubeShows) m.spin += SPIN_SPEED * delta;
+    // Hero: the portrait turns towards the pointer and, while it holds, sways very slowly.
+    const heroShows = hero && phase !== BETWEEN;
+    const holding = hero && phase === FORMED;
+    const turnXTarget = heroShows && pointer.inside ? -pointer.y * TURN_PITCH : 0;
+    const turnYTarget = heroShows && pointer.inside ? pointer.x * TURN_YAW : 0;
+    m.turnX = MathUtils.damp(m.turnX, turnXTarget, EASE, delta);
+    m.turnY = MathUtils.damp(m.turnY, turnYTarget, EASE, delta);
+    if (holding) m.holdTime += delta;
+    const swayTime = Math.max(0, m.holdTime - SWAY_AFTER);
 
     // Live actions: on their own clock from the moment a shape forms, easing in and out.
     const formed = !hero && phase === FORMED;
@@ -280,35 +279,46 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     }
     if (m.live > 0) m.liveTime += delta;
 
-    const cube = scratch.cube;
-    cube.spin = m.spin;
-    cube.tiltX = m.tiltX;
-    cube.tiltY = m.tiltY;
-    cube.separation = m.separation;
     const shape = scratch.shape;
     shape.live = m.live;
     shape.time = m.liveTime;
     // Skills' last tile drops into its slot over the end of the enter.
     shape.settle = phase === ENTERING ? MathUtils.smoothstep(k, 0.75, 1) : 1;
 
-    // The shape in its box (page units: document px / zoom, +y up); entering or exiting, its blocks
-    // stream down into or out of the box's band, staggered. Between stops nothing shows.
-    let poses: Pose[] | null = null;
-    if (phase !== BETWEEN) {
-      const key = hero ? "cube" : stop.shape;
-      fillShape(key, scratch.placed, hero ? cube : shape);
+    let poses: readonly Pose[] | null = null;
+    let clip = EMPTY;
+    if (heroShows) {
+      // The portrait, around its centre (the mesh carries its place and turn). Leaving, it crumbles: the
+      // handoff blocks grow into the next shape's blocks as they fall out of the band.
+      poses = PORTRAIT_REST;
+      if (phase === EXITING) {
+        const next = stops[1];
+        if (next) {
+          fillShape(next.shape, scratch.next, REST);
+          placePoses(scratch.next, 0, 0, next.scale);
+        }
+        portraitExit(k, scratch.portrait, (stop.y - stop.safe.bottom) / zoom, next ? scratch.next : null);
+        poses = scratch.portrait;
+      }
+      // The whole hero box (the visual plus its margin): the turn and sway stay well inside it.
+      const heroBox = { left: stop.left, top: stop.top, right: stop.left + stop.width, bottom: stop.top + stop.height };
+      clip = cut(heroBox, stop.safe, state.size.width, state.size.height);
+    } else if (phase !== BETWEEN) {
+      // The shape in its box (page units: document px / zoom, +y up); entering or exiting, its blocks
+      // stream down into or out of the box's band, staggered. Between stops nothing shows.
+      fillShape(stop.shape, scratch.placed, shape);
       placePoses(scratch.placed, stop.x / zoom, -stop.y / zoom, stop.scale);
       poses = scratch.placed;
       if (phase === ENTERING || phase === EXITING) {
         const top = -stop.safe.top / zoom;
         const bottom = -stop.safe.bottom / zoom;
-        streamPoses(key, scratch.placed, scratch.out, k, phase === ENTERING ? "in" : "out", top, bottom);
+        streamPoses(stop.shape, scratch.placed, scratch.out, k, phase === ENTERING ? "in" : "out", top, bottom);
         poses = scratch.out;
       }
+      // The clipped box follows the blocks, inside the stop's band.
+      clip = clipBox(poses, zoom, stop.safe, state.size.width, state.size.height);
     }
 
-    // The clipped box follows the blocks, inside the stop's band.
-    const clip = poses ? clipBox(poses, zoom, stop.safe, state.size.width, state.size.height) : EMPTY;
     if (!sameRect(clip, m.box)) {
       m.box = clip;
       placeBox(box, clip);
@@ -317,31 +327,48 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     // The canvas fills the box from its top-left corner; the camera looks at the canvas's centre.
     const originX = (clip.left + state.size.width / 2) / zoom;
     const originY = -(clip.top + state.size.height / 2) / zoom;
-    const { matrix, position } = scratch;
-    const glow = mesh.geometry.getAttribute("instanceGlow");
-    if (poses && clip !== EMPTY) {
-      for (let i = 0; i < BLOCKS; i++) {
+    if (heroShows) {
+      mesh.position.set(stop.x / zoom - originX, -stop.y / zoom - originY, 0);
+      mesh.rotation.set(
+        m.turnX + SWAY_PITCH * wave(swayTime, SWAY_PITCH_PERIOD),
+        m.turnY + SWAY_YAW * wave(swayTime, SWAY_YAW_PERIOD),
+        0,
+      );
+    } else {
+      mesh.position.set(-originX, -originY, 0);
+      mesh.rotation.set(0, 0, 0);
+    }
+
+    // Instances: the whole portrait in the hero (written once while it holds), the companion's 100 elsewhere.
+    const rest = poses === PORTRAIT_REST;
+    if (poses && clip !== EMPTY && !(rest && m.restWritten)) {
+      const { matrix } = scratch;
+      const look = mesh.geometry.getAttribute("instanceLook");
+      const count = heroShows ? PORTRAIT_BLOCKS : BLOCKS;
+      for (let i = 0; i < count; i++) {
         const pose = poses[i];
-        position.set(pose.position.x - originX, pose.position.y - originY, pose.position.z);
-        mesh.setMatrixAt(i, matrix.compose(position, pose.quaternion, pose.scale));
-        glow.setX(i, pose.glow);
+        mesh.setMatrixAt(i, matrix.compose(pose.position, pose.quaternion, pose.scale));
+        look.setXYZW(i, pose.glow, pose.shade, pose.portrait, pose.opacity);
       }
+      mesh.count = count;
       mesh.instanceMatrix.needsUpdate = true;
-      glow.needsUpdate = true;
+      look.needsUpdate = true;
+      m.restWritten = rest;
     }
 
     // Report ready once a real frame has been drawn.
     if (m.frames < 2 && ++m.frames === 2) onReady();
 
-    // Next frame: straight away while scroll moves the companion or anything eases; a timed frame while
-    // the hero cube turns or live actions play on screen; otherwise none until scroll, a resize or the
-    // pointer.
+    // Next frame: straight away while scroll moves the companion or the turn eases; a timed frame while the
+    // portrait holds or live actions play on screen; otherwise none until scroll, a resize or the pointer.
     const onScreen =
       clip.right > clip.left && clip.top < window.scrollY + window.innerHeight && clip.bottom > window.scrollY;
-    const looping = cubeShows || formed || m.live > 0;
+    const looping = holding || formed || m.live > 0;
+    const turning =
+      Math.abs(m.turnX - turnXTarget) > TURN_SETTLED || Math.abs(m.turnY - turnYTarget) > TURN_SETTLED;
     m.sleeping = false;
     window.clearTimeout(timer.current);
-    if (m.frames < 2 || m.progress !== target || isEasing(m, separation, tiltXTarget, tiltYTarget)) {
+    if (m.frames < 2 || m.progress !== target || turning) {
       state.invalidate();
     } else if (looping && onScreen) {
       timer.current = window.setTimeout(() => {
@@ -353,17 +380,18 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, BLOCKS]} frustumCulled={false}>
+    <instancedMesh ref={meshRef} args={[undefined, undefined, PORTRAIT_BLOCKS]} frustumCulled={false}>
       <boxGeometry args={[BLOCK, BLOCK, BLOCK]}>
-        <instancedBufferAttribute attach="attributes-instanceGlow" args={[glowArray, 1]} />
+        <instancedBufferAttribute attach="attributes-instanceLook" args={[lookArray, 4]} />
       </boxGeometry>
-      <shaderMaterial uniforms={uniforms} vertexShader={vertexShader} fragmentShader={fragmentShader} />
+      {/* Transparent only so the portrait's falling blocks can fade; everything else is opaque. */}
+      <shaderMaterial transparent uniforms={uniforms} vertexShader={vertexShader} fragmentShader={fragmentShader} />
     </instancedMesh>
   );
 }
 
 type PartsCubeProps = {
-  /** The hero visual's box: the cube's position and size at scroll 0. */
+  /** The hero visual's box: the portrait's position and size at scroll 0. */
   heroRef: RefObject<HTMLElement | null>;
   pointerRef: RefObject<PointerState>;
   onReady: () => void;
@@ -385,7 +413,8 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
     const measure = () => {
       frame = 0;
       const map = measureBuild(hero);
-      mapRef.current = map;      const { canvasWidth: width, canvasHeight: height } = map;
+      mapRef.current = map;
+      const { canvasWidth: width, canvasHeight: height } = map;
       setCanvasSize((size) => (size?.width === width && size.height === height ? size : { width, height }));
       pointerRef.current.wake?.();
     };

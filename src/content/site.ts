@@ -22,6 +22,8 @@ export type Site = {
     statusPill: string;
     /** PIPELINE steps that tick through before the status types out (decorative; hidden from assistive tech). */
     pipeline: readonly string[];
+    /** Alt text for the hero visual: a portrait built from blocks (the poster image). */
+    portraitAlt: string;
     ctas: {
       viewWork: string;
       downloadCv: string;
@@ -105,6 +107,7 @@ export const site: Site = {
       "Final-year IT undergraduate at the University of Kelaniya. I build full-stack systems with Java, Spring Boot and React, most recently as a Software Engineer Intern on aeroPORT, a Departure Control System used by Air Arabia.",
     statusPill: "Open to Associate Software Engineer roles",
     pipeline: ["sense", "analyze", "act"],
+    portraitAlt: "Manditha Madushanka, portrait built from blocks",
     ctas: {
       viewWork: "View my work",
       downloadCv: "Download CV",

@@ -1,0 +1,6 @@
+# Offline only (scripts/portrait/make_portrait.py). Installed in scripts/portrait/.venv, never shipped.
+rembg[cpu]==2.0.87
+onnxruntime==1.31.1
+pillow==13.0.0
+numpy==2.4.6
+scipy==1.17.1

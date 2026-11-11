@@ -40,3 +40,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# portrait (scripts/portrait): source photo, local Python venv, rembg model and experiment output.
+# The site data (src/components/three/portrait.json) and posters (public/images/hero) are committed.
+docs/portrait-source.*
+scripts/portrait/.venv/
+scripts/portrait/.models/
+scripts/portrait/out/
+scripts/portrait/__pycache__/

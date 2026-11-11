@@ -17,8 +17,8 @@ import { shapeSize } from "./build-poses";
  *   Contact) the box runs to the end of the section's content.
  */
 
-// Must match the poster (src/lib/cube.ts): one unit is a quarter of the hero visual's width.
-const VIEW_UNITS = 4;
+// One unit is a quarter of the hero visual's width (the cube shape's scale, src/lib/cube.ts, and the portrait's).
+export const VIEW_UNITS = 4;
 // The hero box reaches this far past the hero visual, so the cube's corners never clip.
 const HERO_MARGIN = 24;
 // Clear space between the box and text, cards or the previous section's content.

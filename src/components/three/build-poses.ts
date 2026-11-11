@@ -17,7 +17,19 @@ import { SWAY, liveBlock, liveExtremes, liveSway, type LiveBlock, type Sway } fr
  * 3D code.
  */
 
-export type Pose = { position: Vector3; quaternion: Quaternion; scale: Vector3; glow: number };
+/**
+ * One block: where it is, and its look (build-material.ts): glow, and for portrait blocks their shade, how
+ * far they wear the portrait's look and their opacity. Section shapes only ever set glow.
+ */
+export type Pose = {
+  position: Vector3;
+  quaternion: Quaternion;
+  scale: Vector3;
+  glow: number;
+  shade: number;
+  portrait: number;
+  opacity: number;
+};
 
 export type PoseInput = {
   /** Hero cube: spin and pointer tilt (radians) and separation (0 = assembled, 1 = fully apart). */
@@ -199,12 +211,15 @@ export function shapeSize(key: ShapeKey): { width: number; height: number } {
   return SHAPES[key];
 }
 
-export function createPoses(): Pose[] {
-  return Array.from({ length: BLOCKS }, () => ({
+export function createPoses(length = BLOCKS): Pose[] {
+  return Array.from({ length }, () => ({
     position: new Vector3(),
     quaternion: new Quaternion(),
     scale: new Vector3(1, 1, 1),
     glow: 0,
+    shade: 0,
+    portrait: 0,
+    opacity: 1,
   }));
 }
 
