@@ -10,14 +10,22 @@ const YAW = 0.6;
 
 export type Voxel = readonly [x: number, y: number, z: number];
 
+/**
+ * What a group does while its shape is formed and on screen (the motions live in the 3D chunk's
+ * build-live.ts): a request travelling the stack, lenses pulsing, a page turning, a tile lifting, the
+ * person waving, the envelope's flap lifting and its letter peeking out.
+ */
+export type LiveRole = "packet" | "lens" | "page" | "lift" | "wave" | "flap" | "letter";
+
 /** A set of voxels, optionally turned as one piece about a pivot (an open book's pages, a waving arm). */
 export type VoxelGroup = {
   voxels: readonly Voxel[];
   turn?: { pivot: Voxel; axis: "x" | "y" | "z"; angle: number };
-  /** The group that waves once when the shape completes (About). */
-  wave?: boolean;
   /** Offset the group hovers at while the shape assembles; it settles into place as the shape completes. */
   place?: Voxel;
+  /** Block size per axis as a share of the spacing, for this group only (a thin page, a recessed lens). */
+  block?: readonly [number, number, number];
+  live?: LiveRole;
 };
 
 export type BuildShape = {
@@ -37,6 +45,12 @@ export const BUILD_BLOCKS = 100;
 
 /** Largest extent of a shape in companion units (the hero cube is 2 units across). */
 export const SHAPE_SIZE = 2.4;
+
+/**
+ * Book: height (above the covers' plane at the spine) where the two page surfaces meet. The pages' top
+ * face is 1.45 above each cover's pivot (x = ±0.5) and each side is turned 0.38 rad.
+ */
+const PAGE_HINGE = 1.45 / Math.cos(0.38) - 0.5 * Math.tan(0.38);
 
 /** Every voxel in the inclusive box x0..x1 × y0..y1 × z0..z1. */
 function box(x0: number, x1: number, y0: number, y1: number, z0: number, z1: number): Voxel[] {
@@ -74,14 +88,19 @@ export const BUILD_SHAPES: Readonly<Record<ShapeKey, BuildShape>> = {
     step: 0.667,
   },
 
-  // Work: full stack. Database (two blocks thick), API and UI layers, with a gap between each.
+  // Work: full stack. Database (two blocks thick), API and UI layers, with a gap between each. A small
+  // request block waits in the UI layer's empty corner; it travels down to the database and back.
   stack: {
-    groups: [{ voxels: [...roundSlab(5, 0, 1), ...roundSlab(5, 4, 4), ...roundSlab(5, 7, 7)] }],
+    groups: [
+      { voxels: [...roundSlab(5, 0, 1), ...roundSlab(5, 4, 4), ...roundSlab(5, 7, 7)] },
+      { voxels: [[4, 7, 4]], block: [0.6, 0.6, 0.6], live: "packet" },
+    ],
     view: { pitch: 0.35, yaw: YAW },
   },
 
   // VR / AR: a headset seen three-quarter front. A visor two blocks deep (front at z = 1) with two lens
   // openings, rounded corners and a nose notch; a strap loop round the back and a strap over the top.
+  // Thin lenses sit at the back of the openings.
   headset: {
     groups: [
       {
@@ -93,6 +112,7 @@ export const BUILD_SHAPES: Readonly<Record<ShapeKey, BuildShape>> = {
           ...box(3, 4, 3, 3, -5, -1),
         ],
       },
+      { voxels: [...box(1, 2, 1, 2, 0, 0), ...box(5, 6, 1, 2, 0, 0)], block: [0.9, 0.9, 0.35], live: "lens" },
     ],
     view: { pitch: 0.2, yaw: 0.52 },
   },
@@ -119,7 +139,8 @@ export const BUILD_SHAPES: Readonly<Record<ShapeKey, BuildShape>> = {
   },
 
   // Writing: an open book lying flat. Each side is a cover with a slightly narrower block of pages on it,
-  // lifted either side of the spine.
+  // lifted either side of the spine. A thin sheet (four wide blocks) lies on the right-hand pages and turns
+  // over about the point where the two page surfaces meet (PAGE_HINGE), landing just inside the left ones.
   book: {
     groups: [
       { voxels: box(0, 0, 0, 0, -2, 2) },
@@ -131,15 +152,25 @@ export const BUILD_SHAPES: Readonly<Record<ShapeKey, BuildShape>> = {
         voxels: [...box(1, 5, 0, 0, -2, 2), ...box(1, 4, 1, 1, -2, 2)],
         turn: { pivot: [0.5, 0, 0], axis: "z", angle: 0.38 },
       },
+      {
+        voxels: [1, 2.95].flatMap((x): Voxel[] => [
+          [x, PAGE_HINGE + 0.12, -1.25],
+          [x, PAGE_HINGE + 0.12, 1.25],
+        ]),
+        turn: { pivot: [0, PAGE_HINGE, 0], axis: "z", angle: 0.38 },
+        block: [1.95, 0.22, 2.4],
+        live: "page",
+      },
     ],
     view: { pitch: 0.55, yaw: 0.2 },
   },
 
   // Skills: a 5×5 board of thin tiles tilted back. The last tile hovers above its empty slot and settles
-  // into it as the shape completes.
+  // into it as the shape completes; once formed, now and then one inner tile lifts out and settles back.
   tiles: {
     groups: [
-      { voxels: box(-2, 2, -2, 2, 0, 0).filter(([x, y]) => !(x === 1 && y === 2)) },
+      { voxels: box(-2, 2, -2, 2, 0, 0).filter(([x, y]) => (Math.abs(x) === 2 || Math.abs(y) === 2) && !(x === 1 && y === 2)) },
+      { voxels: box(-1, 1, -1, 1, 0, 0), live: "lift" },
       { voxels: [[1, 2, 0]], place: [0, 0, 1.6] },
     ],
     view: { pitch: -0.55, yaw: 0.3 },
@@ -147,7 +178,7 @@ export const BUILD_SHAPES: Readonly<Record<ShapeKey, BuildShape>> = {
     block: [0.83, 0.83, 0.17],
   },
 
-  // About: a small blocky person, right arm raised (it waves once).
+  // About: a small blocky person, right arm raised (it waves every few seconds).
   person: {
     groups: [
       {
@@ -160,26 +191,33 @@ export const BUILD_SHAPES: Readonly<Record<ShapeKey, BuildShape>> = {
           ...box(-1, 1, 8, 10, 0, 1),
         ],
       },
-      { voxels: box(2, 2, 6, 9, 0, 0), turn: { pivot: [2, 6, 0], axis: "z", angle: -0.25 }, wave: true },
+      { voxels: box(2, 2, 6, 9, 0, 0), turn: { pivot: [2, 6, 0], axis: "z", angle: -0.25 }, live: "wave" },
     ],
     view: { pitch: 0.25, yaw: 0.45 },
   },
 
   // Contact: an envelope. The closed flap is two diagonal lines of gaps from the top corners, meeting in the
-  // middle. Each step overlaps the next by one cell, so the lines read as unbroken.
+  // middle. Each step overlaps the next by one cell, so the lines read as unbroken. The flap is hinged along
+  // the top edge; a small letter waits behind it, hidden, and peeks out over the top when the flap lifts.
   envelope: {
     groups: [
       {
         voxels: art([
-          "..#######..",
-          "#..#####..#",
-          "##..###..##",
-          "###..#..###",
+          "...........",
+          "#.........#",
+          "##.......##",
+          "###.....###",
           "####...####",
           "###########",
           "###########",
         ]),
       },
+      {
+        voxels: art(["..#######..", "...#####...", "....###....", ".....#....."]).map(([x, y, z]): Voxel => [x, y + 3, z]),
+        turn: { pivot: [0, 6.45, 0.45], axis: "x", angle: 0 },
+        live: "flap",
+      },
+      { voxels: box(4, 6, 4, 5, -0.75, -0.75), block: [0.85, 0.85, 0.3], live: "letter" },
     ],
     view: { pitch: 0.12, yaw: 0.15 },
   },
