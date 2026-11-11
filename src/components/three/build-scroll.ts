@@ -5,12 +5,13 @@ import { shapeSize } from "./build-poses";
 /*
  * "The Build": where each shape forms, and how far the page has scrolled along the path between them.
  * Every section (main section[id], in DOM order, mapped in src/lib/build-sections.ts) gets a free box:
- * the empty space right of its heading and intro, above its cards. As a box scrolls in, blocks stream
- * down into it and assemble its shape; the shape holds while the heading is in view; then its blocks
- * stream down out of the box as it scrolls away, and the next box takes them in. The canvas is only ever
- * drawn inside a stop's band (from its free box to the viewport's right edge, between the box's top and
- * bottom), so it can never sit over text or a card. Everything is measured from the DOM, so it adapts
- * when content changes. Only imported by the lazy 3D chunk.
+ * the empty space right of its heading and intro, above its cards. As a box scrolls in, the build beam
+ * rises through it and prints its shape layer by layer; the shape holds while the heading is in view; then
+ * the beam falls through it and dissolves it as it scrolls away, and the next box prints the next. The
+ * header mark docks each shape as its beam starts (marks, dockAt), and holds it in between. The canvas is
+ * only ever drawn inside a stop's band (from its free box to the viewport's right edge, between the box's
+ * top and bottom), so it can never sit over text or a card. Everything is measured from the DOM, so it
+ * adapts when content changes. Only imported by the lazy 3D chunk.
  *
  * - Text beside a heading that the box must stay clear of carries data-build-clear.
  * - A section's first card block carries data-build-end; the box stops above it. Without one (About,
@@ -31,7 +32,7 @@ const DOCK_SCALE = 0.8;
 const MIN_FIT = 0.36;
 
 // Scroll knots, as where a stop's centre sits in the viewport (share of its height from the top): the
-// blocks stream in and assemble over a long stretch, the shape holds, then streams out as it leaves.
+// beam prints the shape over a long stretch, the shape holds, then the beam dissolves it as it leaves.
 const ENTER_FROM = 0.98;
 const FORMED_FROM = 0.55;
 const EXIT_FROM = 0.15;
@@ -40,6 +41,9 @@ const EXIT_TO = -0.02;
 // may leave as soon as you scroll); and the next may finish forming late, but by the time it's here.
 const EXIT_EARLIEST = 0.3;
 const FORMED_LATEST = 0.35;
+// The header mark (the shapes' dock) switches to a section's shape this far into its stop's enter, as the
+// beam starts printing it.
+const DOCK_AT = 0.15;
 
 export type Rect = { left: number; top: number; right: number; bottom: number };
 
@@ -57,13 +61,20 @@ export type Stop = {
   scale: number;
   /** Where the canvas may draw while this stop shows: the box's band, out to the viewport's edge. */
   safe: Rect;
-  /** Scroll positions: blocks stream in from enter[0] to enter[1], and out from exit[0] to exit[1]. */
+  /** The build beam's ends: across the free box, inside its padding, document px. */
+  beam: { left: number; right: number };
+  /** Scroll positions: the beam prints it from enter[0] to enter[1], and dissolves it from exit[0] to exit[1]. */
   enter: [number, number];
   exit: [number, number];
 };
 
+/** From scroll position `at` on, the header mark shows `shape`. */
+export type DockMark = { shape: ShapeKey; at: number };
+
 export type BuildMap = {
   stops: Stop[];
+  /** Every mapped section, in page order, including those too tight for a stop. */
+  marks: DockMark[];
   /** Px per unit, matching the hero cube. */
   zoom: number;
   /** Size of the canvas inside the clipped box: the largest safe area, so moving never reallocates it. */
@@ -118,8 +129,8 @@ function shift(range: [number, number], by: number) {
 }
 
 /**
- * Settles the stops' scroll knots. There is one set of blocks, so a shape has streamed out before the
- * next streams in. When sections sit close: first the shape leaves earlier (down to EXIT_EARLIEST; the
+ * Settles the stops' scroll knots. There is one set of blocks, so a shape has dissolved before the
+ * next prints. When sections sit close: first the shape leaves earlier (down to EXIT_EARLIEST; the
  * hero from the top of the page), then the next one forms later (up to FORMED_LATEST), each keeping its
  * full, unhurried length; only if that still isn't enough do the two share the scroll in proportion. The
  * last shape stays, and nothing runs backwards.
@@ -179,6 +190,8 @@ export function measureBuild(hero: HTMLElement): BuildMap {
   const columnRight = heroRect.right;
 
   const stops: Stop[] = [];
+  // Each section's mark: its stop's enter, settled below, or (without a stop) where one would start.
+  const docks: { shape: ShapeKey; stop?: Stop; at: number }[] = [];
   let previous: HTMLElement | null = null;
   document.querySelectorAll<HTMLElement>("main section[id]").forEach((section) => {
     const shape = SHAPE_BY_SECTION[section.id];
@@ -194,6 +207,7 @@ export function measureBuild(hero: HTMLElement): BuildMap {
       const height = hero.offsetHeight + 2 * HERO_MARGIN;
       const y = top + height / 2;
       const exitFrom = Math.max(0, y - EXIT_FROM * viewportHeight);
+      docks.push({ shape, at: -Infinity });
       stops.push({
         shape,
         left,
@@ -204,6 +218,7 @@ export function measureBuild(hero: HTMLElement): BuildMap {
         y,
         scale: 1,
         safe: { left, top, right: viewWidth, bottom: top + height },
+        beam: { left: left + PAD, right: left + width - PAD },
         enter: [-Infinity, -Infinity],
         exit: [exitFrom, exitFrom + (EXIT_FROM - EXIT_TO) * viewportHeight],
       });
@@ -221,10 +236,15 @@ export function measureBuild(hero: HTMLElement): BuildMap {
     // The shape (with room for its live actions) fits the box.
     const size = shapeSize(shape);
     const fit = Math.min((width - 2 * PAD) / (size.width * zoom), (height - 2 * PAD) / (size.height * zoom));
-    if (fit < MIN_FIT) return;
-
     const y = top + height / 2;
-    stops.push({
+    const enterFrom = y - ENTER_FROM * viewportHeight;
+    const enterTo = y - FORMED_FROM * viewportHeight;
+    if (fit < MIN_FIT) {
+      docks.push({ shape, at: enterFrom + DOCK_AT * (enterTo - enterFrom) });
+      return;
+    }
+
+    const stop: Stop = {
       shape,
       left,
       top,
@@ -234,19 +254,41 @@ export function measureBuild(hero: HTMLElement): BuildMap {
       y,
       scale: Math.min(DOCK_SCALE, fit),
       safe: { left, top, right: viewWidth, bottom },
-      enter: [y - ENTER_FROM * viewportHeight, y - FORMED_FROM * viewportHeight],
+      beam: { left: left + PAD, right: columnRight - PAD },
+      enter: [enterFrom, enterTo],
       exit: [y - EXIT_FROM * viewportHeight, y - EXIT_TO * viewportHeight],
-    });
+    };
+    stops.push(stop);
+    docks.push({ shape, stop, at: 0 });
   });
 
   fitKnots(stops, viewportHeight);
 
+  // Marks never run backwards, so the dock below only ever moves one way as you scroll.
+  const marks: DockMark[] = [];
+  let at = -Infinity;
+  for (const dock of docks) {
+    const enter = dock.stop?.enter;
+    at = Math.max(at, enter ? enter[0] + DOCK_AT * (enter[1] - enter[0]) : dock.at);
+    marks.push({ shape: dock.shape, at });
+  }
+
   return {
     stops,
+    marks,
     zoom,
     canvasWidth: Math.ceil(Math.max(0, ...stops.map((stop) => stop.safe.right - stop.safe.left))),
     canvasHeight: Math.ceil(Math.max(0, ...stops.map((stop) => stop.height))),
   };
+}
+
+/** The shape the header mark shows at `scrollY`: the last section whose mark the page has passed. */
+export function dockAt(scrollY: number, { marks }: BuildMap): ShapeKey | null {
+  let shape: ShapeKey | null = null;
+  for (const mark of marks) {
+    if (scrollY >= mark.at) shape = mark.shape;
+  }
+  return shape;
 }
 
 /** How far scrollY is through from..to, 0..1. An empty or unbounded range is a step at its end. */
@@ -263,7 +305,7 @@ export const BETWEEN = 3;
 
 /**
  * Continuous progress along the path. The whole part is the stop; the fraction is in quarters:
- * entering (blocks stream in and assemble), formed, exiting (they stream out), then between this stop
+ * entering (the beam prints it), formed, exiting (the beam dissolves it), then between this stop
  * and the next, where nothing shows.
  */
 export function buildProgress(scrollY: number, { stops }: BuildMap): number {

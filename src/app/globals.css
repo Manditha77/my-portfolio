@@ -198,6 +198,44 @@
     opacity 300ms ease-out;
 }
 
+/* The mini build beam: rides the new shape's reveal edge up in the same six steps, then fades. Remounted
+   on each switch, so it plays once per switch; never with motion off. */
+.header-mark-beam {
+  display: none;
+}
+
+:root[data-motion="on"] .header-mark-beam {
+  display: block;
+  position: absolute;
+  inset: auto -2px 0;
+  height: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+  pointer-events: none;
+  animation:
+    mark-beam-rise 360ms steps(6, end) both,
+    mark-beam-fade 420ms linear both;
+}
+
+@keyframes mark-beam-rise {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-24px);
+  }
+}
+
+@keyframes mark-beam-fade {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* ---------- VR / AR "mode shift" ---------- */
 
 /* A faint grid with scanlines behind the section, fading out at the edges. Static: nothing loops.

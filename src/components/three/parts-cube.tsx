@@ -1,20 +1,57 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { MathUtils, Matrix4, Vector3, type InstancedMesh, type ShaderMaterial } from "three";
-import { createBlockUniforms, fragmentShader, readTokenColors, vertexShader, type BlockUniforms } from "./build-material";
-import { BLOCK, BLOCKS, REST, createPoses, fillShape, placePoses, streamPoses, type Pose, type PoseInput } from "./build-poses";
-import { BETWEEN, ENTERING, EXITING, FORMED, buildProgress, measureBuild, type BuildMap, type Rect } from "./build-scroll";
+import { MathUtils, Matrix4, Vector3, type InstancedMesh, type Mesh, type ShaderMaterial } from "three";
+import { setBuildDock } from "@/lib/build-dock";
+import {
+  beamFragmentShader,
+  beamVertexShader,
+  createBeamUniforms,
+  createBlockUniforms,
+  fragmentShader,
+  readTokenColors,
+  vertexShader,
+  type BeamUniforms,
+  type BlockUniforms,
+} from "./build-material";
+import {
+  BLOCK,
+  BLOCKS,
+  INTRO,
+  REST,
+  beamHalf,
+  createPoses,
+  fillShape,
+  introBeam,
+  introPoses,
+  placePoses,
+  printPoses,
+  type Pose,
+  type PoseInput,
+} from "./build-poses";
+import {
+  BETWEEN,
+  ENTERING,
+  EXITING,
+  FORMED,
+  buildProgress,
+  dockAt,
+  measureBuild,
+  type BuildMap,
+  type Rect,
+} from "./build-scroll";
 
 /*
  * "The Build": the hero's "systems from parts" cube as one continuous scroll companion. 100 instanced
- * blocks in one draw call with no textures. Each home section has a free box beside its heading
- * (build-scroll.ts). As a box scrolls in, the blocks stream down into it and assemble that section's
- * shape (build-shapes.ts), bottom first; the shape holds while the heading is in view, then its blocks
- * stream down out of the box as it scrolls away, and the next box takes them in. Scrubbed by scroll and
- * reversible. While a shape is formed and on screen it plays its live actions (build-live.ts). In the
- * hero the cube turns slowly, separates under the pointer, and gently separates and reassembles after a
- * few seconds without interaction.
+ * blocks in one draw call with no textures, plus the build beam (one thin plane). On load the cube is
+ * created once: its blocks fly in from deep in the background and land as the beam rises through it.
+ * Each home section has a free box beside its heading (build-scroll.ts). As a box scrolls in, the beam
+ * rises through it and prints that section's shape (build-shapes.ts) layer by layer; the shape holds
+ * while the heading is in view, then the beam falls through it and dissolves it as it scrolls away, and
+ * the next box prints the next. Scrubbed by scroll and reversible. The header mark docks each shape as
+ * its beam starts (build-dock.ts). While a shape is formed and on screen it plays its live actions
+ * (build-live.ts). In the hero the cube turns slowly, separates under the pointer, and gently separates
+ * and reassembles after a few seconds without interaction.
  * The canvas sits in the document behind all content, so it scrolls with the page natively. Its clipped
  * box follows the blocks, cut to the stop's band, so it can never draw over text or a card, even on a
  * frame that lags the scroll.
@@ -65,9 +102,23 @@ const TILT_SETTLED = 1e-3;
 // Around the blocks' bounds, for their antialiased edges, px.
 const BOX_PAD = 2;
 
+// The build beam's height on screen (its core is ~2px; the rest is its soft halo), px.
+const BEAM_PX = 24;
+// The beam fades in and out over this share of a print or dissolve.
+const BEAM_FADE = 0.08;
+// Intro: blocks wait within this share of the hero box's half-size, clear of its edges.
+const INTRO_REACH = 0.75;
+// After the intro the cube's turn eases up to speed (~95% in 1s).
+const SPIN_EASE = 3;
+
+// The hero creation plays once per page load: not again when the companion remounts (Motion toggled,
+// or back on the home page after a case study).
+let introPlayed = false;
+
 // Reused every frame (there is only ever one companion), so a frame allocates nothing.
 const scratch = {
   placed: createPoses(),
+  intro: createPoses(),
   out: createPoses(),
   cube: { ...REST } as PoseInput,
   shape: { ...REST } as PoseInput,
@@ -89,14 +140,21 @@ function isEasing(m: MotionState, separation: number, tiltX: number, tiltY: numb
 }
 
 /**
- * The blocks' bounds in document px (whole pixels, padded), cut to `safe` and to the canvas size.
- * Empty when nothing is left: then the box has no size and draws nothing.
+ * The blocks' bounds in document px (whole pixels, padded), with `extra` (the beam) if any, cut to `safe`
+ * and to the canvas size. Empty when nothing is left: then the box has no size and draws nothing.
  */
-function clipBox(poses: Pose[], zoom: number, safe: Rect, maxWidth: number, maxHeight: number): Rect {
-  let left = Infinity;
-  let right = -Infinity;
-  let top = Infinity;
-  let bottom = -Infinity;
+function clipBox(
+  poses: Pose[],
+  zoom: number,
+  safe: Rect,
+  maxWidth: number,
+  maxHeight: number,
+  extra: Rect | null,
+): Rect {
+  let left = extra?.left ?? Infinity;
+  let right = extra?.right ?? -Infinity;
+  let top = extra?.top ?? Infinity;
+  let bottom = extra?.bottom ?? -Infinity;
   for (const pose of poses) {
     const radius = 0.5 * BLOCK * pose.scale.length();
     if (radius === 0) continue;
@@ -118,10 +176,12 @@ function clipBox(poses: Pose[], zoom: number, safe: Rect, maxWidth: number, maxH
   return clip.right > clip.left && clip.bottom > clip.top ? clip : EMPTY;
 }
 
-/** Moves the clipped box onto `clip` (document px). */
+/**
+ * Moves the clipped box onto `clip` (document px). By transform, not left/top: a moving box would
+ * otherwise count as a layout shift (CLS) while the blocks fly in or the beam prints.
+ */
 function placeBox(box: HTMLElement, clip: Rect) {
-  box.style.left = `${clip.left}px`;
-  box.style.top = `${clip.top}px`;
+  box.style.transform = `translate(${clip.left}px, ${clip.top}px)`;
   box.style.width = `${clip.right - clip.left}px`;
   box.style.height = `${clip.bottom - clip.top}px`;
 }
@@ -142,6 +202,7 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
   const visibleRef = useRef(visible);
   const timer = useRef<number | undefined>(undefined);
   const meshRef = useRef<InstancedMesh>(null);
+  const beamRef = useRef<Mesh>(null);
   const themeDirty = useRef(true);
   const motion = useRef({
     separation: 0,
@@ -158,8 +219,15 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     liveStop: -1,
     /** Off screen with something to play: the next scroll asks for a frame even if the path didn't move. */
     sleeping: false,
+    /** Hero creation: -1 until the first frame decides, then seconds in, Infinity once done or skipped. */
+    intro: -1,
+    /** performance.now() when the intro ended (the idle breathing waits from here too). */
+    introEnded: 0,
+    /** The cube's turn speed, as a share of SPIN_SPEED: held at 0 through the intro, then eased up. */
+    spinRate: 1,
   });
   const [uniforms] = useState(createBlockUniforms);
+  const [beamUniforms] = useState(() => createBeamUniforms(uniforms));
   const [glowArray] = useState(() => new Float32Array(BLOCKS));
 
   // Recolour when the theme toggle (or the OS theme) changes data-theme on <html>.
@@ -192,6 +260,7 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
       frame = requestAnimationFrame(() => {
         frame = 0;
         const map = mapRef.current;
+        if (map) setBuildDock(dockAt(window.scrollY, map));
         const target = map ? buildProgress(window.scrollY, map) : -1;
         if (target === last && !motion.current.sleeping) return;
         last = target;
@@ -214,9 +283,10 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
 
   useFrame((state, rawDelta) => {
     const mesh = meshRef.current;
+    const beamMesh = beamRef.current;
     const box = boxRef.current;
     const map = mapRef.current;
-    if (!mesh || !box || !map || map.stops.length === 0) return;
+    if (!mesh || !beamMesh || !box || !map || map.stops.length === 0) return;
     const { stops, zoom } = map;
 
     // Orthographic zoom is px per world unit: the hero cube keeps the poster's size.
@@ -247,12 +317,32 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const stop = stops[index];
     const hero = index === 0;
 
-    // Hero only: pointer separation and tilt, and the idle breathing, fade out as it streams away.
+    // The hero creation: decided on the first frame, and played only if the hero cube is formed and on
+    // screen then. It runs on its own clock, so scrolling away mid-way dissolves it like any other shape.
+    if (m.intro < 0) {
+      // Fully formed: the hero may already be "exiting" at scroll 0, but not yet any part of the way.
+      const heroFormed = hero && (phase === FORMED || (phase === EXITING && k <= 0));
+      const heroOnScreen = stop.top < window.scrollY + window.innerHeight && stop.top + stop.height > window.scrollY;
+      m.intro = !introPlayed && heroFormed && heroOnScreen ? 0 : Infinity;
+      if (m.intro === 0) m.spinRate = 0;
+      introPlayed = true;
+    } else if (m.intro < INTRO.end) {
+      m.intro += delta;
+      if (m.intro >= INTRO.end) {
+        m.intro = Infinity;
+        m.introEnded = now;
+      }
+    }
+    const introRunning = Number.isFinite(m.intro);
+
+    // Hero only: pointer separation and tilt, and the idle breathing, fade out as it dissolves; none of
+    // them during the intro.
     let heroWeight = 0;
     if (hero && phase < EXITING) heroWeight = 1;
     else if (hero && phase === EXITING) heroWeight = 1 - k;
+    if (introRunning) heroWeight = 0;
     const moving = pointer.inside && now - pointer.lastMove < SETTLE_AFTER_MS;
-    const idleFor = now - pointer.lastActivity - IDLE_AFTER_MS;
+    const idleFor = now - Math.max(pointer.lastActivity, m.introEnded) - IDLE_AFTER_MS;
     const breathing = heroWeight === 1 && !moving && idleFor > 0;
 
     let separation = moving ? heroWeight : 0;
@@ -263,9 +353,10 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     m.separation = MathUtils.damp(m.separation, separation, breathing ? IDLE_EASE : EASE, delta);
     m.tiltX = MathUtils.damp(m.tiltX, tiltXTarget, EASE, delta);
     m.tiltY = MathUtils.damp(m.tiltY, tiltYTarget, EASE, delta);
-    // The hero cube turns until it has streamed away.
+    // The hero cube turns until it has dissolved; after the intro it eases up to speed.
     const cubeShows = hero && phase !== BETWEEN;
-    if (cubeShows) m.spin += SPIN_SPEED * delta;
+    m.spinRate = introRunning ? 0 : MathUtils.damp(m.spinRate, 1, SPIN_EASE, delta);
+    if (cubeShows) m.spin += SPIN_SPEED * m.spinRate * delta;
 
     // Live actions: on their own clock from the moment a shape forms, easing in and out.
     const formed = !hero && phase === FORMED;
@@ -291,24 +382,50 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     // Skills' last tile drops into its slot over the end of the enter.
     shape.settle = phase === ENTERING ? MathUtils.smoothstep(k, 0.75, 1) : 1;
 
-    // The shape in its box (page units: document px / zoom, +y up); entering or exiting, its blocks
-    // stream down into or out of the box's band, staggered. Between stops nothing shows.
+    // The shape in its box (page units: document px / zoom, +y up); entering, the beam rises through it
+    // and prints it, and exiting, the beam falls through it and dissolves it. Between stops nothing shows.
     let poses: Pose[] | null = null;
+    let beam: { y: number; opacity: number; trail: number } | null = null;
     if (phase !== BETWEEN) {
       const key = hero ? "cube" : stop.shape;
+      const centreY = -stop.y / zoom;
       fillShape(key, scratch.placed, hero ? cube : shape);
-      placePoses(scratch.placed, stop.x / zoom, -stop.y / zoom, stop.scale);
+      placePoses(scratch.placed, stop.x / zoom, centreY, stop.scale);
       poses = scratch.placed;
-      if (phase === ENTERING || phase === EXITING) {
-        const top = -stop.safe.top / zoom;
-        const bottom = -stop.safe.bottom / zoom;
-        streamPoses(key, scratch.placed, scratch.out, k, phase === ENTERING ? "in" : "out", top, bottom);
-        poses = scratch.out;
+      const half = beamHalf(key) * stop.scale;
+      const low = centreY - half;
+      const high = centreY + half;
+      if (introRunning && hero) {
+        introPoses(scratch.placed, scratch.intro, m.intro, low, high, {
+          x: stop.x / zoom,
+          y: centreY,
+          halfWidth: (INTRO_REACH * stop.width) / 2 / zoom,
+          halfHeight: (INTRO_REACH * stop.height) / 2 / zoom,
+        });
+        poses = scratch.intro;
+        beam = { ...introBeam(m.intro, low, high), trail: 1 };
       }
+      if (phase === ENTERING || phase === EXITING) {
+        const rising = phase === ENTERING;
+        const along = MathUtils.smoothstep(k, 0, 1);
+        const y = rising ? MathUtils.lerp(low, high, along) : MathUtils.lerp(high, low, along);
+        printPoses(poses, scratch.out, y, rising ? "in" : "out");
+        poses = scratch.out;
+        const opacity = MathUtils.smoothstep(k, 0, BEAM_FADE) * (1 - MathUtils.smoothstep(k, 1 - BEAM_FADE, 1));
+        // The intro's beam shows until this one has faded in.
+        if (opacity > 0 || !beam) beam = { y, opacity, trail: rising ? 1 : -1 };
+      }
+      if (beam && beam.opacity <= 0) beam = null;
     }
 
-    // The clipped box follows the blocks, inside the stop's band.
-    const clip = poses ? clipBox(poses, zoom, stop.safe, state.size.width, state.size.height) : EMPTY;
+    // The clipped box follows the blocks (and the beam, across the free box), inside the stop's band.
+    const beamRect = beam && {
+      left: stop.beam.left,
+      right: stop.beam.right,
+      top: -beam.y * zoom - BEAM_PX / 2,
+      bottom: -beam.y * zoom + BEAM_PX / 2,
+    };
+    const clip = poses ? clipBox(poses, zoom, stop.safe, state.size.width, state.size.height, beamRect) : EMPTY;
     if (!sameRect(clip, m.box)) {
       m.box = clip;
       placeBox(box, clip);
@@ -329,6 +446,15 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
       mesh.instanceMatrix.needsUpdate = true;
       glow.needsUpdate = true;
     }
+    beamMesh.visible = beam !== null && clip !== EMPTY;
+    if (beam && beamMesh.visible) {
+      const width = (stop.beam.right - stop.beam.left) / zoom;
+      beamMesh.position.set((stop.beam.left + stop.beam.right) / 2 / zoom - originX, beam.y - originY, 5);
+      beamMesh.scale.set(width, BEAM_PX / zoom, 1);
+      const beamUniforms = (beamMesh.material as ShaderMaterial).uniforms as BeamUniforms;
+      beamUniforms.uOpacity.value = beam.opacity;
+      beamUniforms.uTrail.value = beam.trail;
+    }
 
     // Report ready once a real frame has been drawn.
     if (m.frames < 2 && ++m.frames === 2) onReady();
@@ -341,7 +467,7 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const looping = cubeShows || formed || m.live > 0;
     m.sleeping = false;
     window.clearTimeout(timer.current);
-    if (m.frames < 2 || m.progress !== target || isEasing(m, separation, tiltXTarget, tiltYTarget)) {
+    if (m.frames < 2 || introRunning || m.progress !== target || isEasing(m, separation, tiltXTarget, tiltYTarget)) {
       state.invalidate();
     } else if (looping && onScreen) {
       timer.current = window.setTimeout(() => {
@@ -353,12 +479,26 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, BLOCKS]} frustumCulled={false}>
-      <boxGeometry args={[BLOCK, BLOCK, BLOCK]}>
-        <instancedBufferAttribute attach="attributes-instanceGlow" args={[glowArray, 1]} />
-      </boxGeometry>
-      <shaderMaterial uniforms={uniforms} vertexShader={vertexShader} fragmentShader={fragmentShader} />
-    </instancedMesh>
+    <>
+      <instancedMesh ref={meshRef} args={[undefined, undefined, BLOCKS]} frustumCulled={false}>
+        <boxGeometry args={[BLOCK, BLOCK, BLOCK]}>
+          <instancedBufferAttribute attach="attributes-instanceGlow" args={[glowArray, 1]} />
+        </boxGeometry>
+        <shaderMaterial uniforms={uniforms} vertexShader={vertexShader} fragmentShader={fragmentShader} />
+      </instancedMesh>
+      {/* The build beam: drawn over the blocks, never into the depth buffer. */}
+      <mesh ref={beamRef} visible={false} frustumCulled={false} renderOrder={1}>
+        <planeGeometry args={[1, 1]} />
+        <shaderMaterial
+          uniforms={beamUniforms}
+          vertexShader={beamVertexShader}
+          fragmentShader={beamFragmentShader}
+          transparent
+          depthTest={false}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
   );
 }
 
@@ -385,7 +525,9 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
     const measure = () => {
       frame = 0;
       const map = measureBuild(hero);
-      mapRef.current = map;      const { canvasWidth: width, canvasHeight: height } = map;
+      mapRef.current = map;
+      setBuildDock(dockAt(window.scrollY, map));
+      const { canvasWidth: width, canvasHeight: height } = map;
       setCanvasSize((size) => (size?.width === width && size.height === height ? size : { width, height }));
       pointerRef.current.wake?.();
     };
@@ -401,6 +543,7 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
       observer.disconnect();
       window.removeEventListener("resize", schedule);
       cancelAnimationFrame(frame);
+      setBuildDock(null);
     };
   }, [heroRef, pointerRef]);
 

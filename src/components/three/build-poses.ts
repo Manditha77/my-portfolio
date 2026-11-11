@@ -11,8 +11,8 @@ import {
 import { SWAY, liveBlock, liveExtremes, liveSway, type LiveBlock, type Sway } from "./build-live";
 
 /*
- * "The Build": turns the voxel shapes (src/lib/build-shapes.ts) into one pose per block, and streams them
- * into and out of their box. Positions are in companion units, centred on the shape; scales multiply the
+ * "The Build": turns the voxel shapes (src/lib/build-shapes.ts) into one pose per block, prints them into
+ * their box with the build beam and dissolves them out of it, and flies the hero cube in. Positions are in companion units, centred on the shape; scales multiply the
  * 0.6 block geometry. placePoses then moves a set of poses to its spot on the page. Only imported by lazy
  * 3D code.
  */
@@ -68,6 +68,8 @@ type CompiledShape = {
   /** On-screen size, companion units (blocks, live actions and sway included). */
   width: number;
   height: number;
+  /** Largest block's half-diagonal, companion units. */
+  blockRadius: number;
 };
 
 type Bounds = { left: number; right: number; bottom: number; top: number };
@@ -93,7 +95,11 @@ function blockPoint(shape: Pick<CompiledShape, "groups">, block: CompiledBlock, 
  * On-screen box of a shape over a set of view rotations: every block settled, hovering (placed groups) and
  * at each live extreme, plus its half-diagonal; then the sway's bob above and below.
  */
-function measure(shape: Omit<CompiledShape, "centre" | "width" | "height">, views: Quaternion[], withLive: boolean): Bounds {
+function measure(
+  shape: Omit<CompiledShape, "centre" | "width" | "height" | "blockRadius">,
+  views: Quaternion[],
+  withLive: boolean,
+): Bounds {
   const bounds: Bounds = { left: Infinity, right: -Infinity, bottom: Infinity, top: -Infinity };
   const zero = new Vector3();
   for (const view of views) {
@@ -187,6 +193,7 @@ function compile(key: ShapeKey): CompiledShape {
     centre: new Vector3((left + right) / 2, (bottom + top) / 2, 0),
     width: right - left,
     height: top - bottom,
+    blockRadius: Math.max(...groups.map((group) => 0.5 * BLOCK * group.scale.length())),
   };
 }
 
@@ -266,44 +273,159 @@ export function placePoses(poses: Pose[], x: number, y: number, size: number) {
   }
 }
 
-/** Blocks start their move apart (spread over STAGGER of the transition), so a shape streams in parts. */
-const STAGGER = 0.5;
-/** A block's size at the far end of its trip, as a share of its size in the shape. */
-const STREAM_SCALE = 0.85;
+/*
+ * The build beam: a thin accent line that prints a shape layer by layer as it rises through it, and
+ * dissolves it top down as it falls. A block materialises over PRINT_BAND of its own size behind the line
+ * (growing from nothing, settling a little from above), and glows where the line touches it.
+ */
+
+/** How far past a block the beam travels while it materialises, in block diameters. */
+const PRINT_BAND = 1.2;
+/** How far the beam's glow trails on a block it has passed, in block diameters. */
+const FLASH_BAND = 2.5;
+/** Accent share of a block the beam is touching. */
+const FLASH_GLOW = 0.7;
+/** Printed blocks settle down from this share of their radius above their slot. */
+const SETTLE_DROP = 0.6;
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 const easeIn = (t: number) => t ** 3;
 
 /**
- * Writes `placed` (a shape's poses, already on the page) streaming into `out`. "in": at `t` = 0 every block
- * waits just above `top`, and at 1 the shape is assembled; "out": at 0 it is assembled, and at 1 every
- * block has fallen just below `bottom`. Each block travels only as far as it needs to clear that edge, so it
- * is in view for its whole trip. Bottom blocks go first both ways (assembly order), with a soft landing in
- * and a gentle start out. `top` and `bottom` are the band's edges in page units (+y up).
+ * Where a shape's beam starts and ends, as a half-height around its centre (companion units; multiply by
+ * the stop's scale): the shape's on-screen extent plus one block, so the line starts below every block
+ * and has finished printing the top one when it stops.
  */
-export function streamPoses(
-  key: ShapeKey,
-  placed: Pose[],
-  out: Pose[],
-  t: number,
-  direction: "in" | "out",
-  top: number,
-  bottom: number,
-) {
-  const count = Math.max(1, SHAPES[key].blocks.length);
+export function beamHalf(key: ShapeKey): number {
+  const shape = SHAPES[key];
+  return shape.height / 2 + shape.blockRadius;
+}
+
+/**
+ * Writes `placed` (poses on the page) printed or dissolved by a beam at `beam` (page units, +y up) into
+ * `out`. "in": the beam rises, and blocks below it have materialised; "out": it falls, and blocks above it
+ * have dissolved. Reversible: it only depends on where the beam is.
+ */
+export function printPoses(placed: Pose[], out: Pose[], beam: number, direction: "in" | "out") {
   for (let i = 0; i < BLOCKS; i++) {
     const from = placed[i];
     const to = out[i];
-    const start = count > 1 ? (STAGGER * Math.min(i, count - 1)) / (count - 1) : 0;
-    const local = MathUtils.clamp((t - start) / (1 - STAGGER), 0, 1);
-    // 0 = in the shape, 1 = just past the band's edge.
-    const away = direction === "in" ? 1 - easeOut(local) : easeIn(local);
-    const radius = 0.5 * BLOCK * from.scale.length();
-    const edge = direction === "in" ? top + radius : bottom - radius;
     to.position.copy(from.position);
-    to.position.y = MathUtils.lerp(from.position.y, edge, away);
     to.quaternion.copy(from.quaternion);
-    to.scale.copy(from.scale).multiplyScalar(MathUtils.lerp(1, STREAM_SCALE, away));
-    to.glow = from.glow * (1 - away);
+    to.glow = from.glow;
+    const radius = 0.5 * BLOCK * from.scale.length();
+    if (radius === 0) {
+      to.scale.setScalar(0);
+      continue;
+    }
+    // How far the beam has gone past the block's leading edge.
+    const past = direction === "in" ? beam - (from.position.y - radius) : from.position.y + radius - beam;
+    const amount = MathUtils.clamp(past / (2 * radius * PRINT_BAND), 0, 1);
+    const shown = direction === "in" ? easeOut(amount) : 1 - easeIn(amount);
+    to.position.y += (1 - shown) * SETTLE_DROP * radius;
+    to.scale.copy(from.scale).multiplyScalar(shown);
+    if (past > 0) to.glow = Math.max(to.glow, FLASH_GLOW * Math.max(0, 1 - past / (2 * radius * FLASH_BAND)));
+  }
+}
+
+/*
+ * The hero creation (once per page load): the cube's blocks fly in from deep in the background, small and
+ * scattered, and land as a rising beam passes them, so the cube is printed layer by layer. Seconds.
+ */
+export const INTRO = {
+  /** The blocks fade in where they wait. */
+  appear: 0.35,
+  /** Each block's flight, ending as the beam passes it. */
+  flight: 0.9,
+  /** The beam rises through the cube. */
+  beamFrom: 0.55,
+  beamTo: 1.75,
+  /** The landing glow fades. */
+  flash: 0.35,
+  end: 2.1,
+} as const;
+
+type Scatter = { x: number; y: number; z: number; size: number; axis: Vector3; angle: number };
+
+/** Seeded pseudo-random numbers (mulberry32), so every load scatters the blocks the same way. */
+function random(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Where each block waits: x and y as shares of the box's half-size (farther blocks sit nearer its centre,
+ * as with a vanishing point), z behind the shape, its size as a share of its size in the shape, and a small
+ * tumble that untwists as it lands.
+ */
+const SCATTER: Scatter[] = (() => {
+  const next = random(7);
+  return Array.from({ length: BLOCKS }, () => {
+    const depth = next();
+    const direction = next() * 2 * Math.PI;
+    const reach = Math.sqrt(next()) * (1 - 0.55 * depth);
+    return {
+      x: Math.cos(direction) * reach,
+      y: Math.sin(direction) * reach,
+      z: -2 - 4 * depth,
+      size: 0.2 - 0.12 * depth,
+      axis: new Vector3(next() - 0.5, next() - 0.5, next() - 0.5).normalize(),
+      angle: next() - 0.5,
+    };
+  });
+})();
+
+const tumbleQ = new Quaternion();
+
+/** The intro beam at `time`: its height between `low` and `high` (page units), and its opacity. */
+export function introBeam(time: number, low: number, high: number): { y: number; opacity: number } {
+  const t = MathUtils.clamp((time - INTRO.beamFrom) / (INTRO.beamTo - INTRO.beamFrom), 0, 1);
+  const opacity =
+    MathUtils.smoothstep(time, INTRO.beamFrom - 0.15, INTRO.beamFrom + 0.05) *
+    (1 - MathUtils.smoothstep(time, INTRO.beamTo, INTRO.beamTo + 0.25));
+  return { y: MathUtils.lerp(low, high, t), opacity };
+}
+
+/**
+ * Writes `placed` (the hero cube's poses on the page) as they are `time` seconds into the intro into
+ * `out`. Blocks wait scattered inside the box (centre x, y and half-size in page units), then each flies
+ * to its slot, landing as the beam (rising from `low` to `high`) passes its centre.
+ */
+export function introPoses(
+  placed: Pose[],
+  out: Pose[],
+  time: number,
+  low: number,
+  high: number,
+  box: { x: number; y: number; halfWidth: number; halfHeight: number },
+) {
+  const appear = MathUtils.smoothstep(time, 0, INTRO.appear);
+  for (let i = 0; i < BLOCKS; i++) {
+    const to = placed[i];
+    const pose = out[i];
+    const seed = SCATTER[i];
+    const across = MathUtils.clamp((to.position.y - low) / (high - low), 0, 1);
+    const arrive = MathUtils.lerp(INTRO.beamFrom, INTRO.beamTo, across);
+    const start = Math.max(0, arrive - INTRO.flight);
+    // As if coming from far away: it stays small and distant for most of its flight and closes in as the
+    // beam reaches it (size grows as 1 / depth), easing out so it still lands softly.
+    const flown = 1 - (1 - MathUtils.clamp((time - start) / (arrive - start), 0, 1)) ** 2;
+    const near = seed.size / (seed.size + (1 - seed.size) * (1 - flown));
+    const e = (near - seed.size) / (1 - seed.size);
+    pose.position.set(
+      MathUtils.lerp(box.x + seed.x * box.halfWidth, to.position.x, e),
+      MathUtils.lerp(box.y + seed.y * box.halfHeight, to.position.y, e),
+      MathUtils.lerp(seed.z, to.position.z, e),
+    );
+    tumbleQ.setFromAxisAngle(seed.axis, seed.angle * (1 - e));
+    pose.quaternion.multiplyQuaternions(tumbleQ, to.quaternion);
+    pose.scale.copy(to.scale).multiplyScalar(MathUtils.lerp(seed.size * appear, 1, e));
+    const since = time - arrive;
+    pose.glow = since >= 0 ? Math.max(to.glow, FLASH_GLOW * Math.max(0, 1 - since / INTRO.flash)) : to.glow;
   }
 }
