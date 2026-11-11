@@ -8,14 +8,20 @@
 /** The hero poster's yaw (src/lib/cube.ts). */
 const YAW = 0.6;
 
+/** Viewing angle when a shape doesn't set one: the hero poster's exact orientation (src/lib/cube.ts). */
+export const DEFAULT_VIEW = { pitch: 0.45, yaw: YAW, roll: 0 } as const;
+
+/** Block size per axis as a share of the voxel spacing, when neither the shape nor its group sets one. */
+export const DEFAULT_BLOCK = [0.9, 0.9, 0.9] as const;
+
 export type Voxel = readonly [x: number, y: number, z: number];
 
 /**
  * What a group does while its shape is formed and on screen (the motions live in the 3D chunk's
- * build-live.ts): a request travelling the stack, lenses pulsing, a page turning, a tile lifting, the
- * person waving, the envelope's flap lifting and its letter peeking out.
+ * build-live.ts): a request travelling the stack, lenses pulsing, a screen lit, a page turning, a tile
+ * lifting, the person waving, the envelope's flap lifting and its letter peeking out.
  */
-export type LiveRole = "packet" | "lens" | "page" | "lift" | "wave" | "flap" | "letter";
+export type LiveRole = "packet" | "lens" | "screen" | "page" | "lift" | "wave" | "flap" | "letter";
 
 /** A set of voxels, optionally turned as one piece about a pivot (an open book's pages, a waving arm). */
 export type VoxelGroup = {
@@ -178,7 +184,9 @@ export const BUILD_SHAPES: Readonly<Record<ShapeKey, BuildShape>> = {
     block: [0.83, 0.83, 0.17],
   },
 
-  // About: a small blocky person, right arm raised (it waves every few seconds).
+  // About: a small blocky person with a VR headset pushed up on its head, holding an open laptop in front in
+  // the left hand while the right arm waves every few seconds. The slim visor sits on the forehead, tipped up
+  // about the top of the head, with straps at the ears; its lenses pulse and the laptop's screen is lit.
   person: {
     groups: [
       {
@@ -186,12 +194,31 @@ export const BUILD_SHAPES: Readonly<Record<ShapeKey, BuildShape>> = {
           ...box(-1, -1, 0, 2, 0, 1),
           ...box(1, 1, 0, 2, 0, 1),
           ...box(-1, 1, 3, 6, 0, 1),
-          ...box(-2, -2, 3, 6, 0, 0),
+          // Left arm: the upper arm, then the forearm reaching forward to the laptop's side.
+          ...box(-2, -2, 5, 6, 0, 0),
+          ...box(-2, -2, 4, 4, 0, 2),
           ...box(0, 0, 7, 7, 0, 1),
           ...box(-1, 1, 8, 10, 0, 1),
+          [-2, 10, 1],
+          [2, 10, 1],
         ],
       },
       { voxels: box(2, 2, 6, 9, 0, 0), turn: { pivot: [2, 6, 0], axis: "z", angle: -0.25 }, live: "wave" },
+      // Headset: the visor, then its lenses on the front face.
+      { voxels: box(-1.5, 1.5, 10.6, 10.6, 1.6, 1.6), turn: { pivot: [0, 10.45, 1], axis: "x", angle: -0.55 } },
+      {
+        voxels: [
+          [-0.75, 10.6, 2.1],
+          [0.75, 10.6, 2.1],
+        ],
+        turn: { pivot: [0, 10.45, 1], axis: "x", angle: -0.55 },
+        block: [1.2, 0.7, 0.2],
+        live: "lens",
+      },
+      // Laptop, held open in front and turned to face you: the base out in front of the waist, the screen
+      // standing at the edge nearest the body.
+      { voxels: box(-1, 1, 3.8, 3.8, 2, 3), block: [0.95, 0.3, 0.95] },
+      { voxels: box(-1, 1, 4.45, 5.45, 1.62, 1.62), block: [0.95, 0.95, 0.25], live: "screen" },
     ],
     view: { pitch: 0.25, yaw: 0.45 },
   },

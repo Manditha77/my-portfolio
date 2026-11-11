@@ -1,11 +1,20 @@
 import { Euler, MathUtils, Quaternion, Vector3 } from "three";
-import { BUILD_BLOCKS, BUILD_SHAPES, SHAPE_SIZE, type LiveRole, type ShapeKey } from "@/lib/build-shapes";
+import {
+  BUILD_BLOCKS,
+  BUILD_SHAPES,
+  DEFAULT_BLOCK,
+  DEFAULT_VIEW,
+  SHAPE_SIZE,
+  type LiveRole,
+  type ShapeKey,
+} from "@/lib/build-shapes";
 import { SWAY, liveBlock, liveExtremes, liveSway, type LiveBlock, type Sway } from "./build-live";
 
 /*
- * "The Build": turns the voxel shapes (src/lib/build-shapes.ts) into one pose per block, and blends
- * between them. Positions are in companion units, centred on the shape; scales multiply the 0.6 block
- * geometry. placePoses then moves a set of poses to its spot on the page. Only imported by lazy 3D code.
+ * "The Build": turns the voxel shapes (src/lib/build-shapes.ts) into one pose per block, and streams them
+ * into and out of their box. Positions are in companion units, centred on the shape; scales multiply the
+ * 0.6 block geometry. placePoses then moves a set of poses to its spot on the page. Only imported by lazy
+ * 3D code.
  */
 
 export type Pose = { position: Vector3; quaternion: Quaternion; scale: Vector3; glow: number };
@@ -29,11 +38,6 @@ export const BLOCKS = BUILD_BLOCKS;
 /** Edge length of the block geometry, companion units. */
 export const BLOCK = 0.6;
 
-// Must match the poster's projection (src/lib/cube.ts): shapes default to its exact orientation.
-const YAW = 0.6;
-const PITCH = 0.45;
-
-const FILL = 0.9;
 // Kept small so a fully separated hero cube's diagonal still fits inside its box.
 const SPREAD = 0.25;
 
@@ -132,7 +136,7 @@ function swayViews(pitch: number, yaw: number, roll: number, amplitude: Sway): Q
 
 function compile(key: ShapeKey): CompiledShape {
   const shape = BUILD_SHAPES[key];
-  const fill = shape.block ?? [FILL, FILL, FILL];
+  const fill = shape.block ?? DEFAULT_BLOCK;
   const blocks: CompiledBlock[] = [];
   const groups: CompiledGroup[] = shape.groups.map((group) => ({
     axis: AXES[group.turn?.axis ?? "z"],
@@ -159,9 +163,9 @@ function compile(key: ShapeKey): CompiledShape {
       a.local.x + a.pivot.x - (b.local.x + b.pivot.x),
   );
 
-  const pitch = shape.view?.pitch ?? PITCH;
-  const yaw = shape.view?.yaw ?? YAW;
-  const roll = shape.view?.roll ?? 0;
+  const pitch = shape.view?.pitch ?? DEFAULT_VIEW.pitch;
+  const yaw = shape.view?.yaw ?? DEFAULT_VIEW.yaw;
+  const roll = shape.view?.roll ?? DEFAULT_VIEW.roll;
 
   // Voxel positions with their groups turned, then the largest extent fitted into SHAPE_SIZE.
   const zero = new Vector3();
@@ -193,18 +197,6 @@ const SHAPES = Object.fromEntries(
 /** On-screen size of a shape (live actions and sway included), companion units, for fitting it into a box. */
 export function shapeSize(key: ShapeKey): { width: number; height: number } {
   return SHAPES[key];
-}
-
-/** Largest on-screen width or height of a shape over a full turn about its vertical axis, companion units. */
-export function spinSize(key: ShapeKey): number {
-  const shape = SHAPES[key];
-  const turns = 24;
-  const views = Array.from({ length: turns }, (_, i) =>
-    new Quaternion().setFromEuler(euler.set(shape.pitch, shape.yaw + (2 * Math.PI * i) / turns, shape.roll)),
-  );
-  const { left, right, bottom, top } = measure(shape, views, false);
-  // Around the shape's resting centre, as fillShape places it.
-  return 2 * Math.max(right - shape.centre.x, shape.centre.x - left, top - shape.centre.y, shape.centre.y - bottom);
 }
 
 export function createPoses(): Pose[] {
@@ -274,21 +266,44 @@ export function placePoses(poses: Pose[], x: number, y: number, size: number) {
   }
 }
 
-/** Blocks start their move a little apart (up to STAGGER of the transition), so a shape assembles in parts. */
-const STAGGER = 0.35;
+/** Blocks start their move apart (spread over STAGGER of the transition), so a shape streams in parts. */
+const STAGGER = 0.5;
+/** A block's size at the far end of its trip, as a share of its size in the shape. */
+const STREAM_SCALE = 0.85;
+
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
+const easeIn = (t: number) => t ** 3;
 
 /**
- * Writes the blend of `a` and `b` at `t` (0..1) into `out`, block by block in assembly order (bottom
- * first), or in reverse (top first) when a shape folds away.
+ * Writes `placed` (a shape's poses, already on the page) streaming into `out`. "in": at `t` = 0 every block
+ * waits just above `top`, and at 1 the shape is assembled; "out": at 0 it is assembled, and at 1 every
+ * block has fallen just below `bottom`. Each block travels only as far as it needs to clear that edge, so it
+ * is in view for its whole trip. Bottom blocks go first both ways (assembly order), with a soft landing in
+ * and a gentle start out. `top` and `bottom` are the band's edges in page units (+y up).
  */
-export function blendPoses(a: Pose[], b: Pose[], t: number, out: Pose[], reverse = false) {
+export function streamPoses(
+  key: ShapeKey,
+  placed: Pose[],
+  out: Pose[],
+  t: number,
+  direction: "in" | "out",
+  top: number,
+  bottom: number,
+) {
+  const count = Math.max(1, SHAPES[key].blocks.length);
   for (let i = 0; i < BLOCKS; i++) {
-    const order = reverse ? BLOCKS - 1 - i : i;
-    const start = (STAGGER * order) / (BLOCKS - 1);
-    const local = MathUtils.smoothstep(MathUtils.clamp((t - start) / (1 - STAGGER), 0, 1), 0, 1);
-    out[i].position.lerpVectors(a[i].position, b[i].position, local);
-    out[i].quaternion.slerpQuaternions(a[i].quaternion, b[i].quaternion, local);
-    out[i].scale.lerpVectors(a[i].scale, b[i].scale, local);
-    out[i].glow = MathUtils.lerp(a[i].glow, b[i].glow, local);
+    const from = placed[i];
+    const to = out[i];
+    const start = count > 1 ? (STAGGER * Math.min(i, count - 1)) / (count - 1) : 0;
+    const local = MathUtils.clamp((t - start) / (1 - STAGGER), 0, 1);
+    // 0 = in the shape, 1 = just past the band's edge.
+    const away = direction === "in" ? 1 - easeOut(local) : easeIn(local);
+    const radius = 0.5 * BLOCK * from.scale.length();
+    const edge = direction === "in" ? top + radius : bottom - radius;
+    to.position.copy(from.position);
+    to.position.y = MathUtils.lerp(from.position.y, edge, away);
+    to.quaternion.copy(from.quaternion);
+    to.scale.copy(from.scale).multiplyScalar(MathUtils.lerp(1, STREAM_SCALE, away));
+    to.glow = from.glow * (1 - away);
   }
 }

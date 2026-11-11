@@ -3,23 +3,23 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { MathUtils, Matrix4, Vector3, type InstancedMesh, type ShaderMaterial } from "three";
 import { createBlockUniforms, fragmentShader, readTokenColors, vertexShader, type BlockUniforms } from "./build-material";
-import { BLOCK, BLOCKS, REST, blendPoses, createPoses, fillShape, placePoses, type Pose, type PoseInput } from "./build-poses";
-import { FOLDING, FORMED, TRAVELLING, UNFOLDING, buildProgress, measureBuild, type BuildMap, type Rect } from "./build-scroll";
+import { BLOCK, BLOCKS, REST, createPoses, fillShape, placePoses, streamPoses, type Pose, type PoseInput } from "./build-poses";
+import { BETWEEN, ENTERING, EXITING, FORMED, buildProgress, measureBuild, type BuildMap, type Rect } from "./build-scroll";
 
 /*
  * "The Build": the hero's "systems from parts" cube as one continuous scroll companion. 100 instanced
  * blocks in one draw call with no textures. Each home section has a free box beside its heading
- * (build-scroll.ts). Between them the companion travels as a small turning cube down the outer right
- * margin (the lane); at each box it unfolds into that section's shape (build-shapes.ts), staggered so it
- * assembles in parts, holds while the heading is in view, then folds back into the cube and travels on.
- * Scrubbed by scroll and reversible. While a shape is formed and on screen it plays its live actions
- * (build-live.ts). In the hero the cube turns slowly, separates under the pointer, and gently separates
- * and reassembles after a few seconds without interaction.
+ * (build-scroll.ts). As a box scrolls in, the blocks stream down into it and assemble that section's
+ * shape (build-shapes.ts), bottom first; the shape holds while the heading is in view, then its blocks
+ * stream down out of the box as it scrolls away, and the next box takes them in. Scrubbed by scroll and
+ * reversible. While a shape is formed and on screen it plays its live actions (build-live.ts). In the
+ * hero the cube turns slowly, separates under the pointer, and gently separates and reassembles after a
+ * few seconds without interaction.
  * The canvas sits in the document behind all content, so it scrolls with the page natively. Its clipped
- * box follows the blocks, cut to the current phase's safe area (a stop's band, or the lane), so it can
- * never draw over text or a card, even on a frame that lags the scroll.
- * Renders on demand: every frame while scroll moves it or something eases, ~30 fps while only the cube
- * turns or a shape's live actions play (and only while it is on screen), and not at all otherwise.
+ * box follows the blocks, cut to the stop's band, so it can never draw over text or a card, even on a
+ * frame that lags the scroll.
+ * Renders on demand: every frame while scroll moves it or something eases, ~30 fps while only the hero
+ * cube turns or a shape's live actions play (and only while it is on screen), and not at all otherwise.
  * Only loaded lazily by HeroVisual.
  */
 
@@ -48,8 +48,8 @@ const IDLE_APART_MS = 1600;
 const IDLE_SPREAD = 0.6; // share of a full separation
 const IDLE_EASE = 2.5; // softer than EASE: ~95% of the way in 1.2s
 
-// Scroll progress follows the page with a ~125ms time constant, so wheel steps don't snap.
-const PROGRESS_EASE = 8;
+// Scroll progress follows the page with a ~200ms time constant, so wheel steps glide rather than snap.
+const PROGRESS_EASE = 5;
 const PROGRESS_SETTLED = 1e-3; // of one phase: well under a pixel
 
 // Live actions ease in once a shape is formed (~95% in 0.6s) and out as it folds.
@@ -67,8 +67,7 @@ const BOX_PAD = 2;
 
 // Reused every frame (there is only ever one companion), so a frame allocates nothing.
 const scratch = {
-  from: createPoses(),
-  to: createPoses(),
+  placed: createPoses(),
   out: createPoses(),
   cube: { ...REST } as PoseInput,
   shape: { ...REST } as PoseInput,
@@ -218,7 +217,7 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const box = boxRef.current;
     const map = mapRef.current;
     if (!mesh || !box || !map || map.stops.length === 0) return;
-    const { stops, lane, zoom } = map;
+    const { stops, zoom } = map;
 
     // Orthographic zoom is px per world unit: the hero cube keeps the poster's size.
     if (state.camera.zoom !== zoom) {
@@ -237,21 +236,21 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const pointer = pointerRef.current;
     const now = performance.now();
 
-    // Which stop, which phase of it (unfolding, formed, folding, travelling on), and how far through.
+    // Which stop, which phase of it (entering, formed, exiting, between stops), and how far through.
     const target = buildProgress(window.scrollY, map);
     m.progress = m.progress < 0 ? target : MathUtils.damp(m.progress, target, PROGRESS_EASE, delta);
     if (Math.abs(m.progress - target) < PROGRESS_SETTLED) m.progress = target;
     const index = Math.min(Math.floor(m.progress), stops.length - 1);
     const quarters = (m.progress - index) * 4;
-    const phase = Math.min(TRAVELLING, Math.floor(quarters));
+    const phase = Math.min(BETWEEN, Math.floor(quarters));
     const k = Math.min(1, quarters - phase);
     const stop = stops[index];
-    const next = stops[index + 1] ?? stop;
+    const hero = index === 0;
 
-    // Hero only: pointer separation and tilt, and the idle breathing, fade out as it folds away.
+    // Hero only: pointer separation and tilt, and the idle breathing, fade out as it streams away.
     let heroWeight = 0;
-    if (index === 0 && phase < FOLDING) heroWeight = 1;
-    else if (index === 0 && phase === FOLDING) heroWeight = 1 - k;
+    if (hero && phase < EXITING) heroWeight = 1;
+    else if (hero && phase === EXITING) heroWeight = 1 - k;
     const moving = pointer.inside && now - pointer.lastMove < SETTLE_AFTER_MS;
     const idleFor = now - pointer.lastActivity - IDLE_AFTER_MS;
     const breathing = heroWeight === 1 && !moving && idleFor > 0;
@@ -264,12 +263,12 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     m.separation = MathUtils.damp(m.separation, separation, breathing ? IDLE_EASE : EASE, delta);
     m.tiltX = MathUtils.damp(m.tiltX, tiltXTarget, EASE, delta);
     m.tiltY = MathUtils.damp(m.tiltY, tiltYTarget, EASE, delta);
-    // The cube turns wherever it shows: in the hero, travelling, and while folding or unfolding.
-    const cubeShows = index === 0 || phase !== FORMED;
+    // The hero cube turns until it has streamed away.
+    const cubeShows = hero && phase !== BETWEEN;
     if (cubeShows) m.spin += SPIN_SPEED * delta;
 
     // Live actions: on their own clock from the moment a shape forms, easing in and out.
-    const formed = index > 0 && phase === FORMED;
+    const formed = !hero && phase === FORMED;
     if (formed && m.liveStop !== index) {
       m.liveStop = index;
       m.liveTime = 0;
@@ -289,41 +288,27 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const shape = scratch.shape;
     shape.live = m.live;
     shape.time = m.liveTime;
-    // Skills' last tile drops into its slot over the end of the unfold.
-    shape.settle = phase === UNFOLDING ? MathUtils.smoothstep(k, 0.75, 1) : 1;
+    // Skills' last tile drops into its slot over the end of the enter.
+    shape.settle = phase === ENTERING ? MathUtils.smoothstep(k, 0.75, 1) : 1;
 
-    // Page units (document px / zoom, +y up).
-    const laneX = lane.x / zoom;
-    const stopX = stop.x / zoom;
-    const stopY = -stop.y / zoom;
-    let poses: Pose[] = scratch.to;
-    let safe: Rect = stop.safe;
-    if (phase === TRAVELLING) {
-      // Down the lane towards the next stop (the last stop never gets here).
-      safe = lane.safe;
-      fillShape("cube", poses, cube);
-      placePoses(poses, laneX, -MathUtils.lerp(stop.y, next.y, k) / zoom, lane.scale);
-    } else if (index === 0) {
-      // The hero cube shrinks and slides into the lane as one piece.
-      const t = phase === FOLDING ? MathUtils.smoothstep(k, 0, 1) : 0;
-      fillShape("cube", poses, cube);
-      placePoses(poses, MathUtils.lerp(stopX, laneX, t), stopY, MathUtils.lerp(stop.scale, lane.scale, t));
-    } else if (phase === FORMED) {
-      fillShape(stop.shape, poses, shape);
-      placePoses(poses, stopX, stopY, stop.scale);
-    } else {
-      // The blocks travel between the cube in the lane and the shape in its box, staggered.
-      fillShape("cube", scratch.from, cube);
-      placePoses(scratch.from, laneX, stopY, lane.scale);
-      fillShape(stop.shape, scratch.to, shape);
-      placePoses(scratch.to, stopX, stopY, stop.scale);
-      poses = scratch.out;
-      if (phase === UNFOLDING) blendPoses(scratch.from, scratch.to, k, poses);
-      else blendPoses(scratch.to, scratch.from, k, poses, true);
+    // The shape in its box (page units: document px / zoom, +y up); entering or exiting, its blocks
+    // stream down into or out of the box's band, staggered. Between stops nothing shows.
+    let poses: Pose[] | null = null;
+    if (phase !== BETWEEN) {
+      const key = hero ? "cube" : stop.shape;
+      fillShape(key, scratch.placed, hero ? cube : shape);
+      placePoses(scratch.placed, stop.x / zoom, -stop.y / zoom, stop.scale);
+      poses = scratch.placed;
+      if (phase === ENTERING || phase === EXITING) {
+        const top = -stop.safe.top / zoom;
+        const bottom = -stop.safe.bottom / zoom;
+        streamPoses(key, scratch.placed, scratch.out, k, phase === ENTERING ? "in" : "out", top, bottom);
+        poses = scratch.out;
+      }
     }
 
-    // The clipped box follows the blocks, inside the phase's safe area.
-    const clip = clipBox(poses, zoom, safe, state.size.width, state.size.height);
+    // The clipped box follows the blocks, inside the stop's band.
+    const clip = poses ? clipBox(poses, zoom, stop.safe, state.size.width, state.size.height) : EMPTY;
     if (!sameRect(clip, m.box)) {
       m.box = clip;
       placeBox(box, clip);
@@ -334,20 +319,23 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const originY = -(clip.top + state.size.height / 2) / zoom;
     const { matrix, position } = scratch;
     const glow = mesh.geometry.getAttribute("instanceGlow");
-    for (let i = 0; i < BLOCKS; i++) {
-      const pose = poses[i];
-      position.set(pose.position.x - originX, pose.position.y - originY, pose.position.z);
-      mesh.setMatrixAt(i, matrix.compose(position, pose.quaternion, pose.scale));
-      glow.setX(i, pose.glow);
+    if (poses && clip !== EMPTY) {
+      for (let i = 0; i < BLOCKS; i++) {
+        const pose = poses[i];
+        position.set(pose.position.x - originX, pose.position.y - originY, pose.position.z);
+        mesh.setMatrixAt(i, matrix.compose(position, pose.quaternion, pose.scale));
+        glow.setX(i, pose.glow);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      glow.needsUpdate = true;
     }
-    mesh.instanceMatrix.needsUpdate = true;
-    glow.needsUpdate = true;
 
     // Report ready once a real frame has been drawn.
     if (m.frames < 2 && ++m.frames === 2) onReady();
 
     // Next frame: straight away while scroll moves the companion or anything eases; a timed frame while
-    // the cube turns or live actions play on screen; otherwise none until scroll, a resize or the pointer.
+    // the hero cube turns or live actions play on screen; otherwise none until scroll, a resize or the
+    // pointer.
     const onScreen =
       clip.right > clip.left && clip.top < window.scrollY + window.innerHeight && clip.bottom > window.scrollY;
     const looping = cubeShows || formed || m.live > 0;
@@ -397,8 +385,7 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
     const measure = () => {
       frame = 0;
       const map = measureBuild(hero);
-      mapRef.current = map;
-      const { canvasWidth: width, canvasHeight: height } = map;
+      mapRef.current = map;      const { canvasWidth: width, canvasHeight: height } = map;
       setCanvasSize((size) => (size?.width === width && size.height === height ? size : { width, height }));
       pointerRef.current.wake?.();
     };

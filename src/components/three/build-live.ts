@@ -23,7 +23,7 @@ export type Sway = { pitch: number; yaw: number; roll: number; bob: number };
 const DEFAULT_SWAY: Sway = { pitch: 0.035, yaw: 0.07, roll: 0, bob: 0 };
 
 export const SWAY: Readonly<Record<ShapeKey, Sway>> = {
-  // The cube turns instead (hero spin, and while travelling).
+  // The hero cube turns instead.
   cube: { pitch: 0, yaw: 0, roll: 0, bob: 0 },
   stack: DEFAULT_SWAY,
   // Looks around.
@@ -88,6 +88,9 @@ const PACKET_GLOW = 0.55;
 const LENS_PERIOD = 2.8;
 const LENS_GLOW = 0.45;
 
+// Person: the laptop's screen is simply on.
+const SCREEN_GLOW = 0.7;
+
 // Book: the sheet turns over, rests inside the left-hand pages, then rises back out of the right-hand ones.
 const PAGE_PERIOD = 4.5;
 const PAGE_TURN = [0.6, 1.8] as const;
@@ -138,6 +141,9 @@ export function liveBlock(role: LiveRole, member: number, count: number, rest: n
       break;
     case "lens":
       out.glow = LENS_GLOW * (0.5 - 0.5 * Math.cos((2 * Math.PI * time) / LENS_PERIOD));
+      break;
+    case "screen":
+      out.glow = SCREEN_GLOW;
       break;
     case "page": {
       const t = time % PAGE_PERIOD;
@@ -193,6 +199,7 @@ export function liveExtremes(role: LiveRole, rest: number): LiveExtreme[] {
     case "letter":
       return [at(0, LETTER_RISE)];
     case "lens":
+    case "screen":
       return [];
   }
 }
