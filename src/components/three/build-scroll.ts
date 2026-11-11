@@ -1,59 +1,84 @@
 import { MathUtils } from "three";
-import { LAYOUT_WIDTH, type LayoutKey } from "./build-layouts";
+import type { ShapeKey } from "@/lib/build-shapes";
+import { shapeSize } from "./build-poses";
 
 /*
- * "The Build": where each home section's layout sits, and how far the page has scrolled between them.
- * Everything is measured from the section elements (main section[id], in DOM order), so it adapts when
- * content changes. Text that the companion must never sit behind carries data-build-clear; the
- * companion is centred in the free space to the right of it. Only imported by the lazy 3D chunk.
+ * "The Build": where each home section's shape sits, and how far the page has scrolled through it.
+ * Every section (main section[id], in DOM order) gets a free box: the empty space right of its heading
+ * and intro, above its cards. The companion only ever draws inside the current box (its canvas is
+ * clipped to it), so it can never sit over text or a card. Everything is measured from the DOM, so it
+ * adapts when content changes. Only imported by the lazy 3D chunk.
+ *
+ * - Text beside a heading that the box must stay clear of carries data-build-clear.
+ * - A section's first card block carries data-build-end; the box stops above it. Without one (About,
+ *   Contact) the box runs to the end of the section's content.
  */
 
-/** Sections not listed keep the previous section's layout. Neighbours with the same layout merge. */
-export const LAYOUT_BY_SECTION: Readonly<Record<string, LayoutKey>> = {
+/** Sections not listed get no shape. */
+export const SHAPE_BY_SECTION: Readonly<Record<string, ShapeKey>> = {
   top: "cube",
-  work: "modules",
-  "vr-ar": "ring",
-  experience: "pipeline",
-  writing: "grid",
-  skills: "grid",
-  about: "cluster",
-  contact: "settled",
+  work: "stack",
+  "vr-ar": "headset",
+  experience: "plane",
+  writing: "book",
+  skills: "tiles",
+  about: "person",
+  contact: "envelope",
 };
 
 // Must match the poster (src/lib/cube.ts): one unit is a quarter of the hero visual's width.
 const VIEW_UNITS = 4;
-// The fixed layer starts this far left of the hero visual, so the cube's corners never clip.
-const LAYER_MARGIN = 24;
-// Clear space between marked text (or the viewport edge) and the companion.
+// The hero box reaches this far past the hero visual, so the cube's corners never clip.
+const HERO_MARGIN = 24;
+// Clear space between the box and text, cards or the previous section's content.
 const GAP = 32;
-// Outside the hero, the companion is at most this share of the hero cube's size.
+// Inside the box, kept clear on every side.
+const PAD = 12;
+// Outside the hero, a shape is at most this share of the hero cube's size.
 const DOCK_SCALE = 0.8;
-// Below this share it would be too small to read, so it shrinks away instead.
-const MIN_FIT = 0.45;
-// Each move spans half the viewport height of scroll, centred where the next section's top crosses
-// the middle of the viewport.
-const ZONE = 0.5;
+// Below this share it would be too small to read, so the section gets no shape instead.
+const MIN_FIT = 0.4;
+// Scale while a shape enters (from) and leaves (to), as a share of its full size.
+export const EDGE_SCALE = 0.6;
+
+// Scroll knots, as where the box centre sits in the viewport (share of its height from the top).
+const ENTER_FROM = 1;
+const ENTER_TO = 0.65;
+const EXIT_FROM = 0.4;
+// When one section's exit would run into the next one's enter, the exit gets this share of the overlap.
+const EXIT_SHARE = 0.4;
 
 export type Stop = {
-  layout: LayoutKey;
-  /** Scroll position at which the move into this stop is half done (unused for the first). */
-  at: number;
-  /** Companion centre in layer px. */
-  x: number;
-  y: number;
-  /** Size relative to the hero cube; 0 hides it. */
+  shape: ShapeKey;
+  /** Free box, document px. */
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  /** Full size relative to the hero cube (fits this shape and, while entering, the previous one). */
   scale: number;
+  /** Scroll positions: the enter runs from enter[0] to enter[1], the exit from exit[0] to exit[1]. */
+  enter: [number, number];
+  exit: [number, number];
 };
 
 export type BuildMap = {
   stops: Stop[];
-  /** Scroll distance of each move, in px. */
-  zone: number;
-  /** Fixed layer's left edge, viewport px. */
-  layerLeft: number;
   /** Px per unit, matching the hero cube. */
   zoom: number;
+  /** Size of the canvas inside the clipped box: the largest box, so switching boxes never reallocates. */
+  canvasWidth: number;
+  canvasHeight: number;
 };
+
+/** Top of `element` in document px, from layout offsets (ignores the reveal transforms). */
+function pageTop(element: HTMLElement): number {
+  let top = 0;
+  for (let node: HTMLElement | null = element; node; node = node.offsetParent as HTMLElement | null) {
+    top += node.offsetTop;
+  }
+  return top;
+}
 
 /**
  * Right edge of the text inside `element`, viewport px. Text nodes only: a range over a whole element
@@ -70,84 +95,141 @@ function textRight(element: Element, range: Range): number {
   return right;
 }
 
-function clearRight(section: Element): number {
+/** Right edge of the data-build-clear text in `section` that overlaps the band top..bottom (document px). */
+function clearRight(section: Element, top: number, bottom: number): number {
   const range = document.createRange();
   let right = 0;
-  section.querySelectorAll("[data-build-clear]").forEach((element) => {
+  section.querySelectorAll<HTMLElement>("[data-build-clear]").forEach((element) => {
+    const elementTop = pageTop(element);
+    if (elementTop > bottom || elementTop + element.offsetHeight < top) return;
     right = Math.max(right, textRight(element, range));
   });
   return right;
 }
 
-export function measureBuild(hero: HTMLElement): BuildMap {
-  const viewportWidth = document.documentElement.clientWidth;
-  const viewportHeight = window.innerHeight;
-  const scrollY = window.scrollY;
-  const heroRect = hero.getBoundingClientRect();
-  const layerLeft = Math.max(0, heroRect.left - LAYER_MARGIN);
-  const zoom = heroRect.width / VIEW_UNITS;
-  const zone = viewportHeight * ZONE;
-  const headerBottom = Math.max(0, document.querySelector("header")?.getBoundingClientRect().bottom ?? 0);
-  const dockY = (headerBottom + viewportHeight) / 2;
+function paddingBottom(element: Element): number {
+  return Number.parseFloat(getComputedStyle(element).paddingBottom) || 0;
+}
 
-  const stops: (Stop & { clear: number })[] = [];
-  let layout: LayoutKey = "cube";
+export function measureBuild(hero: HTMLElement): BuildMap {
+  const viewportHeight = window.innerHeight;
+  const heroRect = hero.getBoundingClientRect();
+  const zoom = heroRect.width / VIEW_UNITS;
+  const headerBottom = Math.max(0, document.querySelector("header")?.getBoundingClientRect().bottom ?? 0);
+  // Every box shares the hero visual's column, so the shapes line up down the page.
+  const columnLeft = heroRect.left;
+  const columnRight = heroRect.right;
+
+  const stops: Stop[] = [];
+  let previous: HTMLElement | null = null;
   document.querySelectorAll<HTMLElement>("main section[id]").forEach((section) => {
-    layout = LAYOUT_BY_SECTION[section.id] ?? layout;
-    const clear = clearRight(section);
-    const previous = stops.at(-1);
-    if (previous?.layout === layout) {
-      previous.clear = Math.max(previous.clear, clear);
-      return;
-    }
-    if (!previous) {
+    const shape = SHAPE_BY_SECTION[section.id];
+    const after = previous;
+    previous = section;
+    if (!shape) return;
+
+    if (stops.length === 0) {
       // The hero: exactly where the cube sits at scroll 0, at full size.
+      const top = pageTop(hero) - HERO_MARGIN;
+      const height = hero.offsetHeight + 2 * HERO_MARGIN;
+      const centre = top + height / 2;
       stops.push({
-        layout,
-        at: 0,
-        x: heroRect.left + heroRect.width / 2 - layerLeft,
-        y: heroRect.top + scrollY + heroRect.height / 2,
+        shape,
+        left: columnLeft - HERO_MARGIN,
+        top,
+        width: heroRect.width + 2 * HERO_MARGIN,
+        height,
         scale: 1,
-        clear: 0,
+        enter: [-Infinity, -Infinity],
+        exit: [Math.max(0, centre - EXIT_FROM * viewportHeight), top + height - headerBottom],
       });
       return;
     }
+
+    const sectionTop = pageTop(section);
+    const top = (after ? sectionTop - paddingBottom(after) : sectionTop) + GAP;
+    const end = section.querySelector<HTMLElement>("[data-build-end]");
+    const bottom = (end ? pageTop(end) : sectionTop + section.offsetHeight - paddingBottom(section)) - GAP;
+    const left = Math.max(columnLeft, clearRight(section, top, bottom) + GAP);
+    const width = columnRight - left;
+    const height = bottom - top;
+
+    // Fit this shape, and the one its blocks arrive from, inside the box.
+    const from = shapeSize((stops.at(-1) as Stop).shape);
+    const to = shapeSize(shape);
+    const fit = Math.min(
+      (width - 2 * PAD) / (Math.max(from.width, to.width) * zoom),
+      (height - 2 * PAD) / (Math.max(from.height, to.height) * zoom),
+    );
+    if (fit < MIN_FIT) return;
+
+    const centre = top + height / 2;
     stops.push({
-      layout,
-      at: section.getBoundingClientRect().top + scrollY - viewportHeight / 2,
-      x: 0,
-      y: dockY,
-      scale: 0,
-      clear,
+      shape,
+      left,
+      top,
+      width,
+      height,
+      scale: Math.min(DOCK_SCALE, fit),
+      enter: [centre - ENTER_FROM * viewportHeight, centre - ENTER_TO * viewportHeight],
+      exit: [centre - EXIT_FROM * viewportHeight, bottom + GAP - headerBottom],
     });
   });
 
-  // Centre each docked layout in the free space right of its section's marked text, scaled to fit.
-  for (const stop of stops.slice(1)) {
-    const left = Math.max(layerLeft, stop.clear + GAP);
-    const right = viewportWidth - GAP;
-    const fit = (right - left) / (LAYOUT_WIDTH[stop.layout] * zoom);
-    stop.x = (left + right) / 2 - layerLeft;
-    stop.scale = fit < MIN_FIT ? 0 : Math.min(DOCK_SCALE, fit);
+  const last = stops.at(-1);
+  if (last && stops.length > 1) {
+    // The last shape stays at the end of the page, fully formed by the time you reach the bottom.
+    const maxScroll = document.documentElement.scrollHeight - viewportHeight;
+    last.exit = [Infinity, Infinity];
+    last.enter[1] = Math.min(last.enter[1], maxScroll);
+    last.enter[0] = Math.min(last.enter[0], last.enter[1]);
   }
 
-  // The last move must finish by the bottom of the page, and moves never overlap.
-  const maxScroll = document.documentElement.scrollHeight - viewportHeight;
-  for (let i = stops.length - 1; i >= 1; i--) {
-    const limit = i === stops.length - 1 ? maxScroll - zone / 2 : stops[i + 1].at - zone;
-    stops[i].at = Math.min(stops[i].at, limit);
+  // One shape leaves before the next arrives: an overlapping exit and enter split the scroll between them.
+  for (let i = 1; i < stops.length; i++) {
+    const before = stops[i - 1];
+    const stop = stops[i];
+    if (before.exit[1] <= stop.enter[0]) continue;
+    const span = Math.max(0, stop.enter[1] - before.exit[0]);
+    const meet = before.exit[0] + span * EXIT_SHARE;
+    before.exit[1] = meet;
+    stop.enter[0] = meet;
   }
 
-  return { stops, zone, layerLeft, zoom };
+  // Knots never run backwards, so the progress below is always well defined.
+  let knot = -Infinity;
+  for (const stop of stops) {
+    for (const range of [stop.enter, stop.exit]) {
+      for (const index of [0, 1] as const) {
+        range[index] = Math.max(range[index], knot);
+        if (Number.isFinite(range[index])) knot = range[index];
+      }
+    }
+  }
+
+  return {
+    stops,
+    zoom,
+    canvasWidth: Math.ceil(Math.max(...stops.map((stop) => stop.width))),
+    canvasHeight: Math.ceil(Math.max(...stops.map((stop) => stop.height))),
+  };
 }
 
-/** Continuous progress through the stops: 1.5 means halfway from stop 1 to stop 2. */
-export function buildProgress(scrollY: number, { stops, zone }: BuildMap): number {
-  let progress = 0;
-  for (let i = 1; i < stops.length; i++) {
-    const t = MathUtils.clamp((scrollY - (stops[i].at - zone / 2)) / zone, 0, 1);
-    if (t === 0) break;
-    progress = i - 1 + t;
+/** How far scrollY is through from..to, 0..1. An empty range is a step at its end. */
+function along(scrollY: number, [from, to]: [number, number]): number {
+  if (to > from) return MathUtils.clamp((scrollY - from) / (to - from), 0, 1);
+  return scrollY >= to ? 1 : 0;
+}
+
+/**
+ * Continuous progress through the stops. The whole part is the stop; the fraction is its phase:
+ * 0 → 0.5 entering (0 = invisible), 0.5 formed, 0.5 → 1 leaving (1 = invisible).
+ */
+export function buildProgress(scrollY: number, { stops }: BuildMap): number {
+  for (let i = 0; i < stops.length; i++) {
+    const { enter, exit } = stops[i];
+    if (scrollY < enter[1]) return i + 0.5 * along(scrollY, enter);
+    if (scrollY < exit[1]) return i + 0.5 + 0.5 * along(scrollY, exit);
   }
-  return progress;
+  return stops.length;
 }

@@ -12,7 +12,7 @@ export function Work() {
         {workCopy.intro}
       </p>
 
-      <StaggerList role="list" className="mt-10 flex flex-col gap-6">
+      <StaggerList data-build-end role="list" className="mt-10 flex flex-col gap-6">
         {projects.map((project) => (
           <StaggerItem key={project.slug}>
             <ProjectCard project={project} />

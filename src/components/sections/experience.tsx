@@ -16,7 +16,7 @@ const subheading = "text-lg font-semibold tracking-tight";
 export function Experience() {
   return (
     <Section id="experience">
-      <div className="relative mt-10 pl-6 before:absolute before:top-6 before:bottom-0 before:left-1.5 before:w-px before:-translate-x-1/2 before:bg-linear-to-b before:from-border before:from-90% before:to-transparent sm:pl-8">
+      <div data-build-end className="relative mt-10 pl-6 before:absolute before:top-6 before:bottom-0 before:left-1.5 before:w-px before:-translate-x-1/2 before:bg-linear-to-b before:from-border before:from-90% before:to-transparent sm:pl-8">
         <StaggerList as="ol" role="list" className="space-y-6">
           {experience.map((job, index) => {
             const headingId = `job-${index}`;

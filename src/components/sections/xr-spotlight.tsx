@@ -20,7 +20,7 @@ export function XrSpotlight() {
         {xrCopy.subtitle}
       </p>
 
-      <StaggerList role="list" className="mt-10 space-y-8">
+      <StaggerList data-build-end role="list" className="mt-10 space-y-8">
         {xrProjects.map((project) => (
           <StaggerItem key={project.slug}>
             <XrProjectCard project={project} />

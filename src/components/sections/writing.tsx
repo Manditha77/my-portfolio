@@ -6,7 +6,7 @@ import { formatMonth } from "@/lib/dates";
 export function Writing() {
   return (
     <Section id="writing">
-      <StaggerList as="ol" role="list" className="mt-6 grid gap-4 md:grid-cols-2">
+      <StaggerList data-build-end as="ol" role="list" className="mt-6 grid gap-4 md:grid-cols-2">
         {articles.map((article, index) => {
           const headingId = `article-${index}`;
           const splitAt = article.title.lastIndexOf(" ") + 1;
