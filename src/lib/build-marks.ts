@@ -109,10 +109,10 @@ function depthAt(face: Face, [x, y]: Point): number {
 }
 
 /**
- * Every visible face of `key`'s voxels; with `layer`, only that voxel layer (y), drawn as if alone. A layer
- * counts the shape's walled-in cells as blocks too, so drawn alone it has no hole (the hero cube's centre).
+ * Every visible face of `key`'s voxels; with `only`, just those voxels, drawn as if alone (one block of
+ * the shape, at its size and view angle).
  */
-function shapeFaces(key: ShapeKey, layer?: number): Face[] {
+function shapeFaces(key: ShapeKey, only?: readonly Voxel[]): Face[] {
   const shape = BUILD_SHAPES[key];
   const pitch = shape.view?.pitch ?? DEFAULT_VIEW.pitch;
   const yaw = shape.view?.yaw ?? DEFAULT_VIEW.yaw;
@@ -134,16 +134,7 @@ function shapeFaces(key: ShapeKey, layer?: number): Face[] {
         wall[axis] += sign;
         return whole.has(wall.join(","));
       });
-    let voxels: readonly Voxel[] = group.voxels;
-    if (layer !== undefined) {
-      const xs = group.voxels.map(([x]) => x);
-      const zs = group.voxels.map(([, , z]) => z);
-      const walledIn: Voxel[] = [];
-      for (let x = Math.min(...xs); x <= Math.max(...xs); x++) {
-        for (let z = Math.min(...zs); z <= Math.max(...zs); z++) if (enclosed([x, layer, z])) walledIn.push([x, layer, z]);
-      }
-      voxels = [...group.voxels.filter(([, y]) => y === layer), ...walledIn];
-    }
+    const voxels = only ?? group.voxels;
     const filled = new Set(voxels.map((voxel) => voxel.join(",")));
     const pivot: Voxel = group.turn?.pivot ?? [0, 0, 0];
     const place = (point: Vec3): Vec3 => {
@@ -156,7 +147,7 @@ function shapeFaces(key: ShapeKey, layer?: number): Face[] {
       for (const { axis, sign } of SIDES) {
         const neighbour = [...voxel] as Vec3;
         neighbour[axis] += sign;
-        if (filled.has(neighbour.join(",")) || (layer === undefined && enclosed(neighbour))) continue;
+        if (filled.has(neighbour.join(",")) || (!only && enclosed(neighbour))) continue;
 
         // The face's four corners, in the block's frame, wound counter-clockwise seen from outside.
         const u = ((axis + 1) % 3) as 0 | 1 | 2;
@@ -306,11 +297,11 @@ export function markPaths(key: ShapeKey, { size = 24, pad = 1, digits = 1 } = {}
 }
 
 /**
- * A shape layer by layer (voxel y, bottom first), each layer drawn as if alone, at a fixed `unit` view units
- * per voxel around `center`: the hero poster's cube, which prints layer by layer and must land exactly where
- * the 3D blocks rest. Drawn bottom layer first, each covers the one below where they meet.
+ * One block of `key`, drawn alone at its view angle, `unit` view units per voxel and centred on (0, 0): the
+ * hero poster's cube is drawn block by block from this, so each can slide into place in the cube boot, and
+ * lands exactly where the 3D blocks rest. Painted far to near, the blocks cover each other as the 3D
+ * ones do.
  */
-export function layerPaths(key: ShapeKey, { unit, center, digits = 1 }: { unit: number; center: number; digits?: number }): MarkPath[][] {
-  const layers = [...new Set(BUILD_SHAPES[key].groups.flatMap((group) => group.voxels.map(([, y]) => y)))].sort((a, b) => a - b);
-  return layers.map((layer) => toPaths(paintOrder(shapeFaces(key, layer)), unit, center, center, digits));
+export function blockPaths(key: ShapeKey, { unit, digits = 1 }: { unit: number; digits?: number }): MarkPath[] {
+  return toPaths(paintOrder(shapeFaces(key, [[0, 0, 0]])), unit, 0, 0, digits);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useBuildDock } from "@/lib/build-dock";
 import { SHAPE_BY_SECTION } from "@/lib/build-sections";
 import type { ShapeKey } from "@/lib/build-shapes";
@@ -9,16 +9,21 @@ import { useActiveSection } from "@/lib/use-active-section";
 const SHAPES = [...new Set(Object.values(SHAPE_BY_SECTION))];
 const REST: ShapeKey = "cube";
 
+type HeaderMarkProps = {
+  /** The cube boot's block that flies into it (BootBlock, server-rendered). */
+  children?: ReactNode;
+};
+
 /**
  * The living header mark: the Build shape in miniature, and the big shape's dock. While the 3D companion
  * runs, it switches as each stop's beam starts printing and holds the shape between stops; otherwise it
  * shows the current home section's shape (the cube over the hero and off the home page). Static SVGs from
  * one cached sprite (src/app/build-marks.svg); switching assembles the new shape bottom up behind a tiny
  * beam while the old one drains away, in CSS (.header-mark), only with motion on. In the cube boot, one
- * block flies up from the cube into it before the mark builds (.boot-block, shown only then).
+ * block detaches from the hero cube and flies into it before the mark builds (BootBlock, shown only then).
  * Decorative: the name link beside it carries the accessible name.
  */
-export function HeaderMark() {
+export function HeaderMark({ children }: HeaderMarkProps) {
   const active = useActiveSection();
   const dock = useBuildDock();
   const current = dock ?? ((active && SHAPE_BY_SECTION[active]) || REST);
@@ -44,7 +49,7 @@ export function HeaderMark() {
         </svg>
       ))}
       {switched && <span key={current} className="header-mark-beam" />}
-      <span className="boot-block" />
+      {children}
     </span>
   );
 }

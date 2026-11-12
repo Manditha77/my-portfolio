@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { primaryNav, shellCopy } from "@/content/navigation";
 import { site } from "@/content/site";
+import { BootBlock } from "@/components/ui/boot-block";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Container } from "@/components/ui/container";
 import { MotionToggle } from "@/components/ui/motion-toggle";
@@ -18,7 +19,9 @@ export function Header() {
           href="/#top"
           className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight whitespace-nowrap sm:text-base"
         >
-          <HeaderMark />
+          <HeaderMark>
+            <BootBlock target="mark" />
+          </HeaderMark>
           {/* In the cube boot the name slides out from behind the mark. */}
           <span className="boot-brand-clip">
             <span className="boot-brand-name inline-block">{site.name}</span>

@@ -1,31 +1,26 @@
 "use client";
 
-import { Fragment, useEffect, useRef, type CSSProperties } from "react";
-import { BOOT, BOOT_STEPS, bootState, subscribeBoot } from "@/lib/boot";
+import { useEffect, useRef, type ReactNode } from "react";
+import { BOOT, bootState, subscribeBoot } from "@/lib/boot";
 
 /*
- * PIPELINE (from PPCH's Sense → Analyze → Act): the hero status line's part in the cube boot
- * (src/lib/boot.ts). While the cube is built at the viewport centre, a caption under it ticks each step as
- * its stage starts and ends ("sense ✓ · analyze ✓ · act ✓"): server-rendered spans revealed by CSS on the
- * boot's timings, so it needs no hydration. The pill carrying it then glides into place (globals.css).
- * When the boot ends on its own, the status types itself out once; a skipped boot, a return visit and
- * Motion off show the status as it is.
+ * The hero status line's part in the cube boot (src/lib/boot.ts). While the cube grows at the viewport
+ * centre, its caption (the part counter, server-rendered and revealed by CSS on the boot's timings, so it
+ * needs no hydration) sits under it; the pill carrying it then glides into place (globals.css). When the
+ * boot ends on its own, the status types itself out once; a skipped boot, a return visit and Motion off
+ * show the status as it is.
  * The real status text is always in the DOM and sizes the box; the caption and the typed copy are an
  * aria-hidden overlay on top of it, so assistive tech reads the status once and nothing shifts. The caret is
  * positioned out of flow and moved with a transform, so typing never counts as a layout shift.
  */
 
-const CHECK = "✓";
-const SEPARATOR = " · ";
-
-type PipelineStatusProps = {
+type BootStatusProps = {
   status: string;
-  steps: readonly string[];
+  /** The boot's centre caption (aria-hidden with the rest of the overlay). */
+  caption: ReactNode;
 };
 
-const at = (ms: number) => ({ "--at": `${ms}ms` }) as CSSProperties;
-
-export function PipelineStatus({ status, steps }: PipelineStatusProps) {
+export function BootStatus({ status, caption }: BootStatusProps) {
   const rootRef = useRef<HTMLSpanElement>(null);
   const overlayRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
@@ -63,7 +58,7 @@ export function PipelineStatus({ status, steps }: PipelineStatusProps) {
       document.removeEventListener("visibilitychange", onVisibility);
       text.textContent = "";
       caret.hidden = true;
-      root.dataset.pipeline = "done";
+      root.dataset.status = "done";
     };
 
     // Only visible time counts: a hidden tab runs no frames, and the clock picks up where it left off.
@@ -92,7 +87,7 @@ export function PipelineStatus({ status, steps }: PipelineStatusProps) {
     const onBoot = () => {
       unsubscribe();
       if (bootState() !== "end") return;
-      root.dataset.pipeline = "typing";
+      root.dataset.status = "typing";
       caret.hidden = false;
       document.addEventListener("visibilitychange", onVisibility);
       frame = requestAnimationFrame(tick);
@@ -107,24 +102,10 @@ export function PipelineStatus({ status, steps }: PipelineStatusProps) {
   }, [status]);
 
   return (
-    <span ref={rootRef} data-pipeline="idle" className="relative">
-      <span data-pipeline-real="">{status}</span>
+    <span ref={rootRef} data-status="idle" className="relative">
+      <span data-status-real="">{status}</span>
       <span ref={overlayRef} aria-hidden="true" className="absolute inset-0">
-        {/* The boot's centre caption: each step shows as its stage starts and is ticked as it ends. */}
-        <span data-boot-caption="" className="boot-steps">
-          {steps.map((step, index) => {
-            const [start, end] = BOOT_STEPS[index] ?? BOOT_STEPS[BOOT_STEPS.length - 1];
-            return (
-              <Fragment key={step}>
-                {index > 0 && <span style={at(start)}>{SEPARATOR}</span>}
-                <span style={at(start)}>
-                  {step}
-                  <span style={at(end)}> {CHECK}</span>
-                </span>
-              </Fragment>
-            );
-          })}
-        </span>
+        {caption}
         <span ref={textRef} />
         <span ref={caretRef} hidden className="absolute top-0 left-0 animate-caret text-accent">
           ▍

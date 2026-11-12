@@ -122,7 +122,10 @@
   --default-transition-duration: var(--dur-fast);
   --default-transition-timing-function: var(--ease-out);
 
-  /* PIPELINE typing caret. Blinks only while the status types out; removed when typing ends. */
+  /* ASSEMBLE's piston (src/lib/motion-tokens.ts easePiston): a short ease-out with a small overshoot. */
+  --ease-piston: cubic-bezier(0.3, 1.5, 0.5, 1);
+
+  /* The hero status's typing caret. Blinks only while the status types out; removed when typing ends. */
   --animate-caret: caret-blink 0.9s steps(1) infinite;
 
   @keyframes caret-blink {
@@ -214,39 +217,36 @@
   transform: none !important;
 }
 
-/* PIPELINE status: the real text is hidden only while the boot's caption or the typed copy plays over it. */
-:root[data-boot="play"] [data-pipeline-real],
-[data-pipeline="typing"] [data-pipeline-real] {
+/* Hero status: the real text is hidden only while the boot's caption or the typed copy plays over it. */
+:root[data-boot="play"] [data-status-real],
+[data-status="typing"] [data-status-real] {
   opacity: 0;
 }
 
-/* ---------- Cube boot (ASSEMBLE + PIPELINE + SCAN) ----------
+/* ---------- Cube boot (ASSEMBLE + SCAN) ----------
    The home page's opening, once per visit (src/lib/boot.ts, which writes the timings as --boot-* and the
-   phone time scale --boot-k; every delay and duration below is multiplied by it). The cube is built at the
-   viewport centre (the poster: its blueprint traces, the beam scans, the layers print; a caption under it
-   ticks each step), settles onto the floor as the floor rolls out from under it, then glides into its hero
-   slot (FLIP: from the offsets measured before first paint to no transform) while the header and the hero
-   content reveal in reading order.
+   phone time scale --boot-k; every delay and duration below is multiplied by it). The cube grows at the
+   viewport centre (the poster: a glowing core, then the face, edge and corner blocks slide out and snap in,
+   src/lib/boot-growth.ts; a part counter under it counts up), settles onto the floor as the floor rolls out
+   from under it, then glides into its hero slot (FLIP: from the offsets measured before first paint to no
+   transform) while three blocks detach from it and the header and the hero content reveal in reading order.
+   On capable desktops the 3D growth may stand in for the poster's blocks while it plays (.boot-3d).
    Everything is scoped to data-boot="play", which only the init script sets: the resting styles are the
    finished page, so no JS, Motion off, a return visit and the boot ending or being skipped all show it at
-   once. Transform, opacity, clip-path and dash offset only; real text is never visibility: hidden, so it
-   stays in the accessibility tree throughout. Every animation ends before the clock does. */
+   once. Transform, opacity and clip-path only; real text is never visibility: hidden, so it stays in the
+   accessibility tree throughout. Every animation ends before the clock does. */
 
 .boot-stage,
-.boot-steps,
+.boot-count,
 .boot-block,
-.seq-ghost {
+.boot-3d,
+.seq-core-glow {
   display: none;
 }
 
-/* The poster's resting state is the finished cube: blueprint and beam hidden, every layer in place. */
-.seq-blueprint,
-.seq-beam {
+/* The poster's resting state is the finished cube: every block in place, no flash. */
+.seq-flash {
   opacity: 0;
-}
-
-.seq-blueprint path {
-  stroke-dasharray: 1 1;
 }
 
 :root[data-boot="play"] {
@@ -283,31 +283,71 @@
         both;
   }
 
-  /* Its first frame: a faint outline, gone once the blueprint has traced over it. */
-  .seq-ghost {
-    display: inline;
-    animation: seq-fade-out calc(var(--boot-edge-draw) * var(--boot-k)) linear calc(var(--boot-grid-at) * var(--boot-k))
+  /* The core: it appears glowing, and its glow dims as the corners close it in. */
+  .seq-core,
+  .seq-core-glow {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .seq-core {
+    animation: seq-core-in calc(var(--boot-core) * var(--boot-k)) var(--ease-out) calc(var(--boot-core-at) * var(--boot-k))
       both;
   }
 
-  /* sense: each line traces itself (--line: its group's draw time; --delay: its start). */
-  .seq-blueprint path {
-    animation: seq-trace calc(var(--line) * var(--boot-k)) var(--ease-out) calc(var(--delay) * var(--boot-k)) both;
+  .seq-core .seq-flash {
+    animation: seq-glow-out calc(var(--boot-core-dim) * var(--boot-k)) linear calc(var(--boot-core-dim-at) * var(--boot-k))
+      both;
   }
 
-  /* Shown from the start (backwards fill), then fades as the cube completes. */
-  .seq-blueprint {
-    animation: seq-fade-out calc(var(--dur) * var(--boot-k)) linear calc(var(--delay) * var(--boot-k)) both;
+  .seq-core-glow {
+    display: inline;
+    animation:
+      seq-core-in calc(var(--boot-core) * var(--boot-k)) var(--ease-out) calc(var(--boot-core-at) * var(--boot-k)) both,
+      seq-fade-out calc(var(--boot-core-dim) * var(--boot-k)) linear calc(var(--boot-core-dim-at) * var(--boot-k)) both;
   }
 
-  /* analyze: one pass of the beam. */
-  .seq-beam {
-    animation: seq-scan calc(var(--dur) * var(--boot-k)) var(--ease-out) calc(var(--delay) * var(--boot-k)) both;
+  /* Every other block: hidden until its turn (--at), then it slides out of the block before it (--fx, --fy),
+     growing, with a small overshoot, and flashes as it snaps into its slot (--contact). */
+  .seq-part {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation:
+      boot-hidden calc(var(--at) * var(--boot-k)) linear,
+      seq-slide calc(var(--boot-slide) * var(--boot-k)) var(--ease-piston) calc(var(--at) * var(--boot-k)) both;
   }
 
-  /* act: the layers print. */
-  .seq-layer {
-    animation: seq-print calc(var(--dur) * var(--boot-k)) var(--ease-out) calc(var(--delay) * var(--boot-k)) both;
+  .seq-part .seq-flash {
+    animation: seq-flash calc(var(--boot-flash) * var(--boot-k)) linear calc(var(--contact) * var(--boot-k));
+  }
+
+  /* Desktop 3D growth (src/components/three/boot-growth.tsx): exactly over the poster's cube at the centre.
+     While it is live, it stands in for the poster's blocks; it hands back once the cube has settled. */
+  .boot-3d {
+    display: block;
+    position: fixed;
+    top: calc(var(--boot-cy, 50vh) - var(--boot-size, 260px) / 2);
+    left: calc(var(--boot-cx, 50vw) - var(--boot-size, 260px) / 2);
+    z-index: -1;
+    width: var(--boot-size, 260px);
+    height: var(--boot-size, 260px);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--dur-base) linear;
+  }
+
+  .seq-parts {
+    transition: opacity var(--dur-base) linear;
+  }
+
+  &[data-boot-3d="live"] {
+    .boot-3d {
+      opacity: 1;
+    }
+
+    .seq-parts {
+      opacity: 0;
+    }
   }
 
   /* The glow where the cube meets the floor brightens as it settles. */
@@ -316,8 +356,8 @@
       calc(var(--boot-settle-at) * var(--boot-k)) both;
   }
 
-  /* The status pill: its caption ticks under the cube, travels to the pill's place, then the pill's border
-     draws around it and its surface and dot fade in. */
+  /* The status pill: its caption (the part counter) sits under the cube, travels to the pill's place, then
+     the pill's border draws around it and its surface fades in. Its dot appears as a block lands on it. */
   .boot-pill {
     position: relative;
     border-color: transparent;
@@ -340,17 +380,25 @@
   }
 
   .boot-pill > :first-child {
-    animation: boot-fade-in calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
-      calc(var(--boot-border-at) * var(--boot-k)) both;
+    animation: boot-pop calc(var(--dur-fast) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-glide-at) + var(--boot-dot-block)) * var(--boot-k)) both;
   }
 
-  .boot-steps {
-    display: inline;
+  /* The counter's states, stacked: each shows from its step (--at) for --for; the last stays. */
+  .boot-count {
+    display: inline-grid;
+    justify-items: center;
     white-space: nowrap;
   }
 
-  .boot-steps span {
-    animation: boot-fade-in calc(var(--dur-fast) * var(--boot-k)) linear calc(var(--at) * var(--boot-k)) both;
+  .boot-count > * {
+    grid-area: 1 / 1;
+    opacity: 0;
+    animation: boot-shown calc(var(--for) * var(--boot-k)) linear calc(var(--at) * var(--boot-k));
+  }
+
+  .boot-count > :last-child {
+    animation-fill-mode: forwards;
   }
 
   /* The name: each word slides up from its clip wrapper, then one beam sweeps across it (SCAN). */
@@ -389,13 +437,17 @@
       calc((var(--boot-reveal-at) + var(--i) * var(--boot-reveal-step)) * var(--boot-k)) both;
   }
 
-  /* "View my work" fills with the accent, left to right, once the buttons are up. It ends exactly on its
-     resting style, so nothing changes when the boot ends. */
-  .boot-fill {
+  /* "View my work": a block from the cube lands on its left edge and it expands from there, then it fills
+     with the accent, left to right. It ends exactly on its resting style, so nothing changes when the boot
+     ends. */
+  .boot-cta {
     background-image: linear-gradient(var(--accent), var(--accent));
     background-repeat: no-repeat;
-    animation: boot-fill calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
-      calc((var(--boot-reveal-at) + 3 * var(--boot-reveal-step) + var(--dur-medium)) * var(--boot-k)) both;
+    animation:
+      boot-expand calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
+        calc((var(--boot-glide-at) + var(--boot-cta-block)) * var(--boot-k)) both,
+      boot-fill calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
+        calc((var(--boot-reveal-at) + 3 * var(--boot-reveal-step) + var(--dur-medium)) * var(--boot-k)) both;
   }
 
   .boot-socials > * {
@@ -428,22 +480,43 @@
       calc(var(--boot-header-at) * var(--boot-k)) both;
   }
 
+  /* The three blocks that detach from the cube as its glide starts (BootBlock): each flies from its own
+     block of the cube, at that block's size (measured before first paint), into the header mark, the
+     status dot or "View my work", where it gives way to the part it becomes. */
   .boot-block {
     display: block;
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 8px;
-    height: 8px;
-    margin: -4px 0 0 -4px;
-    background: var(--mark-mid);
-    box-shadow:
-      inset 0 2px 0 var(--mark-light),
-      0 0 6px var(--accent);
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    overflow: visible;
     pointer-events: none;
     animation:
-      boot-block calc(var(--boot-block) * var(--boot-k)) var(--ease-out) calc(var(--boot-header-at) * var(--boot-k)) both,
-      seq-fade-out calc(var(--boot-block) * var(--boot-k)) linear calc(var(--boot-mark-at) * var(--boot-k)) forwards;
+      boot-hidden calc(var(--boot-glide-at) * var(--boot-k)) linear,
+      boot-block calc(var(--fly) * var(--boot-k)) var(--ease-out) calc(var(--boot-glide-at) * var(--boot-k)) both,
+      seq-fade-out calc(var(--fade) * var(--boot-k)) linear calc((var(--boot-glide-at) + var(--fly)) * var(--boot-k))
+        forwards;
+  }
+
+  [data-boot-block="mark"] {
+    --fly: var(--boot-block);
+    --fade: var(--boot-block);
+  }
+
+  /* Over the dot: the pill's padding plus half the dot. */
+  [data-boot-block="dot"] {
+    --fly: var(--boot-dot-block);
+    --fade: var(--dur-fast);
+    left: calc(0.75rem + 4px);
+  }
+
+  /* On the button's left edge. */
+  [data-boot-block="cta"] {
+    --fly: var(--boot-cta-block);
+    --fade: var(--dur-fast);
+    left: 5px;
   }
 
   .header-mark > svg[data-on] {
@@ -607,18 +680,44 @@
   }
 }
 
-/* The block appears on the cube at its glide's start, then flies into the mark. */
+/* From its block on the cube (at that block's size) to its place. */
 @keyframes boot-block {
   from {
+    transform: translate(var(--boot-from-x, 0px), var(--boot-from-y, 0px)) scale(var(--boot-from-s, 1));
+  }
+}
+
+/* Hidden for the animation's whole duration (until its turn); its resting style shows it after. */
+@keyframes boot-hidden {
+  from,
+  to {
     opacity: 0;
-    transform: translate(var(--boot-mark-x, 0px), var(--boot-mark-y, 0px)) scale(2.5);
   }
-  15% {
-    opacity: 1;
-  }
+}
+
+@keyframes boot-shown {
+  from,
   to {
     opacity: 1;
-    transform: none;
+  }
+}
+
+@keyframes boot-pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+/* From nothing, to a block-sized square on the button's left edge (where its block lands), to the button. */
+@keyframes boot-expand {
+  from {
+    clip-path: inset(50% 100% 50% 0 round 2px);
+  }
+  0.1% {
+    clip-path: inset(calc(50% - 5px) calc(100% - 10px) calc(50% - 5px) 0 round 2px);
+  }
+  to {
+    clip-path: inset(0 round 0.375rem);
   }
 }
 
@@ -644,15 +743,6 @@
   }
 }
 
-@keyframes seq-trace {
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
 @keyframes seq-fade-out {
   from {
     opacity: 1;
@@ -662,31 +752,36 @@
   }
 }
 
-/* --rise: the cube's height (negative, view units), set by the poster. */
-@keyframes seq-scan {
+@keyframes seq-core-in {
   from {
-    opacity: 0;
-    transform: translateY(0);
-  }
-  15%,
-  85% {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-    transform: translateY(var(--rise));
+    transform: scale(0);
   }
 }
 
-/* A layer drops a little into its slot as it appears, like the 3D blocks settling. */
-@keyframes seq-print {
+/* The core's glow (an accent copy of the block, FLASH_PEAK in src/lib/boot-growth.ts), dimming. */
+@keyframes seq-glow-out {
   from {
-    opacity: 0;
-    transform: translateY(-14px);
+    opacity: 0.7;
   }
   to {
-    opacity: 1;
-    transform: none;
+    opacity: 0;
+  }
+}
+
+/* Out of the block before it (--fx, --fy, view units) at 0.6 size (GROWTH_FROM_SCALE), into its slot. */
+@keyframes seq-slide {
+  from {
+    transform: translate(var(--fx), var(--fy)) scale(0.6);
+  }
+}
+
+/* The flash as a block snaps in: an accent copy of it, fading (FLASH_PEAK). */
+@keyframes seq-flash {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 0;
   }
 }
 

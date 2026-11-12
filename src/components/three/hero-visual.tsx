@@ -13,8 +13,9 @@ import type { PointerState } from "./parts-cube";
  * spot, the poster's own cube fades out (the canvas sits behind the page content). The 3D chunk is only
  * requested on large screens with a fine hover pointer, site motion on (data-motion), no Save-Data and
  * WebGL2, and only once the browser is idle.
- * While the cube boot plays (src/lib/boot.ts), the poster is the cube, built and moved in CSS: the chunk
- * is fetched when idle, but the canvas only mounts once the boot has ended or been skipped, so the 3D cube
+ * While the cube boot plays (src/lib/boot.ts), the poster is the cube, grown and moved in CSS (on capable
+ * desktops a separate 3D growth may stand in for its blocks until it settles: BootGrowthGate): the chunk is
+ * fetched when idle, but the canvas only mounts once the boot has ended or been skipped, so the 3D cube
  * always crossfades in over a poster that is already finished and in place.
  */
 
