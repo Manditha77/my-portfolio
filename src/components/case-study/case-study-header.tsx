@@ -8,15 +8,17 @@ import { camelCaseBreaks } from "@/lib/word-breaks";
 import { caseStudyTextLink } from "./text-link";
 
 type CaseStudyHeaderProps = {
-  project: XrProjectBase;
+  project: Pick<XrProjectBase, "title" | "fullTitle" | "context" | "stack">;
+  /** The small mono label above the h1: the home section the project belongs to. */
+  label?: string;
   /** A short line under the context, e.g. the platform or where the demo runs. */
   note: string;
   /** The buttons under the tech tags. */
   actions: ReactNode;
 };
 
-/** The case study's back link, h1 and summary, on the same "mode shift" backdrop as the home section. */
-export function CaseStudyHeader({ project, note, actions }: CaseStudyHeaderProps) {
+/** The case study's back link, h1 and summary, on a faint flat grid (every case study, VR / AR or not). */
+export function CaseStudyHeader({ project, label = xrCopy.heading, note, actions }: CaseStudyHeaderProps) {
   return (
     <div data-mode="xr">
       <Container>
@@ -28,7 +30,7 @@ export function CaseStudyHeader({ project, note, actions }: CaseStudyHeaderProps
         </p>
 
         <header className="pt-6 pb-8">
-          <p className="font-mono text-xs text-accent">{xrCopy.heading}</p>
+          <p className="font-mono text-xs text-accent">{label}</p>
           <h1 id="case-study-heading" className="mt-3 text-display font-semibold tracking-tight wrap-break-word">
             {camelCaseBreaks(project.title)}
           </h1>

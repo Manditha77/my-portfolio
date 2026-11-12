@@ -9,7 +9,9 @@ export type Job = {
   location: string;
   /** aeroPORT is proprietary: describe only what CONTENT.md says. */
   product: string;
+  /** Most important first: the card shows the first `bulletsShown`, the rest behind "Show all". */
   bullets: readonly string[];
+  bulletsShown?: number;
   tech: readonly string[];
 };
 
@@ -31,20 +33,21 @@ export type Education = {
 export const experience: readonly Job[] = [
   {
     role: "Software Engineer Intern",
-    company: "Information Systems Associates (Pvt) Ltd",
+    company: "Information Systems Associates (ISA)",
     start: "2025-07",
     end: "2026-01",
     location: "Colombo, Sri Lanka",
     product:
-      "aeroPORT, a microservices-based Departure Control System (DCS) used by Air Arabia for check-in, boarding, baggage and passenger operations",
+      "aeroPORT, ISA's microservices-based airline Departure Control System for check-in, boarding, baggage and passenger operations",
     bullets: [
       "Built Java and Spring Boot backend flows that process Passenger Name Lists (PNL) for check-in, seat assignment and boarding",
       "Shipped enhancements across core DCS modules, on both backend services and React.js / Next.js frontend components",
       "Debugged data flows spanning multiple microservices, Apache Kafka topics and gRPC calls",
-      "Refactored backend services for readability and maintainability",
       "Raised frontend unit-test coverage to meet SonarQube quality standards",
+      "Refactored backend services for readability and maintainability",
       "Worked in an Agile/Scrum team (sprint planning, stand-ups, reviews, retrospectives)",
     ],
+    bulletsShown: 4,
     tech: [
       // Most relevant first: cards show the first six.
       "Java",
@@ -87,10 +90,10 @@ export const leadership: readonly LeadershipRole[] = [
 
 export const education: readonly Education[] = [
   {
-    degree:
-      "BSc (Hons) Management and Information Technology (IT specialisation)",
+    degree: "BSc (Hons) Information Technology",
     institution: "University of Kelaniya",
     start: "2023",
+    end: "2026",
   },
 ];
 
@@ -100,4 +103,6 @@ export const experienceCopy = {
   leadershipHeading: "Leadership & activities",
   educationHeading: "Education",
   present: "present",
+  showAll: (count: number) => `Show all ${count}`,
+  showFewer: "Show fewer",
 };

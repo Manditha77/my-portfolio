@@ -6,6 +6,12 @@ export type ExternalLink = {
   href: string;
 };
 
+/** A titled step in a numbered list ("What trainees do", "How it plays", "How it works"). */
+export type NumberedStep = {
+  title: string;
+  body: string;
+};
+
 /** Screenshots and diagrams, rendered with next/image. */
 export type ContentImage = {
   src: string;

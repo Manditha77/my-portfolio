@@ -1,17 +1,13 @@
-import type { ContentImage, ExternalLink, Todo } from "./types";
+import type { ContentImage, ExternalLink, NumberedStep, Todo } from "./types";
 import { articles } from "./writing";
+
+export type { NumberedStep } from "./types";
 
 export type TeamMember = {
   name: string;
   area: string;
   /** Manditha himself; left out of the "Built with" line. */
   isMe?: boolean;
-};
-
-/** A titled step in a numbered list ("What trainees do", "How it plays"). */
-export type NumberedStep = {
-  title: string;
-  body: string;
 };
 
 export type TechnicalChallenge = {
@@ -132,7 +128,7 @@ export const electricalSafetyVr: ElectricalSafetyVrProject = {
   repo,
   stack: ["Unity 6 (URP)", "XR Interaction Toolkit 3", "OpenXR", "XR Device Simulator", "C#"],
   spotlightBlurb:
-    "A VR training simulator where trainees learn electrical workshop safety by doing. They put on the right PPE, find and make safe hazards against the clock, then isolate, prove dead and replace a blown fuse in the correct order, and get a scored result at the end. I built the indoor workshop and integrated our five-person team's work into the final build.",
+    "A VR training simulator where trainees put on the right PPE, make hazards safe against the clock, and replace a blown fuse in the correct, safe order. I built the indoor workshop and integrated our five-person team's work into the final build.",
   video: {
     provider: "youtube",
     title: "Electrical Workshop Safety Training Simulator demo",
@@ -309,7 +305,7 @@ export const arElementalArena: ArElementalArenaProject = {
     "GitHub Pages",
   ],
   spotlightBlurb:
-    "A mobile web AR game. Scan physical summon cards to collect four elemental creatures, then place a battle arena on a real table or floor and fight a real-time battle against an AI opponent. The local live weather gives one element a damage buff. Built solo; it runs in Chrome on Android, with no app to install.",
+    "A mobile web AR game: scan physical summon cards to collect elemental creatures, then place an arena on a real table or floor and battle an AI opponent, with the local weather buffing one element. Built solo; it runs in Chrome on Android with no app to install.",
   video: {
     provider: "youtube",
     title: "AR Elemental Arena demo",
@@ -443,7 +439,8 @@ export const xrCopy = {
   },
 };
 
-export function caseStudyHref(project: Pick<XrProject, "slug">): string {
+/** Every case study (VR / AR or not) lives at /work/<slug>. */
+export function caseStudyHref(project: { slug: string }): string {
   return `/work/${project.slug}`;
 }
 

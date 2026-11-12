@@ -1,11 +1,12 @@
 import type { CompactProject } from "@/content/projects";
+import { workCopy } from "@/content/projects";
 import { cx } from "@/lib/cx";
-import { withCountUp } from "@/lib/measured";
 import { Badge } from "./badge";
 import { cardHover } from "./card";
 import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
 import { ScanFrame } from "./scan-frame";
+import { StatChips } from "./stat-chips";
 
 type CompactProjectCardProps = {
   project: CompactProject;
@@ -39,11 +40,7 @@ export function CompactProjectCard({ project }: CompactProjectCardProps) {
       </div>
 
       <div className="mt-4 flex flex-col gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
-        <ul className="max-w-measure list-disc space-y-1 pl-5 text-sm marker:text-accent">
-          {project.highlights.map((highlight) => (
-            <li key={highlight}>{withCountUp(highlight, project.countUp)}</li>
-          ))}
-        </ul>
+        <StatChips chips={project.chips} countUp={project.countUp} label={workCopy.chipsLabel} />
 
         <CollapsibleTagList tags={project.stack} />
       </div>

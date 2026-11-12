@@ -2,6 +2,7 @@ import { education, experience, experienceCopy, leadership } from "@/content/exp
 import { cardHover } from "@/components/ui/card";
 import { CollapsibleTagList } from "@/components/ui/collapsible-tag-list";
 import { DateRange } from "@/components/ui/date-range";
+import { ExpandableList } from "@/components/ui/expandable-list";
 import { ScanFrame } from "@/components/ui/scan-frame";
 import { Section } from "@/components/ui/section";
 import { StaggerItem, StaggerList } from "@/components/ui/stagger";
@@ -45,11 +46,13 @@ export function Experience() {
                   <p className="mt-1 font-medium">{job.company}</p>
                   <p className="mt-3 max-w-measure text-text-muted">{job.product}</p>
 
-                  <ul className="mt-5 max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
-                    {job.bullets.map((bullet) => (
-                      <li key={bullet}>{bullet}</li>
-                    ))}
-                  </ul>
+                  <ExpandableList
+                    items={job.bullets}
+                    shown={job.bulletsShown ?? job.bullets.length}
+                    showAllLabel={experienceCopy.showAll(job.bullets.length)}
+                    showFewerLabel={experienceCopy.showFewer}
+                    className="mt-5"
+                  />
 
                   <CollapsibleTagList tags={job.tech} label={experienceCopy.techLabel} className="mt-5" />
 

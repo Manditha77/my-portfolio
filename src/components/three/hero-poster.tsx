@@ -6,7 +6,9 @@ import { cx } from "@/lib/cx";
 /*
  * Static poster for the hero visual: the hero cube (The Build's blocks, drawn flat at their exact 3D size
  * and angle) in a soft accent glow, with a second, flat glow just below it where it would meet the
- * perspective floor, so the cube reads as floating above it (on phones the glow reads as a shadow).
+ * perspective floor, so the cube reads as floating above it (on phones the glow reads as a shadow). Once
+ * The Build's 3D cube has taken over, both glows follow it (--hero-presence, set by parts-cube.tsx): they
+ * fade out as it dissolves on scroll and return with it.
  * It also plays its part of the cube boot (src/lib/boot.ts) in CSS: at the viewport centre a glowing core
  * appears, the face, edge and corner blocks slide out of it and snap in (src/lib/boot-growth.ts), then it
  * glides into this slot (FLIP: .boot-cube). Its resting state, with motion off, on a return visit and
@@ -65,8 +67,10 @@ export function HeroPoster({ className }: HeroPosterProps) {
         </radialGradient>
       </defs>
 
-      {/* Faint until the cube settles onto the floor in the boot. */}
-      <ellipse className="seq-floor-glow" cx={CENTER} {...FLOOR_GLOW} fill="url(#hero-poster-floor-glow)" />
+      {/* Faint until the cube settles onto the floor in the boot. Both glows follow the 3D cube (.hero-glow). */}
+      <g className="hero-glow">
+        <ellipse className="seq-floor-glow" cx={CENTER} {...FLOOR_GLOW} fill="url(#hero-poster-floor-glow)" />
+      </g>
 
       {/* The core's glow, behind the blocks: only while the cube grows. */}
       <circle className="seq-core-glow" cx={CENTER} cy={CENTER} r={CORE_GLOW} fill="url(#hero-poster-core-glow)" />
@@ -93,7 +97,9 @@ export function HeroPoster({ className }: HeroPosterProps) {
       </g>
 
       {/* Over the cube, as it lies over the 3D canvas, so both read the same. */}
-      <circle cx={CENTER} cy={CENTER} r={CENTER} fill="url(#hero-poster-glow)" />
+      <g className="hero-glow">
+        <circle cx={CENTER} cy={CENTER} r={CENTER} fill="url(#hero-poster-glow)" />
+      </g>
     </svg>
   );
 }

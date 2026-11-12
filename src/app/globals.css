@@ -244,6 +244,12 @@
   display: none;
 }
 
+/* The poster's glows follow The Build's 3D hero cube once it has taken over (parts-cube.tsx sets
+   --hero-presence on the hero visual, damped with the scroll); without it they stay at full strength. */
+.hero-glow {
+  opacity: var(--hero-presence, 1);
+}
+
 /* The poster's resting state is the finished cube: every block in place, no flash. */
 .seq-flash {
   opacity: 0;

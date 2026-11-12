@@ -6,14 +6,16 @@ import { useMotionOn } from "@/lib/use-motion-on";
 
 /*
  * SCAN (from AR Elemental Arena): the game's ring reticle, lying on the perspective floor wherever the
- * pointer meets it, like the game's hit-test reticle finding a surface. It belongs to the hero only: it
- * shows while the pointer is over the hero (below the sticky header) and the hero still fills the top half
- * of the viewport, hides once the page scrolls on, and is clipped to the hero's box, so even its glow never
- * reaches the next section (the floor runs on behind the whole page). Rendered inside
- * PerspectiveFloor, so it sits at the floor's depth: behind all content and behind The Build's cube.
- * The pointer's height gives the depth along the floor; the ring and a faint glow under it are scaled to
- * that depth and flattened by the floor's tilt, so they read as ellipses lying on it. Above the horizon
- * there is no floor to hit, so the reticle hides; it fades as it nears the horizon.
+ * pointer meets it, like the game's hit-test reticle finding a surface. Kept quiet: a small 1px ring at low
+ * opacity, no glow. It belongs to the cube's column of the hero only: it shows while the pointer is around
+ * or below the hero visual (its box widened by ZONE_PAD, down to the hero's bottom, below the sticky header)
+ * and the hero still fills the top half of the viewport, hides once the page scrolls on, and is clipped to
+ * that zone, so it never reaches the hero's text column or the next section (the floor runs on behind the
+ * whole page). Rendered inside PerspectiveFloor, so it sits at the floor's depth: behind all content and
+ * behind The Build's cube. The pointer's height gives the depth along the floor; the ring is scaled to that
+ * depth and flattened by the floor's tilt, so it reads as an ellipse lying on it, with its stroke kept at
+ * about 1px on screen. Above the horizon there is no floor to hit, so the reticle hides; it fades as it
+ * nears the horizon.
  * The floor's geometry is read from its CSS (perspective, perspective-origin, --floor-tilt) and its box.
  * Same gate as the floor: large screen, a mouse-class pointer, site motion on; it wakes once the cube boot
  * is over. The animation loop runs only while the reticle is catching up, so nothing runs while the
@@ -21,8 +23,9 @@ import { useMotionOn } from "@/lib/use-motion-on";
  */
 
 const FLOOR_QUERY = "(min-width: 64rem) and (hover: hover) and (pointer: fine)";
-const RING = 36; // px: the ring's radius where the floor meets the bottom of the viewport
-const GLOW = 3; // the glow's radius, in ring radii
+const RING = 18; // px: the ring's radius where the floor meets the bottom of the viewport
+const STROKE = 1; // px on screen, at any depth
+const ZONE_PAD = 48; // px around the hero visual where the reticle may show
 const EASE_MS = 60; // time constant: ~95% of the way in 180ms
 const SETTLED_PX = 0.3;
 // Fully shown above this on-screen scale, hidden below the lower one (towards the horizon).
@@ -76,18 +79,19 @@ export function HeroReticle() {
   const enabled = motionOn && floorShown && !booting;
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<SVGSVGElement>(null);
+  const circleRef = useRef<SVGCircleElement>(null);
 
   useEffect(() => {
     const root = rootRef.current;
     const layer = layerRef.current;
     const floor = root?.parentElement;
     const hero = document.getElementById("top");
+    const visual = hero?.querySelector<HTMLElement>("[data-boot-cube]");
     const header = document.querySelector("header");
-    const glow = glowRef.current;
     const ring = ringRef.current;
-    if (!enabled || !root || !layer || !floor || !hero || !glow || !ring) return;
+    const circle = circleRef.current;
+    if (!enabled || !root || !layer || !floor || !hero || !visual || !ring || !circle) return;
 
     let geometry = readGeometry(floor);
     const client = { x: 0, y: 0 };
@@ -98,33 +102,51 @@ export function HeroReticle() {
     let frame = 0;
     let last: number | null = null;
 
-    // Transforms only: both circles are centred on the point and scaled to lie on the floor there.
+    // Transforms only: the ring is centred on the point and scaled to lie on the floor there; its stroke is
+    // scaled back up, so it stays about 1px wide on screen.
     const place = (x: number, y: number, height: number) => {
       const scale = geometry && projectOnFloor(y, height, geometry);
       const shown = scale ? Math.min(1, Math.max(0, (scale.x - HIDE_BELOW) / (SHOW_FROM - HIDE_BELOW))) : 0;
       layer.style.opacity = String(shown);
       if (!scale || shown === 0) return;
-      const squash = `scale(${scale.x}, ${scale.y})`;
-      ring.style.transform = `translate3d(${x - RING}px, ${y - RING}px, 0) ${squash}`;
-      glow.style.transform = `translate3d(${x - RING * GLOW}px, ${y - RING * GLOW}px, 0) ${squash}`;
+      ring.style.transform = `translate3d(${x - RING}px, ${y - RING}px, 0) scale(${scale.x}, ${scale.y})`;
+      circle.style.strokeWidth = String(STROKE / scale.x);
     };
 
-    // The hero's visible box in the viewport: below the sticky header.
-    const heroBox = () => {
-      const { top, bottom } = hero.getBoundingClientRect();
-      return { top: Math.max(top, header?.getBoundingClientRect().bottom ?? 0), bottom };
+    // The reticle's zone in the viewport: the hero visual's box widened by ZONE_PAD, down to the hero's
+    // bottom, below the sticky header. The hero's text column is outside it.
+    const zone = () => {
+      const heroRect = hero.getBoundingClientRect();
+      const visualRect = visual.getBoundingClientRect();
+      const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+      return {
+        left: visualRect.left - ZONE_PAD,
+        right: visualRect.right + ZONE_PAD,
+        top: Math.max(visualRect.top - ZONE_PAD, heroRect.top, headerBottom),
+        bottom: heroRect.bottom,
+      };
     };
 
-    // The hero still fills the top half of the viewport, and the pointer is over it.
+    // The hero still fills the top half of the viewport, and the pointer is in the zone.
     const heroShown = () => {
-      const { top, bottom } = heroBox();
-      return bottom > window.innerHeight / 2 && client.y >= top && client.y <= bottom;
+      const { left, right, top, bottom } = zone();
+      const heroBottom = hero.getBoundingClientRect().bottom;
+      return (
+        heroBottom > window.innerHeight / 2 &&
+        client.x >= left &&
+        client.x <= right &&
+        client.y >= top &&
+        client.y <= bottom
+      );
     };
 
-    // Cut to the hero's box (in the floor's coordinates), so nothing of it shows past the hero's edges.
-    const clipToHero = (rect: DOMRect) => {
-      const { top, bottom } = heroBox();
-      root.style.clipPath = `inset(${Math.max(0, top - rect.top)}px 0 ${Math.max(0, rect.bottom - bottom)}px 0)`;
+    // Cut to the zone (in the floor's coordinates), so nothing of it shows past the zone's edges.
+    const clipToZone = (rect: DOMRect) => {
+      const { left, right, top, bottom } = zone();
+      const inset = [top - rect.top, rect.right - right, rect.bottom - bottom, left - rect.left].map(
+        (value) => `${Math.max(0, value)}px`,
+      );
+      root.style.clipPath = `inset(${inset.join(" ")})`;
     };
     const setActive = (active: boolean) => {
       inside = active;
@@ -140,7 +162,7 @@ export function HeroReticle() {
         return;
       }
       const rect = floor.getBoundingClientRect();
-      clipToHero(rect);
+      clipToZone(rect);
       const targetX = client.x - rect.left;
       const targetY = client.y - rect.top;
 
@@ -195,7 +217,7 @@ export function HeroReticle() {
     // Scrolling moves the hero under a still pointer (and its clip with it), and can scroll it away.
     const onScroll = () => {
       if (!inside && pointerIn && heroShown()) setActive(true);
-      if (inside) clipToHero(floor.getBoundingClientRect());
+      if (inside) clipToZone(floor.getBoundingClientRect());
       kick();
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -220,20 +242,15 @@ export function HeroReticle() {
       className="absolute inset-0 opacity-0 transition-opacity duration-fast ease-out data-[active=true]:opacity-100"
     >
       <div ref={layerRef} className="absolute inset-0">
-        <div
-          ref={glowRef}
-          className="absolute top-0 left-0 rounded-full bg-[radial-gradient(closest-side,var(--accent),transparent)] opacity-15"
-          style={{ width: 2 * RING * GLOW, height: 2 * RING * GLOW }}
-        />
-        {/* The AR game's ring: inner radius 0.8 of the outer, so the stroke is a fifth of the radius. */}
+        {/* The AR game's ring, drawn thin: the view box is in px, so the stroke is set in px. */}
         <svg
           ref={ringRef}
           width={2 * RING}
           height={2 * RING}
-          viewBox="0 0 24 24"
-          className="absolute top-0 left-0 fill-none stroke-accent opacity-70"
+          viewBox={`0 0 ${2 * RING} ${2 * RING}`}
+          className="absolute top-0 left-0 overflow-visible fill-none stroke-accent opacity-40"
         >
-          <circle cx="12" cy="12" r="10.8" strokeWidth="2.4" />
+          <circle ref={circleRef} cx={RING} cy={RING} r={RING - STROKE / 2} strokeWidth={STROKE} />
         </svg>
       </div>
     </div>

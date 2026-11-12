@@ -180,6 +180,8 @@ const sameRect = (a: Rect, b: Rect) =>
 
 type BlocksProps = {
   mapRef: RefObject<BuildMap | null>;
+  /** The hero visual: carries --hero-presence for the poster's glows. */
+  heroRef: RefObject<HTMLElement | null>;
   boxRef: RefObject<HTMLDivElement | null>;
   pointerRef: RefObject<PointerState>;
   visible: boolean;
@@ -189,7 +191,7 @@ type BlocksProps = {
   onHeroShown: () => void;
 };
 
-function Blocks({ mapRef, boxRef, pointerRef, visible, onDrawn, onHeroShown }: BlocksProps) {
+function Blocks({ mapRef, heroRef, boxRef, pointerRef, visible, onDrawn, onHeroShown }: BlocksProps) {
   const invalidate = useThree((state) => state.invalidate);
   const visibleRef = useRef(visible);
   const timer = useRef<number | undefined>(undefined);
@@ -217,6 +219,8 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onDrawn, onHeroShown }: B
     heroShown: false,
     /** The cube's turn speed, as a share of SPIN_SPEED: from rest (the poster's angle), eased up. */
     spinRate: 0,
+    /** --hero-presence as last written (-1: not yet). */
+    presence: -1,
   });
   const [uniforms] = useState(createBlockUniforms);
   const [beamUniforms] = useState(() => createBeamUniforms(uniforms));
@@ -317,6 +321,18 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onDrawn, onHeroShown }: B
     const moving = pointer.inside && now - pointer.lastMove < SETTLE_AFTER_MS;
     const idleFor = now - Math.max(pointer.lastActivity, m.mounted) - IDLE_AFTER_MS;
     const breathing = heroWeight === 1 && !moving && idleFor > 0;
+
+    // The poster's glows (HeroPoster, .hero-glow) follow the hero cube: they fade out as the beam dissolves
+    // it and come back as it prints, so the hero never keeps an empty glow.
+    let presence = 0;
+    if (hero && phase === ENTERING) presence = MathUtils.smoothstep(k, 0, 1);
+    else if (hero && phase === FORMED) presence = 1;
+    else if (hero && phase === EXITING) presence = 1 - MathUtils.smoothstep(k, 0, 1);
+    presence = Math.round(presence * 100) / 100;
+    if (presence !== m.presence) {
+      m.presence = presence;
+      heroRef.current?.style.setProperty("--hero-presence", String(presence));
+    }
 
     let separation = moving ? heroWeight : 0;
     if (breathing) separation = idleFor % IDLE_CYCLE_MS < IDLE_APART_MS ? IDLE_SPREAD : 0;
@@ -514,6 +530,14 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
     };
   }, [heroRef, pointerRef]);
 
+  // Unmounted (Motion off, a failure, a narrow window): the poster's glows return at full strength.
+  useEffect(() => {
+    const hero = heroRef.current;
+    return () => {
+      hero?.style.removeProperty("--hero-presence");
+    };
+  }, [heroRef]);
+
   // Rendering stops entirely while the tab is hidden.
   useEffect(() => {
     const update = () => setVisible(!document.hidden);
@@ -550,6 +574,7 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
         >
           <Blocks
             mapRef={mapRef}
+            heroRef={heroRef}
             boxRef={boxRef}
             pointerRef={pointerRef}
             visible={visible}
