@@ -25,6 +25,9 @@ const MID_FROM = 0.3;
 
 const SOLID_FROM = 0.85;
 
+// A face whose view-space normal points up more than this is a top face (bySide); the 3D material's too.
+const SIDE_TOP_FROM = 0.5;
+
 // Two faces that share no more than this much area (view units squared) don't overlap.
 const OVERLAP = 1e-4;
 // Where a face is sampled (across each edge) to tell whether nearer faces hide all of it.
@@ -108,7 +111,11 @@ function depthAt(face: Face, [x, y]: Point): number {
   return oz - (nx * (x - ox) + ny * (y - oy)) / nz;
 }
 
-function shapeFaces(key: ShapeKey): Face[] {
+/**
+ * Every visible face of `key`'s voxels; with `only`, just those voxels, drawn as if alone (one block of
+ * the shape, at its size and view angle).
+ */
+function shapeFaces(key: ShapeKey, only?: readonly Voxel[]): Face[] {
   const shape = BUILD_SHAPES[key];
   const pitch = shape.view?.pitch ?? DEFAULT_VIEW.pitch;
   const yaw = shape.view?.yaw ?? DEFAULT_VIEW.yaw;
@@ -121,14 +128,17 @@ function shapeFaces(key: ShapeKey): Face[] {
     // "systems from parts" mark.
     const solid = (share: number) => key !== "cube" && share >= SOLID_FROM && share < 1;
     const size = (group.block ?? shape.block ?? DEFAULT_BLOCK).map((share) => (solid(share) ? 1 : share));
-    const filled = new Set(group.voxels.map((voxel) => voxel.join(",")));
+    const whole = new Set(group.voxels.map((voxel) => voxel.join(",")));
     // An empty cell walled in on all six sides (the cube's hidden centre) is never seen.
     const enclosed = (cell: Vec3) =>
+      !whole.has(cell.join(",")) &&
       SIDES.every(({ axis, sign }) => {
         const wall = [...cell] as Vec3;
         wall[axis] += sign;
-        return filled.has(wall.join(","));
+        return whole.has(wall.join(","));
       });
+    const voxels = only ?? group.voxels;
+    const filled = new Set(voxels.map((voxel) => voxel.join(",")));
     const pivot: Voxel = group.turn?.pivot ?? [0, 0, 0];
     const place = (point: Vec3): Vec3 => {
       const local: Vec3 = [point[0] - pivot[0], point[1] - pivot[1], point[2] - pivot[2]];
@@ -136,11 +146,11 @@ function shapeFaces(key: ShapeKey): Face[] {
       return view([turned[0] + pivot[0], turned[1] + pivot[1], turned[2] + pivot[2]], pitch, yaw, roll);
     };
 
-    for (const voxel of group.voxels) {
+    for (const voxel of voxels) {
       for (const { axis, sign } of SIDES) {
         const neighbour = [...voxel] as Vec3;
         neighbour[axis] += sign;
-        if (filled.has(neighbour.join(",")) || enclosed(neighbour)) continue;
+        if (filled.has(neighbour.join(",")) || (!only && enclosed(neighbour))) continue;
 
         // The face's four corners, in the block's frame, wound counter-clockwise seen from outside.
         const u = ((axis + 1) % 3) as 0 | 1 | 2;
@@ -249,6 +259,51 @@ function hidden(face: Face, nearer: Face[]): boolean {
   return true;
 }
 
+/**
+ * Faces as paths, view units = `offset` + face units × `scale` (y down), coordinates to `digits` places.
+ * Neighbouring faces with the same `group` (their tone, or their side) merge into one path.
+ */
+function toPaths<G extends string>(
+  faces: Face[],
+  group: (face: Face) => G,
+  scale: number,
+  offsetX: number,
+  offsetY: number,
+  digits: number,
+): { group: G; d: string }[] {
+  const unit = 10 ** digits;
+  const round = (n: number) => Math.round(n * unit) / unit;
+  // Shortest form: no leading zero, and a minus sign doubles as the separator.
+  const format = (n: number) => String(round(n)).replace(/^(-?)0\./, "$1.");
+  const pair = (x: number, y: number) => `${format(x)}${y < 0 ? "" : " "}${format(y)}`;
+
+  const paths: { group: G; d: string }[] = [];
+  for (const face of faces) {
+    // Rounded first, so the relative steps add up exactly.
+    const points = face.points.map(([x, y]) => [round(offsetX + x * scale), round(offsetY - y * scale)]);
+    const steps = points.slice(1).map(([x, y], i) => pair(x - points[i][0], y - points[i][1]));
+    const d = `M${pair(points[0][0], points[0][1])}l${steps.reduce((all, step) => all + (step.startsWith("-") ? "" : " ") + step)}z`;
+    const last = paths.at(-1);
+    if (last?.group === group(face)) last.d += d;
+    else paths.push({ group: group(face), d });
+  }
+  return paths;
+}
+
+const byTone = (face: Face) => face.tone;
+const asMarkPaths = (paths: { group: MarkTone; d: string }[]): MarkPath[] =>
+  paths.map(({ group, d }) => ({ tone: group, d }));
+
+export type BlockSide = "top" | "left" | "right";
+export type SidePath = { side: BlockSide; d: string };
+
+/**
+ * Which way a face looks in view space (y up): up, or to the left or right. The light theme's solid blocks
+ * are toned by this (globals.css --solid-*); The Build's 3D material uses the same rule
+ * (src/components/three/build-material.ts), so the two match at rest.
+ */
+const bySide = ({ normal: [x, y] }: Face): BlockSide => (y > SIDE_TOP_FROM ? "top" : x < 0 ? "left" : "right");
+
 /** A shape as paths in a `size`×`size` view box, `pad` clear on every side, coordinates to `digits` places. */
 export function markPaths(key: ShapeKey, { size = 24, pad = 1, digits = 1 } = {}): MarkPath[] {
   const faces = paintOrder(shapeFaces(key));
@@ -265,23 +320,25 @@ export function markPaths(key: ShapeKey, { size = 24, pad = 1, digits = 1 } = {}
     }
   }
   const scale = (size - 2 * pad) / Math.max(right - left, top - bottom);
-  const offsetX = size / 2 - ((left + right) / 2) * scale;
-  const offsetY = size / 2 + ((bottom + top) / 2) * scale;
-  const unit = 10 ** digits;
-  const round = (n: number) => Math.round(n * unit) / unit;
-  // Shortest form: no leading zero, and a minus sign doubles as the separator.
-  const format = (n: number) => String(round(n)).replace(/^(-?)0\./, "$1.");
-  const pair = (x: number, y: number) => `${format(x)}${y < 0 ? "" : " "}${format(y)}`;
+  return asMarkPaths(
+    toPaths(faces, byTone, scale, size / 2 - ((left + right) / 2) * scale, size / 2 + ((bottom + top) / 2) * scale, digits),
+  );
+}
 
-  const paths: MarkPath[] = [];
-  for (const face of faces) {
-    // Rounded first, so the relative steps add up exactly.
-    const points = face.points.map(([x, y]) => [round(offsetX + x * scale), round(offsetY - y * scale)]);
-    const steps = points.slice(1).map(([x, y], i) => pair(x - points[i][0], y - points[i][1]));
-    const d = `M${pair(points[0][0], points[0][1])}l${steps.reduce((all, step) => all + (step.startsWith("-") ? "" : " ") + step)}z`;
-    const last = paths.at(-1);
-    if (last?.tone === face.tone) last.d += d;
-    else paths.push({ tone: face.tone, d });
-  }
-  return paths;
+/**
+ * One block of `key`, drawn alone at its view angle, `unit` view units per voxel and centred on (0, 0): the
+ * hero poster's cube is drawn block by block from this, so each can slide into place in the cube boot, and
+ * lands exactly where the 3D blocks rest. Painted far to near, the blocks cover each other as the 3D
+ * ones do.
+ */
+export function blockPaths(key: ShapeKey, { unit, digits = 1 }: { unit: number; digits?: number }): MarkPath[] {
+  return asMarkPaths(toPaths(paintOrder(shapeFaces(key, [[0, 0, 0]])), byTone, unit, 0, 0, digits));
+}
+
+/** The same block as `blockPaths`, its faces grouped by the way they look (top, left, right) instead of tone. */
+export function blockSidePaths(key: ShapeKey, { unit, digits = 1 }: { unit: number; digits?: number }): SidePath[] {
+  return toPaths(paintOrder(shapeFaces(key, [[0, 0, 0]])), bySide, unit, 0, 0, digits).map(({ group, d }) => ({
+    side: group,
+    d,
+  }));
 }

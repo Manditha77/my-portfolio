@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
-import { caseStudyHref, xrProjects } from "@/content/xr";
+import { caseStudies, caseStudyHref } from "@/content/case-studies";
 import { absoluteUrl } from "@/lib/site-url";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: absoluteUrl("/"), priority: 1 },
-    ...xrProjects.map((project) => ({ url: absoluteUrl(caseStudyHref(project)), priority: 0.8 })),
+    ...caseStudies.map((project) => ({ url: absoluteUrl(caseStudyHref(project)), priority: 0.8 })),
   ];
 }

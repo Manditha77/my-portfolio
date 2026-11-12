@@ -9,7 +9,7 @@ type BadgeProps = {
 
 const variants = {
   default: "border-border text-text-muted",
-  accent: "border-accent text-accent",
+  accent: "border-accent text-accent-ink",
 } as const;
 
 export function Badge({ children, variant = "default", className }: BadgeProps) {

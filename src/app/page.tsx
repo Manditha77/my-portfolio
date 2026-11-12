@@ -7,6 +7,8 @@ import { Skills } from "@/components/sections/skills";
 import { Work } from "@/components/sections/work";
 import { Writing } from "@/components/sections/writing";
 import { XrSpotlight } from "@/components/sections/xr-spotlight";
+import { BootStage } from "@/components/ui/boot-stage";
+import { PerspectiveFloor } from "@/components/ui/perspective-floor";
 import { ScanObserver } from "@/components/ui/scan-observer";
 import { personJsonLd, serializeJsonLd } from "@/lib/json-ld";
 
@@ -21,6 +23,8 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(personJsonLd()) }}
       />
+      <BootStage />
+      <PerspectiveFloor />
       <Hero />
       <Work />
       <XrSpotlight />

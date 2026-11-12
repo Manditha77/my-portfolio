@@ -12,12 +12,17 @@ import type { CreatureViewerLabels } from "./creature-viewer";
  * is the fallback and loading state. The viewer chunk and its first model are only requested on large
  * screens with a fine hover pointer, site motion on, no Save-Data and WebGL2, and only once the card
  * first scrolls into view. If the conditions stop holding, the viewer unmounts and frees its models.
+ * Every time it turns on (first entry, Motion back on, the home page shown again after a client navigation,
+ * a bfcache restore) it mounts a brand-new canvas: the old one's context is lost on purpose as it unmounts.
+ * A failure only rules out the canvas it happened in.
  */
 
 const CreatureViewer = dynamic(() => import("./creature-viewer").then((m) => m.CreatureViewer), {
   ssr: false,
   loading: () => null,
 });
+
+let lastViewerKey = 0;
 
 function subscribeCapable(onChange: () => void) {
   const media = window.matchMedia(CAPABLE_QUERY);
@@ -44,13 +49,26 @@ export function CreatureStage({ creatures, labels, children }: CreatureStageProp
   const motionOn = useMotionOn();
   const capable = useCapable();
   const [seen, setSeen] = useState(false);
-  const [failed, setFailed] = useState(false);
+  // The mounted viewer's key (null: no viewer), and the key of the viewer that failed, if any.
+  const [viewerKey, setViewerKey] = useState<number | null>(null);
+  const [failedKey, setFailedKey] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
   const [active, setActive] = useState(true);
+  const [restored, setRestored] = useState(0);
 
-  const eligible = motionOn && capable && !failed;
-  const show = eligible && seen;
+  const eligible = motionOn && capable;
+  const show = viewerKey !== null && viewerKey !== failedKey;
   const live = show && ready;
+  const fail = () => setFailedKey(viewerKey);
+
+  // Back from the bfcache: start over with a new canvas (the frozen one may have lost its context).
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setRestored((count) => count + 1);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   // Wait for the card's first entry into view (a little past the edge, as the SCAN sweep does).
   useEffect(() => {
@@ -68,6 +86,17 @@ export function CreatureStage({ creatures, labels, children }: CreatureStageProp
     return () => observer.disconnect();
   }, [eligible, seen]);
 
+  // Once seen, each turn-on mounts a new viewer. Re-runs when the page is shown again (a hidden page runs
+  // its cleanups) and after a bfcache restore.
+  useEffect(() => {
+    if (!eligible || !seen) return;
+    const frame = requestAnimationFrame(() => setViewerKey(++lastViewerKey));
+    return () => {
+      cancelAnimationFrame(frame);
+      setViewerKey(null);
+    };
+  }, [eligible, seen, restored]);
+
   // While mounted: pause when off-screen or the tab is hidden.
   useEffect(() => {
     const wrapper = wrapperRef.current;
@@ -83,15 +112,15 @@ export function CreatureStage({ creatures, labels, children }: CreatureStageProp
       {show && (
         <div
           inert={!live}
-          className="absolute inset-0 opacity-0 transition-opacity duration-200 group-data-[3d=ready]:opacity-100"
+          className="absolute inset-0 opacity-0 transition-opacity duration-base group-data-[3d=ready]:opacity-100"
         >
-          <SilentBoundary onError={() => setFailed(true)}>
+          <SilentBoundary key={viewerKey} onError={fail}>
             <CreatureViewer
               creatures={creatures}
               labels={labels}
               active={active}
               onReadyChange={setReady}
-              onFail={() => setFailed(true)}
+              onFail={fail}
             />
           </SilentBoundary>
         </div>

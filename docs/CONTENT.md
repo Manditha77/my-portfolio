@@ -8,7 +8,7 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 ## Identity & links
 
 - **Name:** Manditha Madushanka (full: Manditha Madushanka Athukorala)
-- **Headline:** Software Engineer · building VR/AR on the side
+- **Headline:** Full-stack Software Engineer · Java, Spring Boot & React · also building in VR/AR
 - **Status:** Open to Associate Software Engineer roles
 - **Location (city level only):** Colombo, Sri Lanka
 - **Email:** manditha77madushanka@gmail.com
@@ -23,8 +23,8 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 ## Hero copy (draft)
 
 **H1:** Manditha Madushanka
-**Tagline:** Software Engineer · building VR/AR on the side
-**Intro:** Final-year IT undergraduate at the University of Kelaniya. I build full-stack systems with Java, Spring Boot and React, most recently as a Software Engineer Intern on aeroPORT, a Departure Control System used by Air Arabia.
+**Tagline:** Full-stack Software Engineer · Java, Spring Boot & React · also building in VR/AR
+**Intro:** I build full-stack systems with Java, Spring Boot and React. I gained industry experience as a Software Engineer Intern in the aeroPORT team at Information Systems Associates, building an airline Departure Control System.
 **Status pill:** Open to Associate Software Engineer roles
 **CTAs:** View my work · Download CV · GitHub · LinkedIn
 
@@ -33,40 +33,62 @@ Sources: CV (Oct 2026), GitHub repos, and Manditha's own notes.
 ## Selected Work (SE)
 
 > Each home section shows a small mono label ("01 / Work") above its heading. Nav labels and these mono labels stay as they are; the headings below are what the big h2 says.
+> Home cards stay short: a one-sentence blurb and either stat chips or at most 3 short bullets. The detail lives in a case study.
 
 **Heading:** Selected projects
-**Section intro:** Two full-stack Java and Spring Boot systems, and the research from my final-year dissertation.
+**Section intro:** The research from my final-year dissertation, and two full-stack Java and Spring Boot systems.
+**Order:** PPCH Framework, GroceryEase, Employee Management System, then This portfolio (stacked, no carousel).
 
-### 1. GroceryEase: Web-based grocery management system
-- **Year:** 2024–2025 · **Type:** Solo project
-- **Repo:** https://github.com/Manditha77/groceryease_sdp
-- **Stack:** Java, Spring Boot, React.js, JavaScript, MySQL
-- **Card blurb:** A full-stack grocery management system I built solo for Samantha Store, with inventory tracking, credit-sales management, supplier coordination and an online storefront for customer pre-orders.
-- **Highlights:**
-  - Spring Boot backend with a MySQL database
-  - Two React frontends: a store-management app and a customer e-commerce site
-  - Inventory tracking, credit sales and supplier coordination
-- **Status note:** Planned for Microsoft Azure deployment with security enhancements (do not claim it is deployed).
-- **Media:** TODO: 2–3 screenshots (admin dashboard, storefront, inventory), plus an architecture diagram from `diagrams/`.
-
-### 2. PPCH Framework: Predictive and Proactive Code Health (dissertation)
+### 1. PPCH Framework: Predictive and Proactive Code Health (dissertation)
 - **Year:** 2026 · **Type:** Final-year dissertation · **Status:** Completed
 - **Repo:** https://github.com/Manditha77/ppch-framework
 - **Stack:** Python, scikit-learn, XGBoost, GitHub REST API, SonarQube (SonarScanner), GitHub Actions, Java (Apache Commons)
-- **Card blurb:** My final-year research: a Sense–Analyze–Act framework that predicts when a Java pull request will increase code complexity, and proposes verified refactorings before it merges. Trained on 334 real Apache Commons pull requests and deployed as a working GitHub Action.
-- **How it works:**
-  - **Sense:** mines PR history through the GitHub REST API and runs SonarScanner on before/after snapshots to build a leakage-safe dataset of 334 PRs
-  - **Analyze:** compares four models with 1,000-iteration bootstrap validation; the best, Logistic Regression, reached 0.78 AUC
-  - **Act:** an ILP-based Extract Method engine proposes refactorings behind four safety checks; every applied suggestion was re-verified safe by a real SonarQube scan
-  - **Deployed:** a GitHub Action (Random Forest + XGBoost) that comments on real PRs at submission. A reactive scanner took a mean 82 hours (median 13) to flag complexity-increasing PRs; the Action caught 42% of them (22 of 52) before merge
-- **Connection:** Grew out of refactoring and SonarQube work during my internship.
+- **Card blurb:** My final-year research: a framework that predicts when a Java pull request will increase code complexity, and proposes verified refactorings before it merges.
+- **Stat chips (count up):** 334 PRs · 0.78 AUC · 42% caught before merge
+- **Card buttons:** Read the case study · View code on GitHub
+- **Connection (case study note):** Grew out of refactoring and SonarQube work during my internship.
+
+#### Case study (`/work/ppch-framework`)
+
+**The problem**
+Code-quality issues are usually found after a pull request merges. Can complexity risk be predicted when a pull request is submitted, and fixed before it merges?
+
+**How it works**
+1. **Sense:** mines PR history through the GitHub REST API and runs SonarScanner on before/after snapshots to build a leakage-safe dataset of 334 PRs.
+2. **Analyze:** compares four models with 1,000-iteration bootstrap validation; the best, Logistic Regression, reached 0.78 AUC.
+3. **Act:** an ILP-based Extract Method engine proposes refactorings behind four safety checks; every applied suggestion was re-verified safe by a real SonarQube scan.
+
+**Results**
+- **Dataset:** 1,767 PRs scraped → 500 sampled → 497 scanned → 334 usable.
+- **Model comparison** (mean AUC, 1,000-iteration bootstrap validation): Logistic Regression 0.780 (95% CI 0.709–0.847), XGBoost 0.750, Random Forest 0.746, Naive Bayes 0.660.
+- **Act engine:** ILP-based Extract Method with four safety checks (return-forwarding, break/continue, independent-variable mutation, non-productive extraction). 10 suggestions applied, each re-verified safe by a real SonarQube scan; 4 correctly declined; 0 unsafe.
+- **Deployed GitHub Action:** a reactive scanner took a mean 82.4 h (median 12.9 h) to flag complexity-increasing PRs. The Action caught 22 of 52 (42.3%) before merge.
+
+**Limitations**
+The deployed Action runs Random Forest + XGBoost; Logistic Regression was found best later, in the four-model comparison.
+
+**Links:** repo (header button).
+
+### 2. GroceryEase: Web-based grocery management system
+- **Year:** 2024–2025 · **Type:** Solo project
+- **Repo:** https://github.com/Manditha77/groceryease_sdp
+- **Stack:** Java, Spring Boot, React.js, JavaScript, MySQL
+- **Card blurb:** A full-stack grocery management system I built solo for Samantha Store.
+- **Highlights:**
+  - Spring Boot backend with a MySQL database
+  - Two React frontends: a store-management app and a customer storefront for pre-orders
+  - Inventory tracking, credit sales and supplier coordination
+- **Status note (not shown on the card):** Planned for Microsoft Azure deployment with security enhancements (do not claim it is deployed).
+- **Media:** TODO: 2–3 screenshots (admin dashboard, storefront, inventory), plus an architecture diagram from `diagrams/`.
 
 ### 3. Employee Management System
 - **Year:** 2025 · **Type:** Team project
 - **Repo:** https://github.com/SenudaJK/Employee-Management
 - **Stack:** Java, Spring Boot, JavaScript, HTML, Docker, Microsoft Azure
 - **Card blurb:** A full-stack employee records system with full CRUD, containerised with Docker and deployed on Microsoft Azure.
-- **My role:** Handled the Docker containerisation and Azure deployment, and contributed to parts of the Spring Boot backend.
+- **Highlights:**
+  - My part: the Docker containerisation and the Azure deployment
+  - Also contributed to parts of the Spring Boot backend
 - **Media:** TODO: screenshot(s); optional deployment diagram.
 
 ### 4. This portfolio (compact entry)
@@ -74,13 +96,9 @@ Compact card after 1–3 and before "More on GitHub"; visually secondary to the 
 - **Year:** 2026 · **Type:** Personal project · **Status:** Live
 - **Repo:** https://github.com/Manditha77/my-portfolio (link label: "View source on GitHub")
 - **Stack:** Next.js, TypeScript, Tailwind CSS, React Three Fiber, three.js, Motion, Vercel
-- **Card blurb:** The site you're reading, built to be fast, accessible and honest: every fact comes from one content file, and the single 3D element only loads where it won't slow anyone down.
-- **Highlights:**
-  - Next.js, strict TypeScript and Tailwind, with content kept in typed data files
-  - Lazy-loaded 3D that phones and reduced-motion users never download
-  - Lighthouse on mobile (Oct 2026): 99 / 100 / 100 / 100, with WCAG AA in both themes
-  - Built with Claude Code from a written design brief, one reviewed step at a time
-- **Note:** Lighthouse figures are from a mobile run in Oct 2026; re-run before changing them.
+- **Card blurb:** The site you're reading: fast, accessible, and built from one typed content file.
+- **Chips:** Accessibility 100 · WCAG AA · 3D lazy-loaded
+- **Note:** "Accessibility 100" is the Lighthouse mobile Accessibility score (Nov 2026: 100 in 5 of 5 runs on the production build); re-run before changing it.
 
 **More on GitHub:** link to https://github.com/Manditha77?tab=repositories
 
@@ -103,16 +121,16 @@ Compact card after 1–3 and before "More on GitHub"; visually secondary to the 
 - **Platform:** Windows build (OpenXR); developed and demonstrated with the XR Device Simulator. (If tested on a real headset later, update this line.)
 
 #### Images (public/images/xr/electrical-safety-vr/)
-| File | Shows | Alt text |
-|---|---|---|
-| overview.png | Workshop entrance: welcome board, PPE station, workbench | VR electrical workshop with a welcome board, a PPE station and a workbench |
-| ppe.png | Putting on PPE at the PPE station (PPE 1 / 6) | Trainee picking up an insulated glove at the PPE station, with a PPE progress counter |
-| hazard.png | Wet-floor hazard with its risk panel and the Safe Isolation poster | Wet-floor hazard beside Workstation 2 with a risk panel and the Safe Isolation steps poster |
-| fuse-snap.png | Fitting the new fuse ("Release to fit") next to the damaged-parts bin | Fitting a new fuse into Workstation 2, with the damaged-parts bin beside it |
-| results.png | Training results: PASS – EXCELLENT | Training results screen showing a pass, 6 of 6 job steps, 4 of 4 hazards and zero unsafe actions |
+| File | Shows | Gallery caption | Alt text |
+|---|---|---|---|
+| overview.png | Workshop entrance: welcome board, PPE station, workbench | The workshop entrance | VR electrical workshop with a welcome board, a PPE station and a workbench |
+| ppe.png | Putting on PPE at the PPE station (PPE 1 / 6) | Putting on PPE | Trainee picking up an insulated glove at the PPE station, with a PPE progress counter |
+| hazard.png | Wet-floor hazard with its risk panel and the Safe Isolation poster | Spotting a wet-floor hazard | Wet-floor hazard beside Workstation 2 with a risk panel and the Safe Isolation steps poster |
+| fuse-snap.png | Fitting the new fuse ("Release to fit") next to the damaged-parts bin | Fitting the new fuse | Fitting a new fuse into Workstation 2, with the damaged-parts bin beside it |
+| results.png | Training results: PASS – EXCELLENT | Training results | Training results screen showing a pass, 6 of 6 job steps, 4 of 4 hazards and zero unsafe actions |
 
-#### Home page spotlight blurb
-A VR training simulator where trainees learn electrical workshop safety by doing. They put on the right PPE, find and make safe hazards against the clock, then isolate, prove dead and replace a blown fuse in the correct order, and get a scored result at the end. I built the indoor workshop and integrated our five-person team's work into the final build.
+#### Home page spotlight blurb (2 sentences; the case study holds the detail)
+A VR training simulator where trainees put on the right PPE, make hazards safe against the clock, and replace a blown fuse in the correct, safe order. I built the indoor workshop and integrated our five-person team's work into the final build.
 
 #### Case study (`/work/electrical-safety-vr`)
 
@@ -187,16 +205,16 @@ Alt text: "Fire summon card", "Water summon card", "Earth summon card", "Air sum
 Home card creature viewer (desktop only) caption: "<Name> from AR Elemental Arena: drag to rotate, click to animate".
 
 #### Screenshots (public/images/xr/ar-elemental-arena/), portrait phone screenshots, 720×1600
-| File | In gallery | Alt text |
-|---|---|---|
-| menu.jpeg | yes | Game menu in Chrome on Android with two options: scan a summon card (marker-based AR) or deploy the battle arena (markerless AR) |
-| summon-water.jpeg | yes (also the home card visual and video placeholder) | The Tide Serpent creature waving on top of the scanned water summon card, with the roster at 1 of 4 |
-| summon-earth.jpeg | yes | The Stone Golem creature walking on the scanned earth summon card, with the roster at 2 of 4 |
-| battle.jpeg | yes (also the share image) | Stone Golem facing an Ember Drake in the AR arena on a real desk, with health bars, an "Air buff: Overcast" weather banner and Attack and Defend buttons |
-| battle-low-health.jpeg | **no**: the camera scene is rotated sideways (the UI is upright) | — |
+| File | In gallery | Gallery caption | Alt text |
+|---|---|---|---|
+| menu.jpeg | yes | Choosing an AR mode | Game menu in Chrome on Android with two options: scan a summon card (marker-based AR) or deploy the battle arena (markerless AR) |
+| summon-water.jpeg | yes (also the home card visual and video placeholder) | Summoning Tide Serpent | The Tide Serpent creature waving on top of the scanned water summon card, with the roster at 1 of 4 |
+| summon-earth.jpeg | yes | Summoning Stone Golem | The Stone Golem creature walking on the scanned earth summon card, with the roster at 2 of 4 |
+| battle.jpeg | yes (also the share image) | Battling Ember Drake | Stone Golem facing an Ember Drake in the AR arena on a real desk, with health bars, an "AIR BUFF — OVERCAST" weather banner and Attack and Defend buttons |
+| battle-low-health.jpeg | **no**: the camera scene is rotated sideways (the UI is upright) | — | — |
 
-#### Home page card blurb
-A mobile web AR game. Scan physical summon cards to collect four elemental creatures, then place a battle arena on a real table or floor and fight a real-time battle against an AI opponent. The local live weather gives one element a damage buff. Built solo; it runs in Chrome on Android, with no app to install.
+#### Home page card blurb (2 sentences; the case study holds the detail)
+A mobile web AR game: scan physical summon cards to collect elemental creatures, then place an arena on a real table or floor and battle an AI opponent, with the local weather buffing one element. Built solo; it runs in Chrome on Android with no app to install.
 
 #### Case study (`/work/ar-elemental-arena`)
 
@@ -207,7 +225,7 @@ The assignment required both marker-based and markerless AR, plus a data-driven 
 1. **Summon (marker-based AR):** point the camera at a summon card and its creature appears on the card. Drag to rotate, pinch to resize, and tap to cycle its animations, each with matching sound effects. Every card scanned adds that creature to your roster.
 2. **Choose your creature** from the ones you've scanned. The enemy is picked at random.
 3. **Deploy the arena (markerless AR):** a reticle finds a real floor or table; tap to place the arena, and both creatures appear facing each other.
-4. **Weather buff:** with your permission, the game reads the current weather at your location and gives one element ×1.5 damage for that match (for example "AIR BUFF — Overcast").
+4. **Weather buff:** with your permission, the game reads the current weather at your location and gives one element ×1.5 damage for that match (for example "AIR BUFF — OVERCAST").
 5. **Fight in real time:** tap to move within the arena, attack when in range, and defend to halve the next hit. The enemy AI acts on its own timer: it approaches, winds up attacks you can react to, defends, retreats when low and taunts. Hits show floating damage numbers and vibrate the phone.
 6. **Win or lose,** then play again.
 
@@ -250,15 +268,15 @@ AR bugs rarely show up as errors: a black screen, a silently ignored animation o
 
 **Heading:** Where I've worked
 
-### Software Engineer Intern: Information Systems Associates (Pvt) Ltd
+### Software Engineer Intern: Information Systems Associates (ISA)
 - **Dates:** Jul 2025 – Jan 2026 · Colombo, Sri Lanka
-- **Product:** aeroPORT, a microservices-based Departure Control System (DCS) used by Air Arabia for check-in, boarding, baggage and passenger operations
-- **Bullets:**
+- **Product:** aeroPORT, ISA's microservices-based airline Departure Control System for check-in, boarding, baggage and passenger operations
+- **Bullets** (strongest first; the card shows the first 4, then a "Show all 6" button):
   - Built Java and Spring Boot backend flows that process Passenger Name Lists (PNL) for check-in, seat assignment and boarding
   - Shipped enhancements across core DCS modules, on both backend services and React.js / Next.js frontend components
   - Debugged data flows spanning multiple microservices, Apache Kafka topics and gRPC calls
-  - Refactored backend services for readability and maintainability
   - Raised frontend unit-test coverage to meet SonarQube quality standards
+  - Refactored backend services for readability and maintainability
   - Worked in an Agile/Scrum team (sprint planning, stand-ups, reviews, retrospectives)
 - **Tech (most relevant first; cards show the first six):** Java, Spring Boot, Apache Kafka, gRPC, Microservices, React.js, Next.js, PostgreSQL, REST, SonarQube, Git, Bitbucket
 
@@ -268,7 +286,7 @@ AR bugs rarely show up as errors: a black screen, a silently ignored animation o
 - Main Coordinator, IM Auwrudu, Industrial Management Science Students' Association, 2024
 
 ### Education
-- BSc (Hons) Management and Information Technology (IT specialisation), University of Kelaniya, 2023 – present
+- BSc (Hons) Information Technology, University of Kelaniya, 2023 – 2026
 
 ---
 
@@ -295,9 +313,9 @@ AR bugs rarely show up as errors: a black screen, a silently ignored animation o
 
 **Heading:** A bit about me
 
-I'm Manditha, a final-year Management and Information Technology undergraduate at the University of Kelaniya, Sri Lanka.
+I'm Manditha, a software engineer from Sri Lanka. I've just completed my BSc (Hons) in Information Technology at the University of Kelaniya.
 
-My internship at Information Systems Associates put me inside a live airline system, where I learned to trace a problem across microservices, Kafka topics and gRPC calls, and to leave code cleaner than I found it. That interest in code quality became my dissertation.
+My internship in the aeroPORT team at Information Systems Associates put me inside a live airline system, where I learned to trace a problem across microservices, Kafka topics and gRPC calls, and to leave code cleaner than I found it. That interest in code quality became my dissertation.
 
 On the side, I build in VR and AR with Unity and WebXR, and I write about hands-on experiments, like running Stable Diffusion on my laptop's GPU or setting up my own VPN on Azure. At university I've helped run hackX 9.0 and the SCSE 2025 research conference.
 

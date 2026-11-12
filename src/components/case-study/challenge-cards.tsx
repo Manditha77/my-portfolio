@@ -1,5 +1,7 @@
 import type { TechnicalChallenge } from "@/content/xr";
+import { cardHover } from "@/components/ui/card";
 import { ScanFrame } from "@/components/ui/scan-frame";
+import { cx } from "@/lib/cx";
 
 type ChallengeCardsProps = {
   challenges: readonly TechnicalChallenge[];
@@ -18,9 +20,9 @@ export function ChallengeCards({ challenges, idPrefix }: ChallengeCardsProps) {
             <article
               aria-labelledby={headingId}
               data-scan={`${idPrefix}-challenge-${index + 1}`}
-              className="relative h-full rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out hover:border-accent/60 sm:p-6"
+              className={cx("relative h-full rounded-lg border border-border bg-surface p-5 sm:p-6", cardHover)}
             >
-              <p aria-hidden="true" className="font-mono text-xs text-accent">
+              <p aria-hidden="true" className="font-mono text-xs text-accent-ink">
                 {String(index + 1).padStart(2, "0")}
               </p>
               <h3 id={headingId} className="mt-2 text-lg font-semibold tracking-tight">

@@ -1,9 +1,12 @@
 import type { CompactProject } from "@/content/projects";
-import { withCountUp } from "@/lib/measured";
+import { workCopy } from "@/content/projects";
+import { cx } from "@/lib/cx";
 import { Badge } from "./badge";
+import { cardHover } from "./card";
 import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
 import { ScanFrame } from "./scan-frame";
+import { StatChips } from "./stat-chips";
 
 type CompactProjectCardProps = {
   project: CompactProject;
@@ -20,7 +23,7 @@ export function CompactProjectCard({ project }: CompactProjectCardProps) {
     <article
       aria-labelledby={headingId}
       data-scan={project.slug}
-      className="relative rounded-lg border border-border p-4 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-5 lg:grid lg:grid-cols-2 lg:gap-x-10"
+      className={cx("relative rounded-lg border border-border p-4 sm:p-5 lg:grid lg:grid-cols-2 lg:gap-x-10", cardHover)}
     >
       <div className="lg:col-start-1 lg:row-start-1">
         <div className="flex flex-wrap gap-2">
@@ -37,11 +40,7 @@ export function CompactProjectCard({ project }: CompactProjectCardProps) {
       </div>
 
       <div className="mt-4 flex flex-col gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
-        <ul className="max-w-measure list-disc space-y-1 pl-5 text-sm marker:text-accent">
-          {project.highlights.map((highlight) => (
-            <li key={highlight}>{withCountUp(highlight, project.countUp)}</li>
-          ))}
-        </ul>
+        <StatChips chips={project.chips} countUp={project.countUp} label={workCopy.chipsLabel} />
 
         <CollapsibleTagList tags={project.stack} />
       </div>
@@ -49,11 +48,11 @@ export function CompactProjectCard({ project }: CompactProjectCardProps) {
       <p className="pt-4 lg:col-start-1 lg:row-start-2 lg:self-end">
         <a
           href={project.link.href}
-          className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-accent hover:underline hover:underline-offset-4"
+          className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-accent-ink hover:underline hover:underline-offset-4"
         >
           <GitHubIcon className="size-4" />
           {project.link.label}
-          <span aria-hidden="true" className="transition-transform duration-150 ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
+          <span aria-hidden="true" className="transition-transform duration-fast ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
             →
           </span>
         </a>

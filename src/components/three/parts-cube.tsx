@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { MathUtils, Matrix4, Vector3, type InstancedMesh, type Mesh, type ShaderMaterial } from "three";
 import { setBuildDock } from "@/lib/build-dock";
@@ -9,6 +9,7 @@ import {
   createBeamUniforms,
   createBlockUniforms,
   fragmentShader,
+  onThemeChange,
   readTokenColors,
   vertexShader,
   type BeamUniforms,
@@ -17,13 +18,11 @@ import {
 import {
   BLOCK,
   BLOCKS,
-  INTRO,
   REST,
   beamHalf,
+  beamOpacity,
   createPoses,
   fillShape,
-  introBeam,
-  introPoses,
   placePoses,
   printPoses,
   type Pose,
@@ -43,8 +42,8 @@ import {
 
 /*
  * "The Build": the hero's "systems from parts" cube as one continuous scroll companion. 100 instanced
- * blocks in one draw call with no textures, plus the build beam (one thin plane). On load the cube is
- * created once: its blocks fly in from deep in the background and land as the beam rises through it.
+ * blocks in one draw call with no textures, plus the build beam (one thin plane). It mounts once the cube
+ * boot is over (HeroVisual), so its hero cube fades in over the finished poster, then starts to turn.
  * Each home section has a free box beside its heading (build-scroll.ts). As a box scrolls in, the beam
  * rises through it and prints that section's shape (build-shapes.ts) layer by layer; the shape holds
  * while the heading is in view, then the beam falls through it and dissolves it as it scrolls away, and
@@ -104,21 +103,12 @@ const BOX_PAD = 2;
 
 // The build beam's height on screen (its core is ~2px; the rest is its soft halo), px.
 const BEAM_PX = 24;
-// The beam fades in and out over this share of a print or dissolve.
-const BEAM_FADE = 0.08;
-// Intro: blocks wait within this share of the hero box's half-size, clear of its edges.
-const INTRO_REACH = 0.75;
-// After the intro the cube's turn eases up to speed (~95% in 1s).
+// The cube's turn eases up to speed once it shows (~95% in 1s).
 const SPIN_EASE = 3;
-
-// The hero creation plays once per page load: not again when the companion remounts (Motion toggled,
-// or back on the home page after a case study).
-let introPlayed = false;
 
 // Reused every frame (there is only ever one companion), so a frame allocates nothing.
 const scratch = {
   placed: createPoses(),
-  intro: createPoses(),
   out: createPoses(),
   cube: { ...REST } as PoseInput,
   shape: { ...REST } as PoseInput,
@@ -191,13 +181,18 @@ const sameRect = (a: Rect, b: Rect) =>
 
 type BlocksProps = {
   mapRef: RefObject<BuildMap | null>;
+  /** The hero visual: carries --hero-presence for the poster's glows. */
+  heroRef: RefObject<HTMLElement | null>;
   boxRef: RefObject<HTMLDivElement | null>;
   pointerRef: RefObject<PointerState>;
   visible: boolean;
-  onReady: () => void;
+  /** The canvas has drawn: it fades in. */
+  onDrawn: () => void;
+  /** The 3D hero cube is showing: the poster's cube can go. */
+  onHeroShown: () => void;
 };
 
-function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
+function Blocks({ mapRef, heroRef, boxRef, pointerRef, visible, onDrawn, onHeroShown }: BlocksProps) {
   const invalidate = useThree((state) => state.invalidate);
   const visibleRef = useRef(visible);
   const timer = useRef<number | undefined>(undefined);
@@ -219,26 +214,28 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     liveStop: -1,
     /** Off screen with something to play: the next scroll asks for a frame even if the path didn't move. */
     sleeping: false,
-    /** Hero creation: -1 until the first frame decides, then seconds in, Infinity once done or skipped. */
-    intro: -1,
-    /** performance.now() when the intro ended (the idle breathing waits from here too). */
-    introEnded: 0,
-    /** The cube's turn speed, as a share of SPIN_SPEED: held at 0 through the intro, then eased up. */
-    spinRate: 1,
+    /** performance.now() of the first frame (the idle breathing waits from here too). */
+    mounted: 0,
+    /** onHeroShown has been called. */
+    heroShown: false,
+    /** The cube's turn speed, as a share of SPIN_SPEED: from rest (the poster's angle), eased up. */
+    spinRate: 0,
+    /** --hero-presence as last written (-1: not yet). */
+    presence: -1,
   });
   const [uniforms] = useState(createBlockUniforms);
   const [beamUniforms] = useState(() => createBeamUniforms(uniforms));
   const [glowArray] = useState(() => new Float32Array(BLOCKS));
 
   // Recolour when the theme toggle (or the OS theme) changes data-theme on <html>.
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      themeDirty.current = true;
-      invalidate();
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => observer.disconnect();
-  }, [invalidate]);
+  useEffect(
+    () =>
+      onThemeChange(() => {
+        themeDirty.current = true;
+        invalidate();
+      }),
+    [invalidate],
+  );
 
   // Pointer moves over the hero visual and re-measures ask for a frame at once.
   useEffect(() => {
@@ -305,6 +302,7 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const m = motion.current;
     const pointer = pointerRef.current;
     const now = performance.now();
+    if (m.mounted === 0) m.mounted = now;
 
     // Which stop, which phase of it (entering, formed, exiting, between stops), and how far through.
     const target = buildProgress(window.scrollY, map);
@@ -317,33 +315,25 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const stop = stops[index];
     const hero = index === 0;
 
-    // The hero creation: decided on the first frame, and played only if the hero cube is formed and on
-    // screen then. It runs on its own clock, so scrolling away mid-way dissolves it like any other shape.
-    if (m.intro < 0) {
-      // Fully formed: the hero may already be "exiting" at scroll 0, but not yet any part of the way.
-      const heroFormed = hero && (phase === FORMED || (phase === EXITING && k <= 0));
-      const heroOnScreen = stop.top < window.scrollY + window.innerHeight && stop.top + stop.height > window.scrollY;
-      m.intro = !introPlayed && heroFormed && heroOnScreen ? 0 : Infinity;
-      if (m.intro === 0) m.spinRate = 0;
-      introPlayed = true;
-    } else if (m.intro < INTRO.end) {
-      m.intro += delta;
-      if (m.intro >= INTRO.end) {
-        m.intro = Infinity;
-        m.introEnded = now;
-      }
-    }
-    const introRunning = Number.isFinite(m.intro);
-
-    // Hero only: pointer separation and tilt, and the idle breathing, fade out as it dissolves; none of
-    // them during the intro.
+    // Hero only: pointer separation and tilt, and the idle breathing, fade out as it dissolves.
     let heroWeight = 0;
     if (hero && phase < EXITING) heroWeight = 1;
     else if (hero && phase === EXITING) heroWeight = 1 - k;
-    if (introRunning) heroWeight = 0;
     const moving = pointer.inside && now - pointer.lastMove < SETTLE_AFTER_MS;
-    const idleFor = now - Math.max(pointer.lastActivity, m.introEnded) - IDLE_AFTER_MS;
+    const idleFor = now - Math.max(pointer.lastActivity, m.mounted) - IDLE_AFTER_MS;
     const breathing = heroWeight === 1 && !moving && idleFor > 0;
+
+    // The poster's glows (HeroPoster, .hero-glow) follow the hero cube: they fade out as the beam dissolves
+    // it and come back as it prints, so the hero never keeps an empty glow.
+    let presence = 0;
+    if (hero && phase === ENTERING) presence = MathUtils.smoothstep(k, 0, 1);
+    else if (hero && phase === FORMED) presence = 1;
+    else if (hero && phase === EXITING) presence = 1 - MathUtils.smoothstep(k, 0, 1);
+    presence = Math.round(presence * 100) / 100;
+    if (presence !== m.presence) {
+      m.presence = presence;
+      heroRef.current?.style.setProperty("--hero-presence", String(presence));
+    }
 
     let separation = moving ? heroWeight : 0;
     if (breathing) separation = idleFor % IDLE_CYCLE_MS < IDLE_APART_MS ? IDLE_SPREAD : 0;
@@ -353,9 +343,9 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     m.separation = MathUtils.damp(m.separation, separation, breathing ? IDLE_EASE : EASE, delta);
     m.tiltX = MathUtils.damp(m.tiltX, tiltXTarget, EASE, delta);
     m.tiltY = MathUtils.damp(m.tiltY, tiltYTarget, EASE, delta);
-    // The hero cube turns until it has dissolved; after the intro it eases up to speed.
+    // The hero cube turns until it has dissolved, easing up to speed from the poster's angle.
     const cubeShows = hero && phase !== BETWEEN;
-    m.spinRate = introRunning ? 0 : MathUtils.damp(m.spinRate, 1, SPIN_EASE, delta);
+    m.spinRate = MathUtils.damp(m.spinRate, 1, SPIN_EASE, delta);
     if (cubeShows) m.spin += SPIN_SPEED * m.spinRate * delta;
 
     // Live actions: on their own clock from the moment a shape forms, easing in and out.
@@ -395,27 +385,16 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
       const half = beamHalf(key) * stop.scale;
       const low = centreY - half;
       const high = centreY + half;
-      if (introRunning && hero) {
-        introPoses(scratch.placed, scratch.intro, m.intro, low, high, {
-          x: stop.x / zoom,
-          y: centreY,
-          halfWidth: (INTRO_REACH * stop.width) / 2 / zoom,
-          halfHeight: (INTRO_REACH * stop.height) / 2 / zoom,
-        });
-        poses = scratch.intro;
-        beam = { ...introBeam(m.intro, low, high), trail: 1 };
-      }
       if (phase === ENTERING || phase === EXITING) {
         const rising = phase === ENTERING;
         const along = MathUtils.smoothstep(k, 0, 1);
         const y = rising ? MathUtils.lerp(low, high, along) : MathUtils.lerp(high, low, along);
         printPoses(poses, scratch.out, y, rising ? "in" : "out");
         poses = scratch.out;
-        const opacity = MathUtils.smoothstep(k, 0, BEAM_FADE) * (1 - MathUtils.smoothstep(k, 1 - BEAM_FADE, 1));
-        // The intro's beam shows until this one has faded in.
-        if (opacity > 0 || !beam) beam = { y, opacity, trail: rising ? 1 : -1 };
+        // Only while blocks are changing: never a line over a formed shape.
+        const opacity = beamOpacity(scratch.placed, y, rising ? "in" : "out");
+        if (opacity > 0) beam = { y, opacity, trail: rising ? 1 : -1 };
       }
-      if (beam && beam.opacity <= 0) beam = null;
     }
 
     // The clipped box follows the blocks (and the beam, across the free box), inside the stop's band.
@@ -456,8 +435,12 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
       beamUniforms.uTrail.value = beam.trail;
     }
 
-    // Report ready once a real frame has been drawn.
-    if (m.frames < 2 && ++m.frames === 2) onReady();
+    // The canvas fades in once a real frame has been drawn; the poster's cube goes once the 3D one shows.
+    if (m.frames < 2 && ++m.frames === 2) onDrawn();
+    if (!m.heroShown && m.frames === 2) {
+      m.heroShown = true;
+      onHeroShown();
+    }
 
     // Next frame: straight away while scroll moves the companion or anything eases; a timed frame while
     // the hero cube turns or live actions play on screen; otherwise none until scroll, a resize or the
@@ -467,7 +450,7 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const looping = cubeShows || formed || m.live > 0;
     m.sleeping = false;
     window.clearTimeout(timer.current);
-    if (m.frames < 2 || introRunning || m.progress !== target || isEasing(m, separation, tiltXTarget, tiltYTarget)) {
+    if (m.frames < 2 || m.progress !== target || isEasing(m, separation, tiltXTarget, tiltYTarget)) {
       state.invalidate();
     } else if (looping && onScreen) {
       timer.current = window.setTimeout(() => {
@@ -506,6 +489,7 @@ type PartsCubeProps = {
   /** The hero visual's box: the cube's position and size at scroll 0. */
   heroRef: RefObject<HTMLElement | null>;
   pointerRef: RefObject<PointerState>;
+  /** The 3D hero cube is showing: the poster's cube can fade out. */
   onReady: () => void;
   onFail: () => void;
 };
@@ -516,6 +500,16 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
   const [canvasSize, setCanvasSize] = useState<{ width: number; height: number } | null>(null);
   const [visible, setVisible] = useState(() => !document.hidden);
   const [ready, setReady] = useState(false);
+  const mountedRef = useRef(false);
+
+  // A lost context only counts while this canvas is mounted: unmounting (or the page being hidden) loses
+  // it on purpose. This cleanup runs before the canvas's own teardown.
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Measure the sections (and the hero box) now and whenever the layout or content changes size.
   useEffect(() => {
@@ -547,6 +541,14 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
     };
   }, [heroRef, pointerRef]);
 
+  // Unmounted (Motion off, a failure, a narrow window): the poster's glows return at full strength.
+  useEffect(() => {
+    const hero = heroRef.current;
+    return () => {
+      hero?.style.removeProperty("--hero-presence");
+    };
+  }, [heroRef]);
+
   // Rendering stops entirely while the tab is hidden.
   useEffect(() => {
     const update = () => setVisible(!document.hidden);
@@ -567,7 +569,7 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
     >
       <div
         data-ready={ready || undefined}
-        className="opacity-0 transition-opacity duration-400 data-ready:opacity-100"
+        className="opacity-0 transition-opacity duration-slow data-ready:opacity-100"
         style={canvasSize}
       >
         <Canvas
@@ -578,18 +580,23 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
           frameloop={visible ? "demand" : "never"}
           gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
           onCreated={({ gl }) => {
-            gl.domElement.addEventListener("webglcontextlost", onFail, { once: true });
+            gl.domElement.addEventListener(
+              "webglcontextlost",
+              () => {
+                if (mountedRef.current) onFail();
+              },
+              { once: true },
+            );
           }}
         >
           <Blocks
             mapRef={mapRef}
+            heroRef={heroRef}
             boxRef={boxRef}
             pointerRef={pointerRef}
             visible={visible}
-            onReady={() => {
-              setReady(true);
-              onReady();
-            }}
+            onDrawn={() => setReady(true)}
+            onHeroShown={onReady}
           />
         </Canvas>
       </div>

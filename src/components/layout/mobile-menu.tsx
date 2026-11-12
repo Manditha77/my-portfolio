@@ -69,7 +69,7 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
         aria-controls={panelId}
         aria-label={open ? shellCopy.closeMenu : shellCopy.openMenu}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex size-11 items-center justify-center rounded-md text-text transition-colors duration-150 ease-out hover:text-accent"
+        className="inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors duration-fast ease-out hover:text-text"
       >
         {open ? <CloseIcon /> : <MenuIcon />}
       </button>
@@ -78,7 +78,7 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
         ref={panelRef}
         id={panelId}
         className={cx(
-          "absolute inset-x-0 top-full border-b border-border bg-bg transition-[opacity,transform,visibility] duration-200 ease-out",
+          "absolute inset-x-0 top-full border-b border-border bg-bg transition-[opacity,transform,visibility] duration-base ease-out",
           open ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0",
         )}
       >
@@ -90,7 +90,7 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
                   href={item.href}
                   onClick={close}
                   aria-current={item.id === active ? "true" : undefined}
-                  className="flex min-h-11 items-center gap-2 border-b border-border text-base text-text transition-colors duration-150 ease-out before:size-1.5 before:shrink-0 before:rounded-full before:bg-accent before:opacity-0 hover:text-accent aria-current:text-accent aria-current:before:opacity-100"
+                  className="flex min-h-11 items-center gap-2 border-b border-border text-base text-text transition-colors duration-fast ease-out before:size-1.5 before:shrink-0 before:rounded-full before:bg-accent before:opacity-0 hover:text-accent-ink aria-current:text-accent-ink aria-current:before:opacity-100"
                 >
                   {item.label}
                 </Link>

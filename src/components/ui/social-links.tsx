@@ -39,7 +39,7 @@ export function SocialLinks({ variant, className }: SocialLinksProps) {
             <a
               href={href}
               {...external}
-              className="inline-flex min-h-11 items-center gap-2 font-medium text-accent underline decoration-accent/40 underline-offset-4 transition-colors duration-150 hover:decoration-accent"
+              className="inline-flex min-h-11 items-center gap-2 font-medium text-accent-ink underline decoration-accent/40 underline-offset-4 transition-colors duration-fast hover:decoration-accent"
             >
               <Icon />
               {label}

@@ -30,7 +30,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors duration-150 ease-out hover:text-text"
+      className="inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors duration-fast ease-out hover:text-text"
     >
       {/* Both icons and labels render; CSS shows the pair for the theme you'd switch to (no hydration mismatch). */}
       <SunIcon className="light:hidden" />

@@ -16,7 +16,7 @@ export default function NotFound() {
     <section aria-labelledby="not-found-heading" className="py-section lg:py-24">
       <Container className="grid items-center gap-10 sm:grid-cols-[1.4fr_1fr]">
         <div>
-          <p className="font-mono text-sm text-accent">{copy.label}</p>
+          <p className="font-mono text-sm text-accent-ink">{copy.label}</p>
           <h1 id="not-found-heading" className="mt-3 text-display font-semibold tracking-tight">
             {copy.heading}
           </h1>

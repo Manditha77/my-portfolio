@@ -20,8 +20,8 @@ export type Site = {
   hero: {
     intro: string;
     statusPill: string;
-    /** PIPELINE steps that tick through before the status types out (decorative; hidden from assistive tech). */
-    pipeline: readonly string[];
+    /** The cube boot's part counter under the cube ("assembling 7 / 27", then "27 / 27 · ready"); decorative, hidden from assistive tech. */
+    assembly: { counting: string; ready: string };
     ctas: {
       viewWork: string;
       downloadCv: string;
@@ -79,7 +79,7 @@ export const site: Site = {
   name: "Manditha Madushanka",
   fullName: "Manditha Madushanka Athukorala",
   role: "Software Engineer",
-  headline: "Software Engineer · building VR/AR on the side",
+  headline: "Full-stack Software Engineer · Java, Spring Boot & React · also building in VR/AR",
   status: "Open to Associate Software Engineer roles",
   location: "Colombo, Sri Lanka",
   email: "manditha77madushanka@gmail.com",
@@ -102,9 +102,9 @@ export const site: Site = {
   },
   hero: {
     intro:
-      "Final-year IT undergraduate at the University of Kelaniya. I build full-stack systems with Java, Spring Boot and React, most recently as a Software Engineer Intern on aeroPORT, a Departure Control System used by Air Arabia.",
+      "I build full-stack systems with Java, Spring Boot and React. I gained industry experience as a Software Engineer Intern in the aeroPORT team at Information Systems Associates, building an airline Departure Control System.",
     statusPill: "Open to Associate Software Engineer roles",
-    pipeline: ["sense", "analyze", "act"],
+    assembly: { counting: "assembling", ready: "ready" },
     ctas: {
       viewWork: "View my work",
       downloadCv: "Download CV",
@@ -120,7 +120,7 @@ export const site: Site = {
     copied: "Copied!",
     copyFailed: "Couldn't copy. Select the address:",
     emailLabel: "Email",
-    opensNewTab: "(opens in new tab)",
+    opensNewTab: "(opens in a new tab)",
   },
   footer: {
     credit: "Designed & built by Manditha Madushanka",
@@ -142,7 +142,7 @@ export const site: Site = {
     description:
       "Software engineer in Colombo, Sri Lanka. Full-stack Java, Spring Boot and React, with industry experience on an airline Departure Control System, plus VR/AR side projects.",
     ogLabel: "Java · Spring Boot · React",
-    ogAlt: "Manditha Madushanka, Software Engineer · building VR/AR on the side",
+    ogAlt: "Manditha Madushanka, Full-stack Software Engineer · Java, Spring Boot & React · also building in VR/AR",
   },
   notFound: {
     title: "Page not found",

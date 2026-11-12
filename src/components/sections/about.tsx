@@ -5,7 +5,7 @@ import { Section } from "@/components/ui/section";
 import { publicFileExists } from "@/lib/public-file";
 
 const linkClass =
-  "inline-flex min-h-11 items-center font-medium text-accent underline decoration-accent/40 underline-offset-4 transition-colors duration-150 hover:decoration-accent";
+  "inline-flex min-h-11 items-center font-medium text-accent-ink underline decoration-accent/40 underline-offset-4 transition-colors duration-fast hover:decoration-accent";
 
 export function About() {
   const hasPhoto = publicFileExists(about.photo.src);

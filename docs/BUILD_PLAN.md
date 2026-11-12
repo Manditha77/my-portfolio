@@ -158,7 +158,7 @@ Check at 360, 768 and 1280px in both themes. Plan first.
 Build the Experience section (#experience) and a Writing strip after it, from src/content/experience.ts and writing.ts.
 Experience:
 - The aeroPORT internship is the prominent first entry: role, company, dates, location, a one-line product
-  description (aeroPORT DCS used by Air Arabia), the bullets, and tech tags (reuse the Tag component).
+  description (aeroPORT, an airline DCS), the bullets, and tech tags (reuse the Tag component).
 - Then a compact "Leadership & activities" list (role, event/organisation, year) and an "Education" entry.
 - Use semantic markup (article/ol, time elements for dates). No logos or images.
 Writing:

@@ -1,9 +1,35 @@
 import { site } from "./site";
-import type { ContentImage, ExternalLink, Todo } from "./types";
+import type { ContentImage, ExternalLink, NumberedStep, Todo } from "./types";
 
-export type ProjectApproachStep = {
+/** One stage of a dataset funnel ("1,767 PRs scraped"). */
+export type FunnelStep = {
+  count: string;
   label: string;
-  text: string;
+};
+
+/** One row of a model comparison table. */
+export type ModelResult = {
+  model: string;
+  /** Mean AUC, as written in the results. */
+  auc: string;
+  /** 95% confidence interval, when reported. */
+  interval?: string;
+  best?: boolean;
+};
+
+/** A project's own case study page (`/work/<slug>`), for SE projects that have one. */
+export type ProjectCaseStudy = {
+  /** A short line under the context, e.g. where the project came from. */
+  note: string;
+  problem: string;
+  howItWorks: readonly NumberedStep[];
+  results: {
+    dataset: { heading: string; funnel: readonly FunnelStep[] };
+    models: { heading: string; caption: string; rows: readonly ModelResult[] };
+    actEngine: { heading: string; intro: string; checks: readonly string[]; outcomes: readonly string[] };
+    deployed: { heading: string; body: readonly string[] };
+  };
+  limitations: string;
 };
 
 export type Project = {
@@ -15,19 +41,107 @@ export type Project = {
   status?: string;
   repo: string;
   stack: readonly string[];
+  /** One sentence: the detail lives in the case study, when there is one. */
   blurb: string;
+  /** At most three short bullets. */
   highlights?: readonly string[];
-  role?: string;
-  approach?: readonly ProjectApproachStep[];
-  connection?: string;
+  /** Short measured stats shown as chips under the blurb. */
+  chips?: readonly string[];
+  /** Kept for the record, not shown on the card. */
   statusNote?: string;
   media?: readonly ContentImage[];
   /** Measured values in this card's copy that count up once on view (exact text, e.g. "0.78", "42%"). */
   countUp?: readonly string[];
+  caseStudy?: ProjectCaseStudy;
   todos: readonly Todo[];
 };
 
+export const ppchFramework = {
+  slug: "ppch-framework",
+  title: "PPCH Framework",
+  subtitle: "Predictive and Proactive Code Health",
+  year: "2026",
+  type: "Final-year dissertation",
+  status: "Completed",
+  repo: "https://github.com/Manditha77/ppch-framework",
+  stack: [
+    "Python",
+    "scikit-learn",
+    "XGBoost",
+    "GitHub REST API",
+    "SonarQube (SonarScanner)",
+    "GitHub Actions",
+    "Java (Apache Commons)",
+  ],
+  blurb:
+    "My final-year research: a framework that predicts when a Java pull request will increase code complexity, and proposes verified refactorings before it merges.",
+  chips: ["334 PRs", "0.78 AUC", "42% caught before merge"],
+  countUp: ["334", "0.78", "42%"],
+  caseStudy: {
+    note: "Grew out of refactoring and SonarQube work during my internship.",
+    problem:
+      "Code-quality issues are usually found after a pull request merges. Can complexity risk be predicted when a pull request is submitted, and fixed before it merges?",
+    howItWorks: [
+      {
+        title: "Sense",
+        body: "Mines PR history through the GitHub REST API and runs SonarScanner on before/after snapshots to build a leakage-safe dataset of 334 PRs.",
+      },
+      {
+        title: "Analyze",
+        body: "Compares four models with 1,000-iteration bootstrap validation; the best, Logistic Regression, reached 0.78 AUC.",
+      },
+      {
+        title: "Act",
+        body: "An ILP-based Extract Method engine proposes refactorings behind four safety checks; every applied suggestion was re-verified safe by a real SonarQube scan.",
+      },
+    ],
+    results: {
+      dataset: {
+        heading: "Dataset",
+        funnel: [
+          { count: "1,767", label: "PRs scraped" },
+          { count: "500", label: "sampled" },
+          { count: "497", label: "scanned" },
+          { count: "334", label: "usable" },
+        ],
+      },
+      models: {
+        heading: "Model comparison",
+        caption: "Mean AUC, 1,000-iteration bootstrap validation",
+        rows: [
+          { model: "Logistic Regression", auc: "0.780", interval: "0.709–0.847", best: true },
+          { model: "XGBoost", auc: "0.750" },
+          { model: "Random Forest", auc: "0.746" },
+          { model: "Naive Bayes", auc: "0.660" },
+        ],
+      },
+      actEngine: {
+        heading: "Act engine",
+        intro: "ILP-based Extract Method with four safety checks:",
+        checks: ["Return-forwarding", "Break/continue", "Independent-variable mutation", "Non-productive extraction"],
+        outcomes: [
+          "10 suggestions applied, each re-verified safe by a real SonarQube scan",
+          "4 correctly declined",
+          "0 unsafe",
+        ],
+      },
+      deployed: {
+        heading: "Deployed GitHub Action",
+        body: [
+          "A reactive scanner took a mean 82.4 h (median 12.9 h) to flag complexity-increasing PRs.",
+          "The Action caught 22 of 52 (42.3%) before merge.",
+        ],
+      },
+    },
+    limitations:
+      "The deployed Action runs Random Forest + XGBoost; Logistic Regression was found best later, in the four-model comparison.",
+  },
+  todos: [],
+} satisfies Project;
+
+/** Home page order: the research first, then the full-stack systems. */
 export const projects: readonly Project[] = [
+  ppchFramework,
   {
     slug: "groceryease",
     title: "GroceryEase",
@@ -36,11 +150,10 @@ export const projects: readonly Project[] = [
     type: "Solo project",
     repo: "https://github.com/Manditha77/groceryease_sdp",
     stack: ["Java", "Spring Boot", "React.js", "JavaScript", "MySQL"],
-    blurb:
-      "A full-stack grocery management system I built solo for Samantha Store, with inventory tracking, credit-sales management, supplier coordination and an online storefront for customer pre-orders.",
+    blurb: "A full-stack grocery management system I built solo for Samantha Store.",
     highlights: [
       "Spring Boot backend with a MySQL database",
-      "Two React frontends: a store-management app and a customer e-commerce site",
+      "Two React frontends: a store-management app and a customer storefront for pre-orders",
       "Inventory tracking, credit sales and supplier coordination",
     ],
     // Not deployed yet. Never describe it as deployed.
@@ -49,48 +162,6 @@ export const projects: readonly Project[] = [
     todos: [
       "TODO: 2–3 screenshots (admin dashboard, storefront, inventory), plus an architecture diagram from `diagrams/`.",
     ],
-  },
-  {
-    slug: "ppch-framework",
-    title: "PPCH Framework",
-    subtitle: "Predictive and Proactive Code Health",
-    year: "2026",
-    type: "Final-year dissertation",
-    status: "Completed",
-    repo: "https://github.com/Manditha77/ppch-framework",
-    stack: [
-      "Python",
-      "scikit-learn",
-      "XGBoost",
-      "GitHub REST API",
-      "SonarQube (SonarScanner)",
-      "GitHub Actions",
-      "Java (Apache Commons)",
-    ],
-    blurb:
-      "My final-year research: a Sense–Analyze–Act framework that predicts when a Java pull request will increase code complexity, and proposes verified refactorings before it merges. Trained on 334 real Apache Commons pull requests and deployed as a working GitHub Action.",
-    approach: [
-      {
-        label: "Sense",
-        text: "mines PR history through the GitHub REST API and runs SonarScanner on before/after snapshots to build a leakage-safe dataset of 334 PRs",
-      },
-      {
-        label: "Analyze",
-        text: "compares four models with 1,000-iteration bootstrap validation; the best, Logistic Regression, reached 0.78 AUC",
-      },
-      {
-        label: "Act",
-        text: "an ILP-based Extract Method engine proposes refactorings behind four safety checks; every applied suggestion was re-verified safe by a real SonarQube scan",
-      },
-      {
-        label: "Deployed",
-        text: "a GitHub Action (Random Forest + XGBoost) that comments on real PRs at submission. A reactive scanner took a mean 82 hours (median 13) to flag complexity-increasing PRs; the Action caught 42% of them (22 of 52) before merge",
-      },
-    ],
-    connection:
-      "Grew out of refactoring and SonarQube work during my internship.",
-    countUp: ["334", "0.78", "42%"],
-    todos: [],
   },
   {
     slug: "employee-management-system",
@@ -108,7 +179,10 @@ export const projects: readonly Project[] = [
     ],
     blurb:
       "A full-stack employee records system with full CRUD, containerised with Docker and deployed on Microsoft Azure.",
-    role: "Handled the Docker containerisation and Azure deployment, and contributed to parts of the Spring Boot backend.",
+    highlights: [
+      "My part: the Docker containerisation and the Azure deployment",
+      "Also contributed to parts of the Spring Boot backend",
+    ],
     todos: ["TODO: screenshot(s); optional deployment diagram."],
   },
 ];
@@ -121,10 +195,10 @@ export type CompactProject = {
   type: string;
   status: string;
   blurb: string;
-  highlights: readonly string[];
+  chips: readonly string[];
   stack: readonly string[];
   link: ExternalLink;
-  /** Measured values in the highlights that count up once on view. */
+  /** Measured values in the chips that count up once on view. */
   countUp?: readonly string[];
 };
 
@@ -134,27 +208,35 @@ export const thisPortfolio: CompactProject = {
   year: "2026",
   type: "Personal project",
   status: "Live",
-  blurb:
-    "The site you're reading, built to be fast, accessible and honest: every fact comes from one content file, and the single 3D element only loads where it won't slow anyone down.",
-  highlights: [
-    "Next.js, strict TypeScript and Tailwind, with content kept in typed data files",
-    "Lazy-loaded 3D that phones and reduced-motion users never download",
-    "Lighthouse on mobile (Oct 2026): 99 / 100 / 100 / 100, with WCAG AA in both themes",
-    "Built with Claude Code from a written design brief, one reviewed step at a time",
-  ],
+  blurb: "The site you're reading: fast, accessible, and built from one typed content file.",
+  // Lighthouse mobile Accessibility (Nov 2026: 100 in 5 of 5 runs); re-run before changing it.
+  chips: ["Accessibility 100", "WCAG AA", "3D lazy-loaded"],
   stack: ["Next.js", "TypeScript", "Tailwind CSS", "React Three Fiber", "three.js", "Motion", "Vercel"],
   link: { label: "View source on GitHub", href: site.links.portfolioRepo.href },
-  countUp: ["99", "100"],
+  countUp: ["100"],
 };
 
 export const moreOnGitHub: ExternalLink = site.links.githubRepos;
 
-/** Interface strings for the Selected Work section. */
+/** Interface strings for the Selected Work section and the SE case study pages. */
 export const workCopy = {
   intro:
-    "Two full-stack Java and Spring Boot systems, and the research from my final-year dissertation.",
-  roleLabel: "My role:",
-  approachHeading: "How it works",
+    "The research from my final-year dissertation, and two full-stack Java and Spring Boot systems.",
   repoLink: "View code",
   repoLinkSuffix: "on GitHub",
+  caseStudyCta: "Read the case study",
+  repoCta: "View code on GitHub",
+  chipsLabel: "Highlights",
+  backToSection: "Back to Selected projects",
+  nextSection: "Next: VR / AR Projects",
+  modelColumn: "Model",
+  aucColumn: "Mean AUC",
+  intervalColumn: "95% CI",
+  best: "best",
+  headings: {
+    problem: "The problem",
+    howItWorks: "How it works",
+    results: "Results",
+    limitations: "Limitations",
+  },
 };

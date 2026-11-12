@@ -1,19 +1,26 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Project } from "@/content/projects";
 import { workCopy } from "@/content/projects";
+import { caseStudyHref } from "@/content/case-studies";
+import { cx } from "@/lib/cx";
 import { withCountUp } from "@/lib/measured";
 import { Badge } from "./badge";
+import { ButtonLink, buttonBase, buttonVariants } from "./button-link";
+import { cardHover } from "./card";
 import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
 import { ScanFrame } from "./scan-frame";
+import { StatChips } from "./stat-chips";
 
 type ProjectCardProps = {
   project: Project;
 };
 
 /**
- * Full-width project card. On large screens: summary and repo link on the left, details and tags on the right.
- * DOM order is summary → details → link, so the single mobile column ends with the link.
+ * Full-width project card: a one-sentence blurb with stat chips or a few bullets; the detail lives in the
+ * case study, when there is one. On large screens: summary and links on the left, details and tags on the
+ * right. DOM order is summary → details → links, so the single mobile column ends with the links.
  */
 export function ProjectCard({ project }: ProjectCardProps) {
   const headingId = `project-${project.slug}`;
@@ -23,7 +30,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
     <article
       aria-labelledby={headingId}
       data-scan={project.slug}
-      className="relative rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6 lg:grid lg:grid-cols-2 lg:gap-x-10"
+      className={cx("relative rounded-lg border border-border bg-surface p-5 sm:p-6 lg:grid lg:grid-cols-2 lg:gap-x-10", cardHover)}
     >
       <div className="lg:col-start-1 lg:row-start-1">
         <div className="flex flex-wrap gap-2">
@@ -39,13 +46,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
         <p className="mt-3 max-w-measure">{withCountUp(project.blurb, project.countUp)}</p>
 
-        {project.role ? (
-          <p className="mt-3 max-w-measure text-sm">
-            <span className="font-medium">{workCopy.roleLabel}</span> {project.role}
-          </p>
+        {project.chips && project.chips.length > 0 ? (
+          <StatChips chips={project.chips} countUp={project.countUp} label={workCopy.chipsLabel} className="mt-4" />
         ) : null}
-
-        {project.statusNote ? <p className="mt-3 max-w-measure text-sm text-text-muted">{project.statusNote}</p> : null}
       </div>
 
       <div className="mt-5 flex flex-col gap-5 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0">
@@ -63,44 +66,46 @@ export function ProjectCard({ project }: ProjectCardProps) {
         ) : null}
 
         {project.highlights && project.highlights.length > 0 ? (
-          <ul className="max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
+          <ul className="max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent-ink">
             {project.highlights.map((highlight) => (
               <li key={highlight}>{withCountUp(highlight, project.countUp)}</li>
             ))}
           </ul>
         ) : null}
 
-        {project.approach && project.approach.length > 0 ? (
-          <div>
-            <p className="font-mono text-xs text-text-muted">{workCopy.approachHeading}</p>
-            <ul className="mt-2 max-w-measure space-y-1.5 text-sm">
-              {project.approach.map((step) => (
-                <li key={step.label}>
-                  <span className="font-medium text-accent">{step.label}:</span> {withCountUp(step.text, project.countUp)}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
         <CollapsibleTagList tags={project.stack} />
       </div>
 
-      <p className="pt-5 lg:col-start-1 lg:row-start-2 lg:self-end">
-        <a
-          href={project.repo}
-          className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-accent hover:underline hover:underline-offset-4"
-        >
-          <GitHubIcon className="size-4" />
-          <span>
-            {workCopy.repoLink}
-            <span className="sr-only"> for {project.title}</span> {workCopy.repoLinkSuffix}
-          </span>
-          <span aria-hidden="true" className="transition-transform duration-150 ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
-            →
-          </span>
-        </a>
-      </p>
+      {project.caseStudy ? (
+        <div className="mt-6 flex flex-wrap gap-3 lg:col-start-1 lg:row-start-2 lg:self-end">
+          <Link href={caseStudyHref(project)} className={cx(buttonBase, buttonVariants.primary)}>
+            {workCopy.caseStudyCta}
+            <span className="sr-only">: {project.title}</span>
+            <span aria-hidden="true">→</span>
+          </Link>
+          <ButtonLink href={project.repo} variant="secondary">
+            <GitHubIcon className="size-4" />
+            {workCopy.repoCta}
+            <span className="sr-only"> for {project.title}</span>
+          </ButtonLink>
+        </div>
+      ) : (
+        <p className="pt-5 lg:col-start-1 lg:row-start-2 lg:self-end">
+          <a
+            href={project.repo}
+            className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-accent-ink hover:underline hover:underline-offset-4"
+          >
+            <GitHubIcon className="size-4" />
+            <span>
+              {workCopy.repoLink}
+              <span className="sr-only"> for {project.title}</span> {workCopy.repoLinkSuffix}
+            </span>
+            <span aria-hidden="true" className="transition-transform duration-fast ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
+              →
+            </span>
+          </a>
+        </p>
+      )}
 
       <ScanFrame />
     </article>

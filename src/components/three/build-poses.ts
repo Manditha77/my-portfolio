@@ -12,9 +12,9 @@ import { SWAY, liveBlock, liveExtremes, liveSway, type LiveBlock, type Sway } fr
 
 /*
  * "The Build": turns the voxel shapes (src/lib/build-shapes.ts) into one pose per block, prints them into
- * their box with the build beam and dissolves them out of it, and flies the hero cube in. Positions are in companion units, centred on the shape; scales multiply the
- * 0.6 block geometry. placePoses then moves a set of poses to its spot on the page. Only imported by lazy
- * 3D code.
+ * their box with the build beam and dissolves them out of it, and prints the hero cube in on first load.
+ * Positions are in companion units, centred on the shape; scales multiply the 0.6 block geometry.
+ * placePoses then moves a set of poses to its spot on the page. Only imported by lazy 3D code.
  */
 
 export type Pose = { position: Vector3; quaternion: Quaternion; scale: Vector3; glow: number };
@@ -328,104 +328,38 @@ export function printPoses(placed: Pose[], out: Pose[], beam: number, direction:
   }
 }
 
-/*
- * The hero creation (once per page load): the cube's blocks fly in from deep in the background, small and
- * scattered, and land as a rising beam passes them, so the cube is printed layer by layer. Seconds.
- */
-export const INTRO = {
-  /** The blocks fade in where they wait. */
-  appear: 0.35,
-  /** Each block's flight, ending as the beam passes it. */
-  flight: 0.9,
-  /** The beam rises through the cube. */
-  beamFrom: 0.55,
-  beamTo: 1.75,
-  /** The landing glow fades. */
-  flash: 0.35,
-  end: 2.1,
-} as const;
-
-type Scatter = { x: number; y: number; z: number; size: number; axis: Vector3; angle: number };
-
-/** Seeded pseudo-random numbers (mulberry32), so every load scatters the blocks the same way. */
-function random(seed: number): () => number {
-  let a = seed;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /**
- * Where each block waits: x and y as shares of the box's half-size (farther blocks sit nearer its centre,
- * as with a vanishing point), z behind the shape, its size as a share of its size in the shape, and a small
- * tumble that untwists as it lands.
+ * The beam's opacity at `beam` (page units, +y up) over `placed`, printing ("in") or dissolving ("out").
+ * It follows where the beam is, not the scroll, so the line is only there while blocks are changing: it
+ * fades in over one block before its first contact, and is gone by the time the last block is complete
+ * (printing: the top block fully grown; dissolving: the bottom block fully gone). Once a shape is formed
+ * there is never a line hanging over it, wherever the scroll parks.
  */
-const SCATTER: Scatter[] = (() => {
-  const next = random(7);
-  return Array.from({ length: BLOCKS }, () => {
-    const depth = next();
-    const direction = next() * 2 * Math.PI;
-    const reach = Math.sqrt(next()) * (1 - 0.55 * depth);
-    return {
-      x: Math.cos(direction) * reach,
-      y: Math.sin(direction) * reach,
-      z: -2 - 4 * depth,
-      size: 0.2 - 0.12 * depth,
-      axis: new Vector3(next() - 0.5, next() - 0.5, next() - 0.5).normalize(),
-      angle: next() - 0.5,
-    };
-  });
-})();
-
-const tumbleQ = new Quaternion();
-
-/** The intro beam at `time`: its height between `low` and `high` (page units), and its opacity. */
-export function introBeam(time: number, low: number, high: number): { y: number; opacity: number } {
-  const t = MathUtils.clamp((time - INTRO.beamFrom) / (INTRO.beamTo - INTRO.beamFrom), 0, 1);
-  const opacity =
-    MathUtils.smoothstep(time, INTRO.beamFrom - 0.15, INTRO.beamFrom + 0.05) *
-    (1 - MathUtils.smoothstep(time, INTRO.beamTo, INTRO.beamTo + 0.25));
-  return { y: MathUtils.lerp(low, high, t), opacity };
-}
-
-/**
- * Writes `placed` (the hero cube's poses on the page) as they are `time` seconds into the intro into
- * `out`. Blocks wait scattered inside the box (centre x, y and half-size in page units), then each flies
- * to its slot, landing as the beam (rising from `low` to `high`) passes its centre.
- */
-export function introPoses(
-  placed: Pose[],
-  out: Pose[],
-  time: number,
-  low: number,
-  high: number,
-  box: { x: number; y: number; halfWidth: number; halfHeight: number },
-) {
-  const appear = MathUtils.smoothstep(time, 0, INTRO.appear);
+export function beamOpacity(placed: Pose[], beam: number, direction: "in" | "out"): number {
+  let bottom = Infinity;
+  let top = -Infinity;
+  let bottomRadius = 0;
+  let topRadius = 0;
   for (let i = 0; i < BLOCKS; i++) {
-    const to = placed[i];
-    const pose = out[i];
-    const seed = SCATTER[i];
-    const across = MathUtils.clamp((to.position.y - low) / (high - low), 0, 1);
-    const arrive = MathUtils.lerp(INTRO.beamFrom, INTRO.beamTo, across);
-    const start = Math.max(0, arrive - INTRO.flight);
-    // As if coming from far away: it stays small and distant for most of its flight and closes in as the
-    // beam reaches it (size grows as 1 / depth), easing out so it still lands softly.
-    const flown = 1 - (1 - MathUtils.clamp((time - start) / (arrive - start), 0, 1)) ** 2;
-    const near = seed.size / (seed.size + (1 - seed.size) * (1 - flown));
-    const e = (near - seed.size) / (1 - seed.size);
-    pose.position.set(
-      MathUtils.lerp(box.x + seed.x * box.halfWidth, to.position.x, e),
-      MathUtils.lerp(box.y + seed.y * box.halfHeight, to.position.y, e),
-      MathUtils.lerp(seed.z, to.position.z, e),
-    );
-    tumbleQ.setFromAxisAngle(seed.axis, seed.angle * (1 - e));
-    pose.quaternion.multiplyQuaternions(tumbleQ, to.quaternion);
-    pose.scale.copy(to.scale).multiplyScalar(MathUtils.lerp(seed.size * appear, 1, e));
-    const since = time - arrive;
-    pose.glow = since >= 0 ? Math.max(to.glow, FLASH_GLOW * Math.max(0, 1 - since / INTRO.flash)) : to.glow;
+    const pose = placed[i];
+    const radius = 0.5 * BLOCK * pose.scale.length();
+    if (radius === 0) continue;
+    if (pose.position.y - radius < bottom) {
+      bottom = pose.position.y - radius;
+      bottomRadius = radius;
+    }
+    if (pose.position.y + radius > top) {
+      top = pose.position.y + radius;
+      topRadius = radius;
+    }
   }
+  if (top < bottom) return 0;
+  // A block finishes this far past its trailing edge (printPoses: PRINT_BAND of its diameter, from its leading edge).
+  const overshoot = (radius: number) => (2 * PRINT_BAND - 2) * radius;
+  // Rising, the beam meets the bottom first and finishes past the top; falling, the reverse.
+  const low = direction === "in" ? bottom : bottom - overshoot(bottomRadius);
+  const high = direction === "in" ? top + overshoot(topRadius) : top;
+  const fadeLow = 2 * bottomRadius;
+  const fadeHigh = 2 * topRadius;
+  return MathUtils.smoothstep(beam, low - fadeLow, low) * (1 - MathUtils.smoothstep(beam, high - fadeHigh, high));
 }

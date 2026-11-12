@@ -41,7 +41,7 @@ export function CollapsibleTagList({ tags, label, tone = "default", className, l
         aria-expanded={expanded}
         aria-controls={listId}
         onClick={() => setExpanded((value) => !value)}
-        className="rounded-md border border-dashed border-border px-2 py-1 font-mono text-xs text-text-muted transition-colors duration-150 ease-out hover:border-accent hover:text-accent"
+        className="rounded-md border border-dashed border-border px-2 py-1 font-mono text-xs text-text-muted transition-colors duration-fast ease-out hover:border-accent hover:text-accent-ink"
       >
         {expanded ? (
           shellCopy.tagsShowLess

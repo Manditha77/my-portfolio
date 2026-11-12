@@ -25,7 +25,7 @@ export function MotionToggle() {
       // Server HTML says paused (the store's server value); it corrects itself on mount.
       aria-pressed={!motionOn}
       title={motionOn ? shellCopy.pauseAnimations : shellCopy.playAnimations}
-      className="inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors duration-150 ease-out hover:text-text"
+      className="inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors duration-fast ease-out hover:text-text"
     >
       {/* Icons follow data-motion in CSS, so the first paint is already right (no hydration flash). */}
       <PauseIcon className="hidden motion-on:block" />

@@ -18,6 +18,9 @@
   --border: #243041;
   --accent: #2dd4bf;
   --accent-contrast: #04201c;
+  /* Accent-coloured text (text-accent-ink). The accent itself in dark; darker in light, where text must stay
+     AA on a floor line pixel. */
+  --accent-ink: var(--accent);
 
   /* The header mark's voxel faces (src/lib/build-marks.ts): three shades of the accent, lit from the
      upper left, and a pale accent for lenses and screens. Mixed towards white and black, so they follow
@@ -27,32 +30,95 @@
   --mark-dark: color-mix(in oklab, var(--accent) 58%, black);
   --mark-lit: color-mix(in oklab, var(--accent) 30%, white);
 
+  /* The hero poster's solid cube (its faces by how they face the light, src/lib/build-marks.ts): the
+     surface with a trace of accent, like The Build's 3D blocks, so the poster and the canvas match. */
+  --cube-light: color-mix(in oklab, var(--surface) 94%, var(--accent));
+  --cube-mid: var(--surface);
+  --cube-dark: color-mix(in oklab, var(--surface) 90%, black);
+
   --header-h: 4rem;
+
+  /* Motion tokens: every UI transition and animation takes its timing from here (Tailwind classes via the
+     duration-fast|base|medium|slow utilities below; Motion and WAAPI via src/lib/motion-tokens.ts, keep in
+     sync). The easings live in @theme (--ease-out, --ease-assemble), so they double as ease-* classes. */
+  --dur-fast: 150ms; /* hover and focus: colours, borders, small nudges */
+  --dur-base: 200ms; /* card borders, menus, small fades */
+  --dur-medium: 300ms; /* reveal-on-scroll, staggered items, mark fades */
+  --dur-slow: 400ms; /* entrances, poster/canvas hand-off, the header mark's assemble */
+  --dur-sweep: 600ms; /* SCAN: one sweep down a card */
+  --dur-floor-sweep: 1200ms; /* SCAN: one sweep along the whole floor, near to far */
+  --delay-sweep: 250ms;
+
+  /* Perspective floor (home page): see "Perspective floor" below. */
+  --floor-strength: 0.11; /* the lines' opacity: every text colour on a line pixel stays AA */
+  --floor-strength-xr: 0.18; /* brighter in VR/AR; still AA for text on a line pixel */
+  --floor-cell: 64px;
+  --floor-tilt: 76deg;
+  --floor-depth: 640px; /* perspective distance */
+  --floor-vanish: 40%; /* vanishing point, down the viewport; the floor's far edge sits just above it */
+
   color-scheme: dark;
 }
 
-/* Light theme: chosen manually, or from the OS when nothing is stored. */
+/* Light theme ("Mist"): chosen manually, or from the OS when nothing is stored. Every light-only value lives
+   in this block and its no-JS copy below, never on the dark :root. */
 :root[data-theme="light"] {
-  --bg: #fbfcfd;
-  --surface: #f1f4f7;
-  --text: #0b1220;
-  --text-muted: #4a5565;
-  --border: #d5dbe3;
-  --accent: #0f766e;
+  --bg: #e4ebee;
+  --surface: #f3f6f7;
+  --text: #0f1b24;
+  --text-muted: #44525d;
+  --border: #c5d1d6;
+  --accent: #0b6e66;
   --accent-contrast: #ffffff;
+  --accent-ink: #095c56;
+  --accent-hover: #095e57;
+  /* The page fades slightly darker towards the bottom of the document. */
+  --bg-wash: linear-gradient(#e4ebee, #dce5e9);
+  --floor-strength: 0.18;
+  --floor-strength-xr: 0.22;
+  /* Solid blocks (the hero poster, the boot's blocks and The Build's 3D shapes): three tones by the way a
+     face looks (top, left, right) with dark-teal edges. Only defined here: the 3D material switches to them
+     only while they exist (build-material.ts), and the poster's block shows its solid faces in place of its
+     tones (/build-marks.svg, --cube-solid / --cube-tones), so dark can never pick them up. */
+  --solid-top: #cfe3e0;
+  --solid-left: #a9c6c2;
+  --solid-right: #8fb2ae;
+  --solid-edge: #0b5550;
+  --cube-solid: inline;
+  --cube-tones: none;
+  /* The hero's halo, behind the cube (globals.css .hero-halo). */
+  --hero-halo: #cfe3e0;
   color-scheme: light;
 }
 
 /* No-JS fallback: follow the OS unless dark was chosen explicitly. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    --bg: #fbfcfd;
-    --surface: #f1f4f7;
-    --text: #0b1220;
-    --text-muted: #4a5565;
-    --border: #d5dbe3;
-    --accent: #0f766e;
+    --bg: #e4ebee;
+    --surface: #f3f6f7;
+    --text: #0f1b24;
+    --text-muted: #44525d;
+    --border: #c5d1d6;
+    --accent: #0b6e66;
     --accent-contrast: #ffffff;
+    --accent-ink: #095c56;
+    --accent-hover: #095e57;
+    /* The page fades slightly darker towards the bottom of the document. */
+    --bg-wash: linear-gradient(#e4ebee, #dce5e9);
+    --floor-strength: 0.18;
+    --floor-strength-xr: 0.22;
+    /* Solid blocks (the hero poster, the boot's blocks and The Build's 3D shapes): three tones by the way a
+       face looks (top, left, right) with dark-teal edges. Only defined here: the 3D material switches to them
+       only while they exist (build-material.ts), and the poster's block shows its solid faces in place of its
+       tones (/build-marks.svg, --cube-solid / --cube-tones), so dark can never pick them up. */
+    --solid-top: #cfe3e0;
+    --solid-left: #a9c6c2;
+    --solid-right: #8fb2ae;
+    --solid-edge: #0b5550;
+    --cube-solid: inline;
+    --cube-tones: none;
+    /* The hero's halo, behind the cube (globals.css .hero-halo). */
+    --hero-halo: #cfe3e0;
     color-scheme: light;
   }
 }
@@ -65,6 +131,8 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-contrast: var(--accent-contrast);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-hover: var(--accent-hover);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -72,6 +140,9 @@
 
 @theme {
   --container-content: 68.75rem;
+
+  /* Cards' soft shadow, light theme only (light:shadow-card, components/ui/card.ts). */
+  --shadow-card: 0 1px 2px rgb(15 27 36 / 0.06), 0 8px 24px rgb(15 27 36 / 0.06);
   /* Comfortable line length for body text (max-w-measure): about 75 characters of Geist at any size.
      In em, not ch: ch is the width of "0", which is wide in Geist, so 75ch ran ~100 characters. */
   --container-measure: 36em;
@@ -84,10 +155,18 @@
   --text-h2: clamp(1.5rem, 1.25rem + 1.25vw, 2.25rem);
   --text-h2--line-height: 1.15;
 
-  /* Hero poster entrance. Used with motion-on: only; never applied to hero text (LCP). */
-  --animate-hero-in: hero-in 400ms ease-out both;
+  /* Motion easings (tokens; see the durations on :root). --ease-out is Tailwind's default curve, made the
+     site's one ease-out: CSS keyframes and Motion use it too. --ease-assemble is ASSEMBLE's block-by-block
+     step. Bare transition-* classes default to the fast token. */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-assemble: steps(6, end);
+  --default-transition-duration: var(--dur-fast);
+  --default-transition-timing-function: var(--ease-out);
 
-  /* PIPELINE typing caret. Blinks only while the status types out; removed when typing ends. */
+  /* ASSEMBLE's piston (src/lib/motion-tokens.ts easePiston): a short ease-out with a small overshoot. */
+  --ease-piston: cubic-bezier(0.3, 1.5, 0.5, 1);
+
+  /* The hero status's typing caret. Blinks only while the status types out; removed when typing ends. */
   --animate-caret: caret-blink 0.9s steps(1) infinite;
 
   @keyframes caret-blink {
@@ -95,17 +174,23 @@
       opacity: 0;
     }
   }
+}
 
-  @keyframes hero-in {
-    from {
-      opacity: 0;
-      transform: scale(0.97);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
+/* Duration classes that read the motion tokens (duration-fast etc. would hard-code them). */
+@utility duration-fast {
+  transition-duration: var(--dur-fast);
+}
+
+@utility duration-base {
+  transition-duration: var(--dur-base);
+}
+
+@utility duration-medium {
+  transition-duration: var(--dur-medium);
+}
+
+@utility duration-slow {
+  transition-duration: var(--dur-slow);
 }
 
 /* ---------- Base ---------- */
@@ -113,6 +198,8 @@
 @layer base {
   body {
     background-color: var(--bg);
+    /* Light only (--bg-wash); none in dark. */
+    background-image: var(--bg-wash, none);
     color: var(--text);
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   }
@@ -173,9 +260,629 @@
   transform: none !important;
 }
 
-/* PIPELINE status: the real text is hidden only while the animated copy plays over it. */
-:root[data-motion="on"] [data-pipeline="pending"] [data-pipeline-real] {
+/* Hero status: the real text is hidden only while the boot's caption or the typed copy plays over it. */
+:root[data-boot="play"] [data-status-real],
+[data-status="typing"] [data-status-real] {
   opacity: 0;
+}
+
+/* ---------- Cube boot (ASSEMBLE + SCAN) ----------
+   The home page's opening, once per visit (src/lib/boot.ts, which writes the timings as --boot-* and the
+   phone time scale --boot-k; every delay and duration below is multiplied by it). The cube grows at the
+   viewport centre (the poster: a glowing core, then the face, edge and corner blocks slide out and snap in,
+   src/lib/boot-growth.ts; a part counter under it counts up), settles onto the floor as the floor rolls out
+   from under it, then glides into its hero slot (FLIP: from the offsets measured before first paint to no
+   transform) while three blocks detach from it and the header and the hero content reveal in reading order.
+   On capable desktops the 3D growth may stand in for the poster's blocks while it plays (.boot-3d).
+   Everything is scoped to data-boot="play", which only the init script sets: the resting styles are the
+   finished page, so no JS, Motion off, a return visit and the boot ending or being skipped all show it at
+   once. Transform, opacity and clip-path only; real text is never visibility: hidden, so it stays in the
+   accessibility tree throughout. Every animation ends before the clock does. */
+
+.boot-stage,
+.boot-count,
+.boot-block,
+.boot-3d,
+.seq-core-glow {
+  display: none;
+}
+
+/* The poster's glows follow The Build's 3D hero cube once it has taken over (parts-cube.tsx sets
+   --hero-presence on the hero visual, damped with the scroll); without it they stay at full strength. */
+.hero-glow {
+  opacity: var(--hero-presence, 1);
+}
+
+/* Light theme: the accent glow over the cube gives way to a soft teal halo *behind* it (hero.tsx): at z -1 in
+   the page's root stacking context, so it sits over the floor (-2) but under The Build's canvas (-1, later in
+   the document) and under the poster, and never paints over a block. The hero stops isolating there so the
+   halo can reach that context (dark keeps it: unchanged). In the cube boot the cube grows away from its slot,
+   so the halo waits and fades in as the cube lands. */
+.hero-halo {
+  display: none;
+  background: radial-gradient(closest-side, var(--hero-halo), transparent);
+}
+
+:root[data-boot="play"] .hero-halo {
+  animation: boot-halo calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
+    calc((var(--boot-glide-at) + var(--boot-glide)) * var(--boot-k)) backwards;
+}
+
+@keyframes boot-halo {
+  from {
+    opacity: 0;
+  }
+}
+
+:root[data-theme="light"] {
+  .hero-section {
+    isolation: auto;
+  }
+
+  .hero-halo {
+    display: block;
+  }
+
+  .hero-glow-over {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    .hero-section {
+      isolation: auto;
+    }
+
+    .hero-halo {
+      display: block;
+    }
+
+    .hero-glow-over {
+      display: none;
+    }
+  }
+}
+
+/* The poster's resting state is the finished cube: every block in place, no flash. */
+.seq-flash {
+  opacity: 0;
+}
+
+:root[data-boot="play"] {
+  /* The stage: a faint glow on the horizon, until the floor takes over. It carries the clock, a no-op that
+     lasts the whole boot; its end marks the boot finished (bootInitScript). */
+  .boot-stage {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 45% 14% at 50% var(--floor-vanish),
+      color-mix(in oklab, var(--accent) 16%, transparent),
+      transparent 70%
+    );
+    animation:
+      boot-clock calc(var(--boot-end) * var(--boot-k)) linear both,
+      seq-fade-out calc(var(--boot-floor) * var(--boot-k)) linear calc(var(--boot-stage-fade-at) * var(--boot-k)) both;
+  }
+
+  /* The floor rolls out from under the cube, towards the horizon and the edges. */
+  .floor {
+    transform-origin: 50% calc(50% + 0.375 * clamp(160px, 36vmin, 260px));
+    animation: boot-floor calc(var(--boot-floor) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-floor-at) * var(--boot-k)) both;
+  }
+
+  /* The cube: at the centre, at boot size; it settles onto the floor, then glides into its slot. */
+  .boot-cube {
+    animation:
+      boot-glide calc(var(--boot-glide) * var(--boot-k)) var(--ease-out) calc(var(--boot-glide-at) * var(--boot-k)) both,
+      boot-settle calc(var(--boot-settle) * var(--boot-k)) var(--ease-out) calc(var(--boot-settle-at) * var(--boot-k))
+        both;
+  }
+
+  /* The core: it appears glowing, and its glow dims as the corners close it in. */
+  .seq-core,
+  .seq-core-glow {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .seq-core {
+    animation: seq-core-in calc(var(--boot-core) * var(--boot-k)) var(--ease-out) calc(var(--boot-core-at) * var(--boot-k))
+      both;
+  }
+
+  .seq-core .seq-flash {
+    animation: seq-glow-out calc(var(--boot-core-dim) * var(--boot-k)) linear calc(var(--boot-core-dim-at) * var(--boot-k))
+      both;
+  }
+
+  .seq-core-glow {
+    display: inline;
+    animation:
+      seq-core-in calc(var(--boot-core) * var(--boot-k)) var(--ease-out) calc(var(--boot-core-at) * var(--boot-k)) both,
+      seq-fade-out calc(var(--boot-core-dim) * var(--boot-k)) linear calc(var(--boot-core-dim-at) * var(--boot-k)) both;
+  }
+
+  /* Every other block: hidden until its turn (--at), then it slides out of the block before it (--fx, --fy),
+     growing, with a small overshoot, and flashes as it snaps into its slot (--contact). */
+  .seq-part {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation:
+      boot-hidden calc(var(--at) * var(--boot-k)) linear,
+      seq-slide calc(var(--boot-slide) * var(--boot-k)) var(--ease-piston) calc(var(--at) * var(--boot-k)) both;
+  }
+
+  .seq-part .seq-flash {
+    animation: seq-flash calc(var(--boot-flash) * var(--boot-k)) linear calc(var(--contact) * var(--boot-k));
+  }
+
+  /* Desktop 3D growth (src/components/three/boot-growth.tsx): exactly over the poster's cube at the centre.
+     While it is live, it stands in for the poster's blocks; it hands back once the cube has settled. */
+  .boot-3d {
+    display: block;
+    position: fixed;
+    top: calc(var(--boot-cy, 50vh) - var(--boot-size, 260px) / 2);
+    left: calc(var(--boot-cx, 50vw) - var(--boot-size, 260px) / 2);
+    z-index: -1;
+    width: var(--boot-size, 260px);
+    height: var(--boot-size, 260px);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--dur-base) linear;
+  }
+
+  .seq-parts {
+    transition: opacity var(--dur-base) linear;
+  }
+
+  &[data-boot-3d="live"] {
+    .boot-3d {
+      opacity: 1;
+    }
+
+    .seq-parts {
+      opacity: 0;
+    }
+  }
+
+  /* The glow where the cube meets the floor brightens as it settles. */
+  .seq-floor-glow {
+    animation: boot-glow calc(var(--boot-settle) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-settle-at) * var(--boot-k)) both;
+  }
+
+  /* The status pill: its caption (the part counter) sits under the cube, travels to the pill's place, then
+     the pill's border draws around it and its surface fades in. Its dot appears as a block lands on it. */
+  .boot-pill {
+    position: relative;
+    border-color: transparent;
+    animation:
+      boot-caption calc(var(--boot-caption) * var(--boot-k)) var(--ease-out) calc(var(--boot-glide-at) * var(--boot-k))
+        both,
+      boot-surface calc(var(--dur-slow) * var(--boot-k)) var(--ease-out) calc(var(--boot-border-at) * var(--boot-k))
+        both;
+  }
+
+  .boot-pill::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border: 1px solid var(--border);
+    border-radius: inherit;
+    pointer-events: none;
+    animation: boot-draw calc(var(--dur-slow) * var(--boot-k)) var(--ease-out) calc(var(--boot-border-at) * var(--boot-k))
+      both;
+  }
+
+  .boot-pill > :first-child {
+    animation: boot-pop calc(var(--dur-fast) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-glide-at) + var(--boot-dot-block)) * var(--boot-k)) both;
+  }
+
+  /* The counter's states, stacked: each shows from its step (--at) for --for; the last stays. */
+  .boot-count {
+    display: inline-grid;
+    justify-items: center;
+    white-space: nowrap;
+  }
+
+  .boot-count > * {
+    grid-area: 1 / 1;
+    opacity: 0;
+    animation: boot-shown calc(var(--for) * var(--boot-k)) linear calc(var(--at) * var(--boot-k));
+  }
+
+  .boot-count > :last-child {
+    animation-fill-mode: forwards;
+  }
+
+  /* The name: each word slides up from its clip wrapper, then one beam sweeps across it (SCAN). */
+  .boot-name {
+    position: relative;
+    clip-path: inset(-0.3em 0);
+  }
+
+  .boot-name::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      transparent calc(100% - 4rem),
+      color-mix(in oklab, var(--accent) 16%, transparent) calc(100% - 1px),
+      var(--accent) calc(100% - 1px)
+    );
+    animation: boot-name-beam calc(var(--dur-sweep) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-name-beam-at) * var(--boot-k)) both;
+  }
+
+  .boot-line {
+    clip-path: inset(-0.3em -0.1em 0);
+  }
+
+  .boot-line > span {
+    animation: boot-line-up calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-reveal-at) + var(--i) * var(--boot-name-step)) * var(--boot-k)) both;
+  }
+
+  /* Tagline, intro and buttons: each fades in as it rises (--rise), one reveal step apart (--i). */
+  .boot-rise {
+    animation: boot-rise calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-reveal-at) + var(--i) * var(--boot-reveal-step)) * var(--boot-k)) both;
+  }
+
+  /* "View my work": a block from the cube lands on its left edge and it expands from there, then it fills
+     with the accent, left to right. It ends exactly on its resting style, so nothing changes when the boot
+     ends. */
+  .boot-cta {
+    background-image: linear-gradient(var(--accent), var(--accent));
+    background-repeat: no-repeat;
+    animation:
+      boot-expand calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
+        calc((var(--boot-glide-at) + var(--boot-cta-block)) * var(--boot-k)) both,
+      boot-fill calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
+        calc((var(--boot-reveal-at) + 3 * var(--boot-reveal-step) + var(--dur-medium)) * var(--boot-k)) both;
+  }
+
+  .boot-socials > * {
+    --rise: 8px;
+    animation: boot-rise calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-reveal-at) + 4 * var(--boot-reveal-step) + var(--j, 0) * var(--boot-nav-step)) * var(--boot-k))
+      both;
+  }
+
+  .boot-socials > :nth-child(2) {
+    --j: 1;
+  }
+
+  /* Header: its bottom line draws, one block flies from the cube into the mark, which then builds; the
+     name slides out from behind it; the nav links drop in, then the controls. */
+  .site-header {
+    border-bottom-color: transparent;
+  }
+
+  .site-header::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--border);
+    transform-origin: left;
+    pointer-events: none;
+    animation: boot-line-draw calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-header-at) * var(--boot-k)) both;
+  }
+
+  /* The three blocks that detach from the cube as its glide starts (BootBlock): each flies from its own
+     block of the cube, at that block's size (measured before first paint), into the header mark, the
+     status dot or "View my work", where it gives way to the part it becomes. */
+  .boot-block {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    overflow: visible;
+    pointer-events: none;
+    animation:
+      boot-hidden calc(var(--boot-glide-at) * var(--boot-k)) linear,
+      boot-block calc(var(--fly) * var(--boot-k)) var(--ease-out) calc(var(--boot-glide-at) * var(--boot-k)) both,
+      seq-fade-out calc(var(--fade) * var(--boot-k)) linear calc((var(--boot-glide-at) + var(--fly)) * var(--boot-k))
+        forwards;
+  }
+
+  [data-boot-block="mark"] {
+    --fly: var(--boot-block);
+    --fade: var(--boot-block);
+  }
+
+  /* Over the dot: the pill's padding plus half the dot. */
+  [data-boot-block="dot"] {
+    --fly: var(--boot-dot-block);
+    --fade: var(--dur-fast);
+    left: calc(0.75rem + 4px);
+  }
+
+  /* On the button's left edge. */
+  [data-boot-block="cta"] {
+    --fly: var(--boot-cta-block);
+    --fade: var(--dur-fast);
+    left: 5px;
+  }
+
+  .header-mark > svg[data-on] {
+    animation: boot-mark-build calc(var(--boot-block) * var(--boot-k)) var(--ease-assemble)
+      calc(var(--boot-mark-at) * var(--boot-k)) both;
+  }
+
+  .boot-brand-clip {
+    clip-path: inset(-0.3em -0.3em -0.3em 0);
+  }
+
+  .boot-brand-name {
+    animation: boot-slide-out calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-mark-at) * var(--boot-k)) both;
+  }
+
+  .boot-nav-item {
+    animation: boot-drop calc(var(--dur-base) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-nav-at) + var(--i) * var(--boot-nav-step)) * var(--boot-k)) both;
+  }
+
+  /* After the nav (the first child): CV, then Pause, then the theme toggle and the menu button. */
+  .boot-tools > :nth-child(n + 2) {
+    animation: boot-drop calc(var(--dur-base) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-tools-at) + var(--j, 0) * var(--boot-nav-step)) * var(--boot-k)) both;
+  }
+
+  .boot-tools > :nth-child(3) {
+    --j: 1;
+  }
+
+  .boot-tools > :nth-child(n + 4) {
+    --j: 2;
+  }
+
+  /* Everything below the hero, so the page stays dark around the cube until the hero is up. */
+  main > section:not(#top),
+  body > footer {
+    animation: boot-fade-in calc(var(--dur-slow) * var(--boot-k)) var(--ease-out) calc(var(--boot-rest-at) * var(--boot-k))
+      both;
+  }
+}
+
+@keyframes boot-clock {
+  to {
+    visibility: visible;
+  }
+}
+
+/* Composited (transform and opacity): the floor grows out from under the cube, whose poster is boot size
+   (clamp(160px, 36vmin, 260px), as in bootMeasureScript) with its lowest corner 0.375 of that below the
+   viewport centre. */
+@keyframes boot-floor {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+/* FLIP: from the measured "first" offsets to no transform (the real layout). Fallbacks keep it in place. */
+@keyframes boot-glide {
+  from {
+    transform: translate(var(--boot-cube-x, 0px), var(--boot-cube-y, 0px)) scale(var(--boot-cube-s, 1));
+  }
+}
+
+@keyframes boot-settle {
+  from {
+    translate: 0 -10px;
+  }
+}
+
+@keyframes boot-glow {
+  from {
+    opacity: 0.35;
+  }
+}
+
+@keyframes boot-caption {
+  from {
+    transform: translate(var(--boot-cap-x, 0px), var(--boot-cap-y, 0px));
+  }
+}
+
+@keyframes boot-surface {
+  from {
+    background-color: transparent;
+  }
+}
+
+@keyframes boot-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@keyframes boot-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes boot-line-up {
+  from {
+    transform: translateY(110%);
+  }
+}
+
+/* The beam is the pseudo-element's right edge, with a faint trail behind it. */
+@keyframes boot-name-beam {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  10%,
+  85% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes boot-rise {
+  from {
+    opacity: 0;
+    translate: 0 var(--rise, 12px);
+  }
+}
+
+@keyframes boot-fill {
+  from {
+    background-color: transparent;
+    background-size: 0% 100%;
+    color: var(--accent-ink);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  /* The label turns as soon as the fill reaches it, so it never sits accent on accent for long. */
+  25% {
+    color: var(--accent-ink);
+  }
+  55% {
+    color: var(--accent-contrast);
+  }
+  99% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+@keyframes boot-line-draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* From its block on the cube (at that block's size) to its place. */
+@keyframes boot-block {
+  from {
+    transform: translate(var(--boot-from-x, 0px), var(--boot-from-y, 0px)) scale(var(--boot-from-s, 1));
+  }
+}
+
+/* Hidden for the animation's whole duration (until its turn); its resting style shows it after. */
+@keyframes boot-hidden {
+  from,
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes boot-shown {
+  from,
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes boot-pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+/* From nothing, to a block-sized square on the button's left edge (where its block lands), to the button. */
+@keyframes boot-expand {
+  from {
+    clip-path: inset(50% 100% 50% 0 round 2px);
+  }
+  0.1% {
+    clip-path: inset(calc(50% - 5px) calc(100% - 10px) calc(50% - 5px) 0 round 2px);
+  }
+  to {
+    clip-path: inset(0 round 0.375rem);
+  }
+}
+
+@keyframes boot-mark-build {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@keyframes boot-slide-out {
+  from {
+    transform: translateX(-105%);
+  }
+}
+
+@keyframes boot-drop {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+
+@keyframes seq-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes seq-core-in {
+  from {
+    transform: scale(0);
+  }
+}
+
+/* The core's glow (an accent copy of the block, FLASH_PEAK in src/lib/boot-growth.ts), dimming. */
+@keyframes seq-glow-out {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Out of the block before it (--fx, --fy, view units) at 0.6 size (GROWTH_FROM_SCALE), into its slot. */
+@keyframes seq-slide {
+  from {
+    transform: translate(var(--fx), var(--fy)) scale(0.6);
+  }
+}
+
+/* The flash as a block snaps in: an accent copy of it, fading (FLASH_PEAK). */
+@keyframes seq-flash {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 /* ---------- Header mark (ASSEMBLE) ----------
@@ -194,8 +901,8 @@
 
 :root[data-motion="on"] .header-mark > svg {
   transition:
-    clip-path 360ms steps(6, end),
-    opacity 300ms ease-out;
+    clip-path var(--dur-slow) var(--ease-assemble),
+    opacity var(--dur-medium) var(--ease-out);
 }
 
 /* The mini build beam: rides the new shape's reveal edge up in the same six steps, then fades. Remounted
@@ -212,9 +919,10 @@
   background: var(--accent);
   box-shadow: 0 0 4px var(--accent);
   pointer-events: none;
+  /* The fade runs a touch longer than the rise, so the beam reaches the top before it goes. */
   animation:
-    mark-beam-rise 360ms steps(6, end) both,
-    mark-beam-fade 420ms linear both;
+    mark-beam-rise var(--dur-slow) var(--ease-assemble) both,
+    mark-beam-fade calc(var(--dur-slow) * 1.15) linear both;
 }
 
 @keyframes mark-beam-rise {
@@ -236,16 +944,244 @@
   }
 }
 
+/* ---------- Header progress (ASSEMBLE: the build beam, laid flat) ----------
+   A 1px accent beam along the header's bottom edge that fills left to right with page scroll. Pure CSS on
+   a scroll timeline: no JS. Hidden where scroll-driven animations aren't supported, and with motion off. */
+
+.header-progress {
+  display: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  :root[data-motion="on"] .header-progress {
+    display: block;
+    position: absolute;
+    inset-inline: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--accent);
+    box-shadow: 0 0 4px var(--accent);
+    pointer-events: none;
+    transform: scaleX(0);
+    transform-origin: left;
+    /* The timeline must follow the shorthand, which resets it. */
+    animation: header-progress-fill linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+@keyframes header-progress-fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ---------- Perspective floor (SCAN: an AR ground plane) ----------
+   The home page's one background surface (PerspectiveFloor), behind every section on every device: an
+   accent grid on a plane receding to a horizon, its lines converging like roads seen from slightly above,
+   fading out towards the far edge. Fixed and at z -2: behind The Build's canvas (-z-1) and all content;
+   opaque cards cover it. Sized to the large viewport, so a phone's URL bar never re-projects it.
+   Live on large screens with a real hover pointer and site motion on, where scroll-driven animations are
+   supported: the lines come towards the viewer as the page scrolls (one cell per iteration of a
+   scroll-timeline animation, repeated, so the grid moves by transform only and never passes the camera),
+   and they brighten while the VR/AR section crosses the lower viewport (a view timeline). Everywhere else
+   it is the same plane, still, and VR/AR brightens it while the section is mid-viewport (ScanObserver
+   sets data-floor-xr). One scan sweep runs along it the first time VR/AR enters, wherever motion is on.
+   The hero's ring reticle sits on it (HeroReticle, a sibling of the masked layer, so neither faded nor
+   masked; desktop only). */
+
+/* Shown once the browser is idle after load (ScanObserver sets data-floor): its large composited plane is
+   rastered after first paint, never in its way (LCP). It fades in where @starting-style is supported.
+   In the cube boot it rolls out from under the cube instead (hidden until then; see "Cube boot"). */
+.floor {
+  display: none;
+}
+
+:root[data-floor] .floor,
+:root[data-boot="play"] .floor {
+  display: block;
+  position: fixed;
+  inset: 0 0 auto;
+  height: 100lvh;
+  z-index: -2;
+  overflow: hidden;
+  contain: strict;
+  pointer-events: none;
+  transition: opacity var(--dur-slow) var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+/* Two fades, intersected: by distance (nothing above the far edge, rising smoothly to full strength well
+   below it, so the far band, where the lines are most compressed, never shows as stripes) and towards the
+   left and right edges (a soft vignette). On its own layer, outside the perspective one: WebKit flattens
+   3D children of an element that has both. */
+.floor-surface {
+  position: absolute;
+  inset: 0;
+  mask-image:
+    linear-gradient(
+      to bottom,
+      transparent calc(var(--floor-vanish) + 2%),
+      rgb(0 0 0 / 0.08) calc(var(--floor-vanish) + 8%),
+      rgb(0 0 0 / 0.3) calc(var(--floor-vanish) + 16%),
+      rgb(0 0 0 / 0.65) calc(var(--floor-vanish) + 26%),
+      #000 calc(var(--floor-vanish) + 38%)
+    ),
+    linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+  mask-composite: intersect;
+}
+
+/* Holds the perspective: it only reaches direct children. */
+.floor-view {
+  position: absolute;
+  inset: 0;
+  perspective: var(--floor-depth);
+  perspective-origin: 50% var(--floor-vanish);
+}
+
+/* The lines' strength is the plane's opacity, not color-mix, so a browser without color-mix can't
+   draw them at full strength. Wide enough that its sides stay out of view up to the fade.
+   Each line is a soft band centred on a cell edge (peak in the middle, fading to nothing over
+   --floor-line-x across and --floor-line-z along the depth), never a hard 1px stop: the tilted plane is
+   sampled at several texels per screen pixel, and a hard line is hit or missed depending on where it
+   falls, so some lines read bright and thick and others faint. A soft band covers the same share of
+   every pixel it crosses, so all lines keep one weight and only thin and fade with distance. */
+.floor-plane {
+  --floor-line-x: 1px;
+  --floor-line-z: 2px;
+  position: absolute;
+  left: -350%;
+  width: 800%;
+  bottom: 0;
+  height: 300%;
+  opacity: var(--floor-strength);
+  transform-origin: 50% 100%;
+  transform: rotateX(var(--floor-tilt));
+  background-image:
+    linear-gradient(
+      to right,
+      var(--accent),
+      transparent var(--floor-line-x),
+      transparent calc(100% - var(--floor-line-x)),
+      var(--accent)
+    ),
+    linear-gradient(
+      to bottom,
+      var(--accent),
+      transparent var(--floor-line-z),
+      transparent calc(100% - var(--floor-line-z)),
+      var(--accent)
+    );
+  background-size: var(--floor-cell) var(--floor-cell);
+  /* Cell edges on the plane's centre line and bottom edge, so each band is whole on screen. */
+  background-position: calc(50% + var(--floor-cell) / 2) bottom;
+  transition: opacity var(--dur-slow) var(--ease-out);
+}
+
+:root[data-floor-xr] .floor-plane {
+  opacity: var(--floor-strength-xr);
+}
+
+/* The VR/AR scan sweep: an accent line with a faint trail behind it, lying on the floor plane. It starts
+   at the bottom of the viewport and runs out towards the horizon. Invisible at rest and at the end. */
+.floor-sweep {
+  position: absolute;
+  left: -350%;
+  width: 800%;
+  bottom: 0;
+  height: var(--floor-cell);
+  opacity: 0;
+  border-top: 2px solid var(--accent);
+  transform-origin: 50% 100%;
+  transform: rotateX(var(--floor-tilt)) translateY(var(--floor-cell));
+}
+
+.floor-sweep::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+}
+
+/* Linear: the perspective already slows the line on screen as it recedes. */
+:root[data-motion="on"][data-floor-scan="run"] .floor-sweep {
+  animation: floor-sweep var(--dur-floor-sweep) linear both;
+}
+
+@supports (animation-timeline: scroll()) and (timeline-scope: none) {
+  @media (min-width: 64rem) and (hover: hover) and (pointer: fine) {
+    body {
+      timeline-scope: --vr-ar;
+    }
+
+    #vr-ar {
+      view-timeline-name: --vr-ar;
+    }
+
+    /* Animations win over data-floor-xr's declaration, so the view timeline alone sets the strength. */
+    :root[data-motion="on"] .floor-plane {
+      animation:
+        floor-advance linear 24 both,
+        floor-xr linear both;
+      animation-timeline: scroll(root block), --vr-ar;
+    }
+  }
+}
+
+@keyframes floor-advance {
+  from {
+    transform: rotateX(var(--floor-tilt)) translateY(0);
+  }
+  to {
+    transform: rotateX(var(--floor-tilt)) translateY(var(--floor-cell));
+  }
+}
+
+@keyframes floor-xr {
+  entry 0% {
+    opacity: var(--floor-strength);
+  }
+  entry 45% {
+    opacity: var(--floor-strength-xr);
+  }
+  exit 55% {
+    opacity: var(--floor-strength-xr);
+  }
+  exit 100% {
+    opacity: var(--floor-strength);
+  }
+}
+
+@keyframes floor-sweep {
+  from {
+    opacity: 0;
+    transform: rotateX(var(--floor-tilt)) translateY(var(--floor-cell));
+  }
+  10%,
+  70% {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 0;
+    transform: rotateX(var(--floor-tilt)) translateY(calc(var(--floor-cell) * -20));
+  }
+}
+
 /* ---------- VR / AR "mode shift" ---------- */
 
-/* A faint grid with scanlines behind the section, fading out at the edges. Static: nothing loops.
-   Derived from --accent, so it follows the theme; the tint stays low enough to keep text contrast. */
+/* Case-study headers: a faint flat grid with scanlines, fading out at the edges (they have no floor).
+   Static: nothing loops. Derived from --accent, so it follows the theme; the tint stays low enough to
+   keep text contrast. The home VR/AR section sits on the perspective floor instead. */
 [data-mode="xr"] {
   position: relative;
   isolation: isolate;
 }
 
-[data-mode="xr"]::before {
+[data-mode="xr"]:not(#vr-ar)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -298,7 +1234,7 @@
 
 :root[data-motion="on"] [data-scan-play="run"] .scan-line,
 :root[data-motion="on"] .lock-line[data-run] {
-  animation: scan-sweep 600ms ease-out 250ms both;
+  animation: scan-sweep var(--dur-sweep) var(--ease-out) var(--delay-sweep) both;
 }
 
 @keyframes scan-sweep {
@@ -335,8 +1271,8 @@
   inset: -6px;
   opacity: 0;
   transition:
-    opacity 180ms ease-out,
-    --c-len 180ms ease-out;
+    opacity var(--dur-fast) var(--ease-out),
+    --c-len var(--dur-fast) var(--ease-out);
 }
 
 .scan-corners,
@@ -385,19 +1321,4 @@
 .lock-corners[data-lock="locked"] {
   --c-len: 18px;
   opacity: 1;
-}
-
-/* Hero reticle (HeroReticle): a soft round patch of dot "surface" around the pointer. Faint, and
-   behind all hero content. The 24px step must match DOT_STEP in hero-reticle.tsx. */
-.reticle-spot {
-  mask-image: radial-gradient(closest-side, #000 25%, transparent);
-}
-
-.reticle-dots {
-  background-image: radial-gradient(
-    circle,
-    color-mix(in oklab, var(--text-muted) 40%, transparent) 1px,
-    transparent 1.5px
-  );
-  background-size: 24px 24px;
 }

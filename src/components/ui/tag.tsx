@@ -11,7 +11,7 @@ type TagListProps = {
 
 const tones = {
   default: "border-border text-text-muted",
-  accent: "border-accent/40 text-accent",
+  accent: "border-accent/40 text-accent-ink",
 } as const;
 
 /** Classes for a single tag, shared with CollapsibleTagList. */

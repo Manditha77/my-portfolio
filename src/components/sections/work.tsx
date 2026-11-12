@@ -27,11 +27,11 @@ export function Work() {
       <p data-build-clear className="mt-8">
         <a
           href={moreOnGitHub.href}
-          className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 font-medium text-text transition-colors duration-150 ease-out hover:text-accent"
+          className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 font-medium text-text transition-colors duration-fast ease-out hover:text-accent-ink"
         >
           <GitHubIcon className="size-5" />
           {moreOnGitHub.label}
-          <span aria-hidden="true" className="transition-transform duration-150 ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
+          <span aria-hidden="true" className="transition-transform duration-fast ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
             →
           </span>
         </a>
