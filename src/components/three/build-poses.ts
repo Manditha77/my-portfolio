@@ -8,7 +8,6 @@ import {
   type LiveRole,
   type ShapeKey,
 } from "@/lib/build-shapes";
-import { SEQUENCE, layerStart } from "@/lib/hero-sequence";
 import { SWAY, liveBlock, liveExtremes, liveSway, type LiveBlock, type Sway } from "./build-live";
 
 /*
@@ -363,36 +362,4 @@ export function beamOpacity(placed: Pose[], beam: number, direction: "in" | "out
   const fadeLow = 2 * bottomRadius;
   const fadeHigh = 2 * topRadius;
   return MathUtils.smoothstep(beam, low - fadeLow, low) * (1 - MathUtils.smoothstep(beam, high - fadeHigh, high));
-}
-
-/*
- * The first-load build sequence's "act" (src/lib/hero-sequence.ts), when the 3D cube takes it over from
- * the poster: the hero cube's blocks print layer by layer (voxel layers, bottom first) on the same clock and
- * timings as the poster's CSS layers. Each block grows in, settles from a little above and glows briefly,
- * as under the build beam. No beam here: the sequence's only beam is the poster's scan before it.
- */
-
-/** Writes `placed` (the hero cube's poses on the page) as they are `time` ms into the sequence into `out`. */
-export function layerPrintPoses(placed: Pose[], out: Pose[], time: number) {
-  const { blocks } = SHAPES.cube;
-  const lowest = Math.min(...blocks.map((block) => block.local.y + block.pivot.y));
-  for (let i = 0; i < BLOCKS; i++) {
-    const from = placed[i];
-    const to = out[i];
-    to.position.copy(from.position);
-    to.quaternion.copy(from.quaternion);
-    to.glow = from.glow;
-    const block = blocks[i];
-    if (!block) {
-      to.scale.setScalar(0);
-      continue;
-    }
-    const layer = Math.round(block.local.y + block.pivot.y - lowest);
-    const amount = MathUtils.clamp((time - layerStart(layer)) / SEQUENCE.layerDraw, 0, 1);
-    const shown = easeOut(amount);
-    const radius = 0.5 * BLOCK * from.scale.length();
-    to.position.y += (1 - shown) * SETTLE_DROP * radius;
-    to.scale.copy(from.scale).multiplyScalar(shown);
-    if (amount > 0) to.glow = Math.max(to.glow, FLASH_GLOW * (1 - amount));
-  }
 }

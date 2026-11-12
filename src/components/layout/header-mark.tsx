@@ -14,7 +14,8 @@ const REST: ShapeKey = "cube";
  * runs, it switches as each stop's beam starts printing and holds the shape between stops; otherwise it
  * shows the current home section's shape (the cube over the hero and off the home page). Static SVGs from
  * one cached sprite (src/app/build-marks.svg); switching assembles the new shape bottom up behind a tiny
- * beam while the old one drains away, in CSS (.header-mark), only with motion on.
+ * beam while the old one drains away, in CSS (.header-mark), only with motion on. In the cube boot, one
+ * block flies up from the cube into it before the mark builds (.boot-block, shown only then).
  * Decorative: the name link beside it carries the accessible name.
  */
 export function HeaderMark() {
@@ -34,6 +35,7 @@ export function HeaderMark() {
     // The header has no room for it below 360px, nor just as the inline nav appears (768px up to 800px).
     <span
       aria-hidden="true"
+      data-boot-mark=""
       className="header-mark relative size-6 shrink-0 max-[359px]:hidden md:max-[799px]:hidden"
     >
       {SHAPES.map((shape) => (
@@ -42,6 +44,7 @@ export function HeaderMark() {
         </svg>
       ))}
       {switched && <span key={current} className="header-mark-beam" />}
+      <span className="boot-block" />
     </span>
   );
 }

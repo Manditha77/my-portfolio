@@ -47,8 +47,8 @@
   --delay-sweep: 250ms;
 
   /* Perspective floor (home page): see "Perspective floor" below. */
-  --floor-strength: 0.14; /* the lines' opacity: every text colour on a line pixel stays AA */
-  --floor-strength-xr: 0.24; /* brighter in VR/AR; still AA for text on a line pixel */
+  --floor-strength: 0.11; /* the lines' opacity: every text colour on a line pixel stays AA */
+  --floor-strength-xr: 0.18; /* brighter in VR/AR; still AA for text on a line pixel */
   --floor-cell: 64px;
   --floor-tilt: 76deg;
   --floor-depth: 640px; /* perspective distance */
@@ -66,8 +66,8 @@
   --border: #d5dbe3;
   --accent: #0f766e;
   --accent-contrast: #ffffff;
-  --floor-strength: 0.1;
-  --floor-strength-xr: 0.12;
+  --floor-strength: 0.08;
+  --floor-strength-xr: 0.09;
   color-scheme: light;
 }
 
@@ -81,8 +81,8 @@
     --border: #d5dbe3;
     --accent: #0f766e;
     --accent-contrast: #ffffff;
-    --floor-strength: 0.1;
-    --floor-strength-xr: 0.12;
+    --floor-strength: 0.08;
+    --floor-strength-xr: 0.09;
     color-scheme: light;
   }
 }
@@ -214,18 +214,32 @@
   transform: none !important;
 }
 
-/* PIPELINE status: the real text is hidden only while the animated copy plays over it. */
-:root[data-motion="on"] [data-pipeline="pending"] [data-pipeline-real] {
+/* PIPELINE status: the real text is hidden only while the boot's caption or the typed copy plays over it. */
+:root[data-boot="play"] [data-pipeline-real],
+[data-pipeline="typing"] [data-pipeline-real] {
   opacity: 0;
 }
 
-/* ---------- First-load build sequence (PIPELINE: sense → analyze → act) ----------
-   The hero poster (src/components/three/hero-poster.tsx; timings in src/lib/hero-sequence.ts, written
-   inline as --delay per element and --dur or --line per group). The resting styles here are the finished cube: blueprint and
-   beam hidden, every layer in place. The animations only run under data-motion="on" while HeroVisual
-   marks the sequence as playing, so motion off, reduced motion, no JS and a remount all show the finished
-   cube at once, and switching motion off mid-way snaps to it. Transform, opacity and dash offset only. */
+/* ---------- Cube boot (ASSEMBLE + PIPELINE + SCAN) ----------
+   The home page's opening, once per visit (src/lib/boot.ts, which writes the timings as --boot-* and the
+   phone time scale --boot-k; every delay and duration below is multiplied by it). The cube is built at the
+   viewport centre (the poster: its blueprint traces, the beam scans, the layers print; a caption under it
+   ticks each step), settles onto the floor as the floor rolls out from under it, then glides into its hero
+   slot (FLIP: from the offsets measured before first paint to no transform) while the header and the hero
+   content reveal in reading order.
+   Everything is scoped to data-boot="play", which only the init script sets: the resting styles are the
+   finished page, so no JS, Motion off, a return visit and the boot ending or being skipped all show it at
+   once. Transform, opacity, clip-path and dash offset only; real text is never visibility: hidden, so it
+   stays in the accessibility tree throughout. Every animation ends before the clock does. */
 
+.boot-stage,
+.boot-steps,
+.boot-block,
+.seq-ghost {
+  display: none;
+}
+
+/* The poster's resting state is the finished cube: blueprint and beam hidden, every layer in place. */
 .seq-blueprint,
 .seq-beam {
   opacity: 0;
@@ -235,34 +249,398 @@
   stroke-dasharray: 1 1;
 }
 
-:root[data-motion="on"] [data-sequence="play"] {
-  /* The clock: does nothing visible, lasts the whole sequence; script reads its time and pauses it. */
-  .seq-clock {
-    animation: seq-clock var(--dur) linear both;
+:root[data-boot="play"] {
+  /* The stage: a faint glow on the horizon, until the floor takes over. It carries the clock, a no-op that
+     lasts the whole boot; its end marks the boot finished (bootInitScript). */
+  .boot-stage {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 45% 14% at 50% var(--floor-vanish),
+      color-mix(in oklab, var(--accent) 16%, transparent),
+      transparent 70%
+    );
+    animation:
+      boot-clock calc(var(--boot-end) * var(--boot-k)) linear both,
+      seq-fade-out calc(var(--boot-floor) * var(--boot-k)) linear calc(var(--boot-stage-fade-at) * var(--boot-k)) both;
   }
 
-  /* Each line traces itself (--line: its group's draw time). */
+  /* The floor rolls out from under the cube, towards the horizon and the edges. */
+  .floor {
+    transform-origin: 50% calc(50% + 0.375 * clamp(160px, 36vmin, 260px));
+    animation: boot-floor calc(var(--boot-floor) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-floor-at) * var(--boot-k)) both;
+  }
+
+  /* The cube: at the centre, at boot size; it settles onto the floor, then glides into its slot. */
+  .boot-cube {
+    animation:
+      boot-glide calc(var(--boot-glide) * var(--boot-k)) var(--ease-out) calc(var(--boot-glide-at) * var(--boot-k)) both,
+      boot-settle calc(var(--boot-settle) * var(--boot-k)) var(--ease-out) calc(var(--boot-settle-at) * var(--boot-k))
+        both;
+  }
+
+  /* Its first frame: a faint outline, gone once the blueprint has traced over it. */
+  .seq-ghost {
+    display: inline;
+    animation: seq-fade-out calc(var(--boot-edge-draw) * var(--boot-k)) linear calc(var(--boot-grid-at) * var(--boot-k))
+      both;
+  }
+
+  /* sense: each line traces itself (--line: its group's draw time; --delay: its start). */
   .seq-blueprint path {
-    animation: seq-trace var(--line) var(--ease-out) var(--delay) both;
+    animation: seq-trace calc(var(--line) * var(--boot-k)) var(--ease-out) calc(var(--delay) * var(--boot-k)) both;
   }
 
   /* Shown from the start (backwards fill), then fades as the cube completes. */
   .seq-blueprint {
-    animation: seq-fade-out var(--dur) linear var(--delay) both;
+    animation: seq-fade-out calc(var(--dur) * var(--boot-k)) linear calc(var(--delay) * var(--boot-k)) both;
   }
 
+  /* analyze: one pass of the beam. */
   .seq-beam {
-    animation: seq-scan var(--dur) var(--ease-out) var(--delay) both;
+    animation: seq-scan calc(var(--dur) * var(--boot-k)) var(--ease-out) calc(var(--delay) * var(--boot-k)) both;
   }
 
+  /* act: the layers print. */
   .seq-layer {
-    animation: seq-print var(--dur) var(--ease-out) var(--delay) both;
+    animation: seq-print calc(var(--dur) * var(--boot-k)) var(--ease-out) calc(var(--delay) * var(--boot-k)) both;
+  }
+
+  /* The glow where the cube meets the floor brightens as it settles. */
+  .seq-floor-glow {
+    animation: boot-glow calc(var(--boot-settle) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-settle-at) * var(--boot-k)) both;
+  }
+
+  /* The status pill: its caption ticks under the cube, travels to the pill's place, then the pill's border
+     draws around it and its surface and dot fade in. */
+  .boot-pill {
+    position: relative;
+    border-color: transparent;
+    animation:
+      boot-caption calc(var(--boot-caption) * var(--boot-k)) var(--ease-out) calc(var(--boot-glide-at) * var(--boot-k))
+        both,
+      boot-surface calc(var(--dur-slow) * var(--boot-k)) var(--ease-out) calc(var(--boot-border-at) * var(--boot-k))
+        both;
+  }
+
+  .boot-pill::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border: 1px solid var(--border);
+    border-radius: inherit;
+    pointer-events: none;
+    animation: boot-draw calc(var(--dur-slow) * var(--boot-k)) var(--ease-out) calc(var(--boot-border-at) * var(--boot-k))
+      both;
+  }
+
+  .boot-pill > :first-child {
+    animation: boot-fade-in calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-border-at) * var(--boot-k)) both;
+  }
+
+  .boot-steps {
+    display: inline;
+    white-space: nowrap;
+  }
+
+  .boot-steps span {
+    animation: boot-fade-in calc(var(--dur-fast) * var(--boot-k)) linear calc(var(--at) * var(--boot-k)) both;
+  }
+
+  /* The name: each word slides up from its clip wrapper, then one beam sweeps across it (SCAN). */
+  .boot-name {
+    position: relative;
+    clip-path: inset(-0.3em 0);
+  }
+
+  .boot-name::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      transparent calc(100% - 4rem),
+      color-mix(in oklab, var(--accent) 16%, transparent) calc(100% - 1px),
+      var(--accent) calc(100% - 1px)
+    );
+    animation: boot-name-beam calc(var(--dur-sweep) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-name-beam-at) * var(--boot-k)) both;
+  }
+
+  .boot-line {
+    clip-path: inset(-0.3em -0.1em 0);
+  }
+
+  .boot-line > span {
+    animation: boot-line-up calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-reveal-at) + var(--i) * var(--boot-name-step)) * var(--boot-k)) both;
+  }
+
+  /* Tagline, intro and buttons: each fades in as it rises (--rise), one reveal step apart (--i). */
+  .boot-rise {
+    animation: boot-rise calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-reveal-at) + var(--i) * var(--boot-reveal-step)) * var(--boot-k)) both;
+  }
+
+  /* "View my work" fills with the accent, left to right, once the buttons are up. It ends exactly on its
+     resting style, so nothing changes when the boot ends. */
+  .boot-fill {
+    background-image: linear-gradient(var(--accent), var(--accent));
+    background-repeat: no-repeat;
+    animation: boot-fill calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-reveal-at) + 3 * var(--boot-reveal-step) + var(--dur-medium)) * var(--boot-k)) both;
+  }
+
+  .boot-socials > * {
+    --rise: 8px;
+    animation: boot-rise calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-reveal-at) + 4 * var(--boot-reveal-step) + var(--j, 0) * var(--boot-nav-step)) * var(--boot-k))
+      both;
+  }
+
+  .boot-socials > :nth-child(2) {
+    --j: 1;
+  }
+
+  /* Header: its bottom line draws, one block flies from the cube into the mark, which then builds; the
+     name slides out from behind it; the nav links drop in, then the controls. */
+  .site-header {
+    border-bottom-color: transparent;
+  }
+
+  .site-header::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--border);
+    transform-origin: left;
+    pointer-events: none;
+    animation: boot-line-draw calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-header-at) * var(--boot-k)) both;
+  }
+
+  .boot-block {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    background: var(--mark-mid);
+    box-shadow:
+      inset 0 2px 0 var(--mark-light),
+      0 0 6px var(--accent);
+    pointer-events: none;
+    animation:
+      boot-block calc(var(--boot-block) * var(--boot-k)) var(--ease-out) calc(var(--boot-header-at) * var(--boot-k)) both,
+      seq-fade-out calc(var(--boot-block) * var(--boot-k)) linear calc(var(--boot-mark-at) * var(--boot-k)) forwards;
+  }
+
+  .header-mark > svg[data-on] {
+    animation: boot-mark-build calc(var(--boot-block) * var(--boot-k)) var(--ease-assemble)
+      calc(var(--boot-mark-at) * var(--boot-k)) both;
+  }
+
+  .boot-brand-clip {
+    clip-path: inset(-0.3em -0.3em -0.3em 0);
+  }
+
+  .boot-brand-name {
+    animation: boot-slide-out calc(var(--dur-medium) * var(--boot-k)) var(--ease-out)
+      calc(var(--boot-mark-at) * var(--boot-k)) both;
+  }
+
+  .boot-nav-item {
+    animation: boot-drop calc(var(--dur-base) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-nav-at) + var(--i) * var(--boot-nav-step)) * var(--boot-k)) both;
+  }
+
+  /* After the nav (the first child): CV, then Pause, then the theme toggle and the menu button. */
+  .boot-tools > :nth-child(n + 2) {
+    animation: boot-drop calc(var(--dur-base) * var(--boot-k)) var(--ease-out)
+      calc((var(--boot-tools-at) + var(--j, 0) * var(--boot-nav-step)) * var(--boot-k)) both;
+  }
+
+  .boot-tools > :nth-child(3) {
+    --j: 1;
+  }
+
+  .boot-tools > :nth-child(n + 4) {
+    --j: 2;
+  }
+
+  /* Everything below the hero, so the page stays dark around the cube until the hero is up. */
+  main > section:not(#top),
+  body > footer {
+    animation: boot-fade-in calc(var(--dur-slow) * var(--boot-k)) var(--ease-out) calc(var(--boot-rest-at) * var(--boot-k))
+      both;
   }
 }
 
-@keyframes seq-clock {
+@keyframes boot-clock {
   to {
     visibility: visible;
+  }
+}
+
+/* Composited (transform and opacity): the floor grows out from under the cube, whose poster is boot size
+   (clamp(160px, 36vmin, 260px), as in bootMeasureScript) with its lowest corner 0.375 of that below the
+   viewport centre. */
+@keyframes boot-floor {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+/* FLIP: from the measured "first" offsets to no transform (the real layout). Fallbacks keep it in place. */
+@keyframes boot-glide {
+  from {
+    transform: translate(var(--boot-cube-x, 0px), var(--boot-cube-y, 0px)) scale(var(--boot-cube-s, 1));
+  }
+}
+
+@keyframes boot-settle {
+  from {
+    translate: 0 -10px;
+  }
+}
+
+@keyframes boot-glow {
+  from {
+    opacity: 0.35;
+  }
+}
+
+@keyframes boot-caption {
+  from {
+    transform: translate(var(--boot-cap-x, 0px), var(--boot-cap-y, 0px));
+  }
+}
+
+@keyframes boot-surface {
+  from {
+    background-color: transparent;
+  }
+}
+
+@keyframes boot-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@keyframes boot-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes boot-line-up {
+  from {
+    transform: translateY(110%);
+  }
+}
+
+/* The beam is the pseudo-element's right edge, with a faint trail behind it. */
+@keyframes boot-name-beam {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  10%,
+  85% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes boot-rise {
+  from {
+    opacity: 0;
+    translate: 0 var(--rise, 12px);
+  }
+}
+
+@keyframes boot-fill {
+  from {
+    background-color: transparent;
+    background-size: 0% 100%;
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  /* The label turns as soon as the fill reaches it, so it never sits accent on accent for long. */
+  25% {
+    color: var(--accent);
+  }
+  55% {
+    color: var(--accent-contrast);
+  }
+  99% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+@keyframes boot-line-draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* The block appears on the cube at its glide's start, then flies into the mark. */
+@keyframes boot-block {
+  from {
+    opacity: 0;
+    transform: translate(var(--boot-mark-x, 0px), var(--boot-mark-y, 0px)) scale(2.5);
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes boot-mark-build {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@keyframes boot-slide-out {
+  from {
+    transform: translateX(-105%);
+  }
+}
+
+@keyframes boot-drop {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
   }
 }
 
@@ -418,12 +796,14 @@
    masked; desktop only). */
 
 /* Shown once the browser is idle after load (ScanObserver sets data-floor): its large composited plane is
-   rastered after first paint, never in its way (LCP). It fades in where @starting-style is supported. */
+   rastered after first paint, never in its way (LCP). It fades in where @starting-style is supported.
+   In the cube boot it rolls out from under the cube instead (hidden until then; see "Cube boot"). */
 .floor {
   display: none;
 }
 
-:root[data-floor] .floor {
+:root[data-floor] .floor,
+:root[data-boot="play"] .floor {
   display: block;
   position: fixed;
   inset: 0 0 auto;
@@ -439,12 +819,24 @@
   }
 }
 
-/* The fade: nothing above the far edge, full strength from a little below it. On its own layer, outside
-   the perspective one: WebKit flattens 3D children of an element that has both. */
+/* Two fades, intersected: by distance (nothing above the far edge, rising smoothly to full strength well
+   below it, so the far band, where the lines are most compressed, never shows as stripes) and towards the
+   left and right edges (a soft vignette). On its own layer, outside the perspective one: WebKit flattens
+   3D children of an element that has both. */
 .floor-surface {
   position: absolute;
   inset: 0;
-  mask-image: linear-gradient(to bottom, transparent calc(var(--floor-vanish) - 3%), #000 calc(var(--floor-vanish) + 22%));
+  mask-image:
+    linear-gradient(
+      to bottom,
+      transparent calc(var(--floor-vanish) + 2%),
+      rgb(0 0 0 / 0.08) calc(var(--floor-vanish) + 8%),
+      rgb(0 0 0 / 0.3) calc(var(--floor-vanish) + 16%),
+      rgb(0 0 0 / 0.65) calc(var(--floor-vanish) + 26%),
+      #000 calc(var(--floor-vanish) + 38%)
+    ),
+    linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+  mask-composite: intersect;
 }
 
 /* Holds the perspective: it only reaches direct children. */
@@ -456,8 +848,15 @@
 }
 
 /* The lines' strength is the plane's opacity, not color-mix, so a browser without color-mix can't
-   draw them at full strength. Wide enough that its sides stay out of view up to the fade. */
+   draw them at full strength. Wide enough that its sides stay out of view up to the fade.
+   Each line is a soft band centred on a cell edge (peak in the middle, fading to nothing over
+   --floor-line-x across and --floor-line-z along the depth), never a hard 1px stop: the tilted plane is
+   sampled at several texels per screen pixel, and a hard line is hit or missed depending on where it
+   falls, so some lines read bright and thick and others faint. A soft band covers the same share of
+   every pixel it crosses, so all lines keep one weight and only thin and fade with distance. */
 .floor-plane {
+  --floor-line-x: 1px;
+  --floor-line-z: 2px;
   position: absolute;
   left: -350%;
   width: 800%;
@@ -467,10 +866,23 @@
   transform-origin: 50% 100%;
   transform: rotateX(var(--floor-tilt));
   background-image:
-    linear-gradient(to right, var(--accent) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--accent) 1px, transparent 1px);
+    linear-gradient(
+      to right,
+      var(--accent),
+      transparent var(--floor-line-x),
+      transparent calc(100% - var(--floor-line-x)),
+      var(--accent)
+    ),
+    linear-gradient(
+      to bottom,
+      var(--accent),
+      transparent var(--floor-line-z),
+      transparent calc(100% - var(--floor-line-z)),
+      var(--accent)
+    );
   background-size: var(--floor-cell) var(--floor-cell);
-  background-position: center bottom;
+  /* Cell edges on the plane's centre line and bottom edge, so each band is whole on screen. */
+  background-position: calc(50% + var(--floor-cell) / 2) bottom;
   transition: opacity var(--dur-slow) var(--ease-out);
 }
 

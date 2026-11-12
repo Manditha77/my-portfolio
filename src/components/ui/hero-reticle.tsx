@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useBootState } from "@/lib/use-boot-state";
 import { useMotionOn } from "@/lib/use-motion-on";
 
 /*
@@ -14,8 +15,9 @@ import { useMotionOn } from "@/lib/use-motion-on";
  * that depth and flattened by the floor's tilt, so they read as ellipses lying on it. Above the horizon
  * there is no floor to hit, so the reticle hides; it fades as it nears the horizon.
  * The floor's geometry is read from its CSS (perspective, perspective-origin, --floor-tilt) and its box.
- * Same gate as the floor: large screen, a mouse-class pointer, site motion on. The animation loop runs
- * only while the reticle is catching up, so nothing runs while the pointer is still. Decorative.
+ * Same gate as the floor: large screen, a mouse-class pointer, site motion on; it wakes once the cube boot
+ * is over. The animation loop runs only while the reticle is catching up, so nothing runs while the
+ * pointer is still. Decorative.
  */
 
 const FLOOR_QUERY = "(min-width: 64rem) and (hover: hover) and (pointer: fine)";
@@ -70,7 +72,8 @@ function projectOnFloor(y: number, height: number, { depth: p, vanishY, sin, cos
 export function HeroReticle() {
   const motionOn = useMotionOn();
   const floorShown = useFloorShown();
-  const enabled = motionOn && floorShown;
+  const booting = useBootState() === "play";
+  const enabled = motionOn && floorShown && !booting;
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);

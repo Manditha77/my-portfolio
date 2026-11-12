@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import type { NavItem } from "@/content/navigation";
 import { shellCopy } from "@/content/navigation";
 import { useActiveSection } from "@/lib/use-active-section";
@@ -16,8 +17,9 @@ export function DesktopNav({ items }: DesktopNavProps) {
   return (
     <nav aria-label={shellCopy.primaryNavLabel} className="hidden md:block">
       <ul className="flex items-center gap-1">
-        {items.map((item) => (
-          <li key={item.href}>
+        {items.map((item, i) => (
+          // --i: its place in the cube boot's drop-in (globals.css).
+          <li key={item.href} className="boot-nav-item" style={{ "--i": i } as CSSProperties}>
             <Link
               href={item.href}
               aria-current={item.id === active ? "true" : undefined}
