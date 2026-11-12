@@ -14,7 +14,7 @@ export function NumberedSteps({ steps }: NumberedStepsProps) {
     <ol role="list" className="mt-6 grid gap-5 sm:grid-cols-2">
       {steps.map((step, index) => (
         <li key={step.title} className="flex gap-4">
-          <span aria-hidden="true" className="shrink-0 pt-0.5 font-mono text-sm text-accent">
+          <span aria-hidden="true" className="shrink-0 pt-0.5 font-mono text-sm text-accent-ink">
             {stepNumber(index)}
           </span>
           <div className="min-w-0">
@@ -37,7 +37,7 @@ export function SimpleSteps({ steps }: SimpleStepsProps) {
     <ol role="list" className="mt-5 max-w-measure space-y-3">
       {steps.map((step, index) => (
         <li key={step} className="flex gap-4">
-          <span aria-hidden="true" className="shrink-0 pt-0.5 font-mono text-sm text-accent">
+          <span aria-hidden="true" className="shrink-0 pt-0.5 font-mono text-sm text-accent-ink">
             {stepNumber(index)}
           </span>
           <span className="min-w-0">{step}</span>

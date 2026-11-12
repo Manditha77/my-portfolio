@@ -18,6 +18,9 @@
   --border: #243041;
   --accent: #2dd4bf;
   --accent-contrast: #04201c;
+  /* Accent-coloured text (text-accent-ink). The accent itself in dark; darker in light, where text must stay
+     AA on a floor line pixel. */
+  --accent-ink: var(--accent);
 
   /* The header mark's voxel faces (src/lib/build-marks.ts): three shades of the accent, lit from the
      upper left, and a pale accent for lenses and screens. Mixed towards white and black, so they follow
@@ -57,32 +60,65 @@
   color-scheme: dark;
 }
 
-/* Light theme: chosen manually, or from the OS when nothing is stored. */
+/* Light theme ("Mist"): chosen manually, or from the OS when nothing is stored. Every light-only value lives
+   in this block and its no-JS copy below, never on the dark :root. */
 :root[data-theme="light"] {
-  --bg: #fbfcfd;
-  --surface: #f1f4f7;
-  --text: #0b1220;
-  --text-muted: #4a5565;
-  --border: #d5dbe3;
-  --accent: #0f766e;
+  --bg: #e4ebee;
+  --surface: #f3f6f7;
+  --text: #0f1b24;
+  --text-muted: #44525d;
+  --border: #c5d1d6;
+  --accent: #0b6e66;
   --accent-contrast: #ffffff;
-  --floor-strength: 0.08;
-  --floor-strength-xr: 0.09;
+  --accent-ink: #095c56;
+  --accent-hover: #095e57;
+  /* The page fades slightly darker towards the bottom of the document. */
+  --bg-wash: linear-gradient(#e4ebee, #dce5e9);
+  --floor-strength: 0.18;
+  --floor-strength-xr: 0.22;
+  /* Solid blocks (the hero poster, the boot's blocks and The Build's 3D shapes): three tones by the way a
+     face looks (top, left, right) with dark-teal edges. Only defined here: the 3D material switches to them
+     only while they exist (build-material.ts), and the poster's block shows its solid faces in place of its
+     tones (/build-marks.svg, --cube-solid / --cube-tones), so dark can never pick them up. */
+  --solid-top: #cfe3e0;
+  --solid-left: #a9c6c2;
+  --solid-right: #8fb2ae;
+  --solid-edge: #0b5550;
+  --cube-solid: inline;
+  --cube-tones: none;
+  /* The hero's halo, behind the cube (globals.css .hero-halo). */
+  --hero-halo: #cfe3e0;
   color-scheme: light;
 }
 
 /* No-JS fallback: follow the OS unless dark was chosen explicitly. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    --bg: #fbfcfd;
-    --surface: #f1f4f7;
-    --text: #0b1220;
-    --text-muted: #4a5565;
-    --border: #d5dbe3;
-    --accent: #0f766e;
+    --bg: #e4ebee;
+    --surface: #f3f6f7;
+    --text: #0f1b24;
+    --text-muted: #44525d;
+    --border: #c5d1d6;
+    --accent: #0b6e66;
     --accent-contrast: #ffffff;
-    --floor-strength: 0.08;
-    --floor-strength-xr: 0.09;
+    --accent-ink: #095c56;
+    --accent-hover: #095e57;
+    /* The page fades slightly darker towards the bottom of the document. */
+    --bg-wash: linear-gradient(#e4ebee, #dce5e9);
+    --floor-strength: 0.18;
+    --floor-strength-xr: 0.22;
+    /* Solid blocks (the hero poster, the boot's blocks and The Build's 3D shapes): three tones by the way a
+       face looks (top, left, right) with dark-teal edges. Only defined here: the 3D material switches to them
+       only while they exist (build-material.ts), and the poster's block shows its solid faces in place of its
+       tones (/build-marks.svg, --cube-solid / --cube-tones), so dark can never pick them up. */
+    --solid-top: #cfe3e0;
+    --solid-left: #a9c6c2;
+    --solid-right: #8fb2ae;
+    --solid-edge: #0b5550;
+    --cube-solid: inline;
+    --cube-tones: none;
+    /* The hero's halo, behind the cube (globals.css .hero-halo). */
+    --hero-halo: #cfe3e0;
     color-scheme: light;
   }
 }
@@ -95,6 +131,8 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-contrast: var(--accent-contrast);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-hover: var(--accent-hover);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -102,6 +140,9 @@
 
 @theme {
   --container-content: 68.75rem;
+
+  /* Cards' soft shadow, light theme only (light:shadow-card, components/ui/card.ts). */
+  --shadow-card: 0 1px 2px rgb(15 27 36 / 0.06), 0 8px 24px rgb(15 27 36 / 0.06);
   /* Comfortable line length for body text (max-w-measure): about 75 characters of Geist at any size.
      In em, not ch: ch is the width of "0", which is wide in Geist, so 75ch ran ~100 characters. */
   --container-measure: 36em;
@@ -157,6 +198,8 @@
 @layer base {
   body {
     background-color: var(--bg);
+    /* Light only (--bg-wash); none in dark. */
+    background-image: var(--bg-wash, none);
     color: var(--text);
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   }
@@ -248,6 +291,57 @@
    --hero-presence on the hero visual, damped with the scroll); without it they stay at full strength. */
 .hero-glow {
   opacity: var(--hero-presence, 1);
+}
+
+/* Light theme: the accent glow over the cube gives way to a soft teal halo *behind* it (hero.tsx): at z -1 in
+   the page's root stacking context, so it sits over the floor (-2) but under The Build's canvas (-1, later in
+   the document) and under the poster, and never paints over a block. The hero stops isolating there so the
+   halo can reach that context (dark keeps it: unchanged). In the cube boot the cube grows away from its slot,
+   so the halo waits and fades in as the cube lands. */
+.hero-halo {
+  display: none;
+  background: radial-gradient(closest-side, var(--hero-halo), transparent);
+}
+
+:root[data-boot="play"] .hero-halo {
+  animation: boot-halo calc(var(--dur-slow) * var(--boot-k)) var(--ease-out)
+    calc((var(--boot-glide-at) + var(--boot-glide)) * var(--boot-k)) backwards;
+}
+
+@keyframes boot-halo {
+  from {
+    opacity: 0;
+  }
+}
+
+:root[data-theme="light"] {
+  .hero-section {
+    isolation: auto;
+  }
+
+  .hero-halo {
+    display: block;
+  }
+
+  .hero-glow-over {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    .hero-section {
+      isolation: auto;
+    }
+
+    .hero-halo {
+      display: block;
+    }
+
+    .hero-glow-over {
+      display: none;
+    }
+  }
 }
 
 /* The poster's resting state is the finished cube: every block in place, no flash. */
@@ -661,12 +755,12 @@
   from {
     background-color: transparent;
     background-size: 0% 100%;
-    color: var(--accent);
+    color: var(--accent-ink);
     box-shadow: inset 0 0 0 1px var(--accent);
   }
   /* The label turns as soon as the fill reaches it, so it never sits accent on accent for long. */
   25% {
-    color: var(--accent);
+    color: var(--accent-ink);
   }
   55% {
     color: var(--accent-contrast);

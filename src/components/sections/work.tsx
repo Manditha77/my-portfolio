@@ -27,7 +27,7 @@ export function Work() {
       <p data-build-clear className="mt-8">
         <a
           href={moreOnGitHub.href}
-          className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 font-medium text-text transition-colors duration-fast ease-out hover:text-accent"
+          className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 font-medium text-text transition-colors duration-fast ease-out hover:text-accent-ink"
         >
           <GitHubIcon className="size-5" />
           {moreOnGitHub.label}

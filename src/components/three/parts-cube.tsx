@@ -9,6 +9,7 @@ import {
   createBeamUniforms,
   createBlockUniforms,
   fragmentShader,
+  onThemeChange,
   readTokenColors,
   vertexShader,
   type BeamUniforms,
@@ -227,14 +228,14 @@ function Blocks({ mapRef, heroRef, boxRef, pointerRef, visible, onDrawn, onHeroS
   const [glowArray] = useState(() => new Float32Array(BLOCKS));
 
   // Recolour when the theme toggle (or the OS theme) changes data-theme on <html>.
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      themeDirty.current = true;
-      invalidate();
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => observer.disconnect();
-  }, [invalidate]);
+  useEffect(
+    () =>
+      onThemeChange(() => {
+        themeDirty.current = true;
+        invalidate();
+      }),
+    [invalidate],
+  );
 
   // Pointer moves over the hero visual and re-measures ask for a frame at once.
   useEffect(() => {

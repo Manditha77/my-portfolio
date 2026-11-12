@@ -44,7 +44,7 @@ export function Hero() {
   const nameWords = site.name.split(" ");
 
   return (
-    <section id="top" aria-labelledby="top-heading" className="relative isolate pt-8 pb-section lg:pt-16">
+    <section id="top" aria-labelledby="top-heading" className="hero-section relative isolate pt-8 pb-section lg:pt-16">
       <Container className="grid items-center gap-10 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
         <div>
           <StatusPill className="boot-pill">
@@ -103,6 +103,8 @@ export function Hero() {
           className="relative mx-auto aspect-square w-full max-w-xs sm:max-w-sm lg:max-w-none"
         >
           <HeroVisual>
+            {/* Light theme only: a soft halo behind the cube, under the poster and the 3D canvas (globals.css). */}
+            <div className="hero-halo hero-glow pointer-events-none absolute inset-0 -z-1" />
             <HeroPoster />
           </HeroVisual>
           <BootGrowthGate />

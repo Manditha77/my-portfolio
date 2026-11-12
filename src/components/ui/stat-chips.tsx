@@ -14,7 +14,7 @@ export function StatChips({ chips, countUp, label, className }: StatChipsProps) 
   return (
     <ul role="list" aria-label={label} className={cx("flex flex-wrap gap-2", className)}>
       {chips.map((chip) => (
-        <li key={chip} className="rounded-md border border-accent/40 bg-bg px-2.5 py-1 font-mono text-sm text-accent">
+        <li key={chip} className="rounded-md border border-accent/40 bg-bg px-2.5 py-1 font-mono text-sm text-accent-ink">
           {withCountUp(chip, countUp)}
         </li>
       ))}

@@ -13,7 +13,7 @@ export function Skills() {
             <StaggerItem
               key={group.label}
               aria-labelledby={headingId}
-              className="rounded-lg border border-border bg-surface p-5"
+              className="rounded-lg border border-border bg-surface p-5 light:shadow-card"
             >
               <h3 id={headingId} className="font-mono text-xs uppercase tracking-wide text-text-muted">
                 {group.label}

@@ -13,7 +13,7 @@ export function IconLink({ label, className, children, ...rest }: IconLinkProps)
     <a
       aria-label={label}
       className={cx(
-        "inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors duration-fast ease-out hover:text-accent",
+        "inline-flex size-11 items-center justify-center rounded-md text-text-muted transition-colors duration-fast ease-out hover:text-accent-ink",
         className,
       )}
       {...rest}

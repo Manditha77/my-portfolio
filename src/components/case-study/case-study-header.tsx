@@ -30,7 +30,7 @@ export function CaseStudyHeader({ project, label = xrCopy.heading, note, actions
         </p>
 
         <header className="pt-6 pb-8">
-          <p className="font-mono text-xs text-accent">{label}</p>
+          <p className="font-mono text-xs text-accent-ink">{label}</p>
           <h1 id="case-study-heading" className="mt-3 text-display font-semibold tracking-tight wrap-break-word">
             {camelCaseBreaks(project.title)}
           </h1>

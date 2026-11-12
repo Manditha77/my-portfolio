@@ -101,12 +101,12 @@ export default function PpchFrameworkPage() {
                           <th scope="row" className={`${cell} ${row.best ? "font-medium" : "font-normal"}`}>
                             {row.model}
                             {row.best && (
-                              <span className="ml-2 rounded-sm border border-accent/40 px-1.5 py-0.5 font-mono text-xs text-accent">
+                              <span className="ml-2 rounded-sm border border-accent/40 px-1.5 py-0.5 font-mono text-xs text-accent-ink">
                                 {workCopy.best}
                               </span>
                             )}
                           </th>
-                          <td className={`${cell} tabular-nums ${row.best ? "font-medium text-accent" : ""}`}>{row.auc}</td>
+                          <td className={`${cell} tabular-nums ${row.best ? "font-medium text-accent-ink" : ""}`}>{row.auc}</td>
                           <td className={`${cell} whitespace-nowrap tabular-nums text-text-muted`}>{row.interval ?? "–"}</td>
                         </tr>
                       ))}
@@ -119,7 +119,7 @@ export default function PpchFrameworkPage() {
             <li>
               <ResultCard id="ppch-act" heading={actEngine.heading}>
                 <p className="mt-3 max-w-measure text-sm">{actEngine.intro}</p>
-                <ul className="mt-2 max-w-measure list-disc space-y-1 pl-5 text-sm marker:text-accent">
+                <ul className="mt-2 max-w-measure list-disc space-y-1 pl-5 text-sm marker:text-accent-ink">
                   {actEngine.checks.map((check) => (
                     <li key={check}>{check}</li>
                   ))}

@@ -25,6 +25,9 @@ const MID_FROM = 0.3;
 
 const SOLID_FROM = 0.85;
 
+// A face whose view-space normal points up more than this is a top face (bySide); the 3D material's too.
+const SIDE_TOP_FROM = 0.5;
+
 // Two faces that share no more than this much area (view units squared) don't overlap.
 const OVERLAP = 1e-4;
 // Where a face is sampled (across each edge) to tell whether nearer faces hide all of it.
@@ -256,26 +259,50 @@ function hidden(face: Face, nearer: Face[]): boolean {
   return true;
 }
 
-/** Faces as paths, view units = `offset` + face units × `scale` (y down), coordinates to `digits` places. */
-function toPaths(faces: Face[], scale: number, offsetX: number, offsetY: number, digits: number): MarkPath[] {
+/**
+ * Faces as paths, view units = `offset` + face units × `scale` (y down), coordinates to `digits` places.
+ * Neighbouring faces with the same `group` (their tone, or their side) merge into one path.
+ */
+function toPaths<G extends string>(
+  faces: Face[],
+  group: (face: Face) => G,
+  scale: number,
+  offsetX: number,
+  offsetY: number,
+  digits: number,
+): { group: G; d: string }[] {
   const unit = 10 ** digits;
   const round = (n: number) => Math.round(n * unit) / unit;
   // Shortest form: no leading zero, and a minus sign doubles as the separator.
   const format = (n: number) => String(round(n)).replace(/^(-?)0\./, "$1.");
   const pair = (x: number, y: number) => `${format(x)}${y < 0 ? "" : " "}${format(y)}`;
 
-  const paths: MarkPath[] = [];
+  const paths: { group: G; d: string }[] = [];
   for (const face of faces) {
     // Rounded first, so the relative steps add up exactly.
     const points = face.points.map(([x, y]) => [round(offsetX + x * scale), round(offsetY - y * scale)]);
     const steps = points.slice(1).map(([x, y], i) => pair(x - points[i][0], y - points[i][1]));
     const d = `M${pair(points[0][0], points[0][1])}l${steps.reduce((all, step) => all + (step.startsWith("-") ? "" : " ") + step)}z`;
     const last = paths.at(-1);
-    if (last?.tone === face.tone) last.d += d;
-    else paths.push({ tone: face.tone, d });
+    if (last?.group === group(face)) last.d += d;
+    else paths.push({ group: group(face), d });
   }
   return paths;
 }
+
+const byTone = (face: Face) => face.tone;
+const asMarkPaths = (paths: { group: MarkTone; d: string }[]): MarkPath[] =>
+  paths.map(({ group, d }) => ({ tone: group, d }));
+
+export type BlockSide = "top" | "left" | "right";
+export type SidePath = { side: BlockSide; d: string };
+
+/**
+ * Which way a face looks in view space (y up): up, or to the left or right. The light theme's solid blocks
+ * are toned by this (globals.css --solid-*); The Build's 3D material uses the same rule
+ * (src/components/three/build-material.ts), so the two match at rest.
+ */
+const bySide = ({ normal: [x, y] }: Face): BlockSide => (y > SIDE_TOP_FROM ? "top" : x < 0 ? "left" : "right");
 
 /** A shape as paths in a `size`×`size` view box, `pad` clear on every side, coordinates to `digits` places. */
 export function markPaths(key: ShapeKey, { size = 24, pad = 1, digits = 1 } = {}): MarkPath[] {
@@ -293,7 +320,9 @@ export function markPaths(key: ShapeKey, { size = 24, pad = 1, digits = 1 } = {}
     }
   }
   const scale = (size - 2 * pad) / Math.max(right - left, top - bottom);
-  return toPaths(faces, scale, size / 2 - ((left + right) / 2) * scale, size / 2 + ((bottom + top) / 2) * scale, digits);
+  return asMarkPaths(
+    toPaths(faces, byTone, scale, size / 2 - ((left + right) / 2) * scale, size / 2 + ((bottom + top) / 2) * scale, digits),
+  );
 }
 
 /**
@@ -303,5 +332,13 @@ export function markPaths(key: ShapeKey, { size = 24, pad = 1, digits = 1 } = {}
  * ones do.
  */
 export function blockPaths(key: ShapeKey, { unit, digits = 1 }: { unit: number; digits?: number }): MarkPath[] {
-  return toPaths(paintOrder(shapeFaces(key, [[0, 0, 0]])), unit, 0, 0, digits);
+  return asMarkPaths(toPaths(paintOrder(shapeFaces(key, [[0, 0, 0]])), byTone, unit, 0, 0, digits));
+}
+
+/** The same block as `blockPaths`, its faces grouped by the way they look (top, left, right) instead of tone. */
+export function blockSidePaths(key: ShapeKey, { unit, digits = 1 }: { unit: number; digits?: number }): SidePath[] {
+  return toPaths(paintOrder(shapeFaces(key, [[0, 0, 0]])), bySide, unit, 0, 0, digits).map(({ group, d }) => ({
+    side: group,
+    d,
+  }));
 }

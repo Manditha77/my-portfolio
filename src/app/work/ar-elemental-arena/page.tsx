@@ -119,7 +119,7 @@ export default function ArElementalArenaPage() {
         </CaseStudySection>
 
         <CaseStudySection id="credits" heading={xrCopy.headings.credits}>
-          <ul className="mt-4 max-w-measure list-disc space-y-2 pl-5 text-sm marker:text-accent">
+          <ul className="mt-4 max-w-measure list-disc space-y-2 pl-5 text-sm marker:text-accent-ink">
             {caseStudy.credits.map((credit) => (
               <li key={credit.text}>
                 {credit.text}
@@ -131,7 +131,7 @@ export default function ArElementalArenaPage() {
                       href={credit.link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-accent underline underline-offset-4 hover:no-underline"
+                      className="font-medium text-accent-ink underline underline-offset-4 hover:no-underline"
                     >
                       {credit.link.label}
                       <span className="sr-only"> {xrCopy.opensNewTab}</span>

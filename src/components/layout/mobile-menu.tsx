@@ -90,7 +90,7 @@ export function MobileMenu({ items, cvHref }: MobileMenuProps) {
                   href={item.href}
                   onClick={close}
                   aria-current={item.id === active ? "true" : undefined}
-                  className="flex min-h-11 items-center gap-2 border-b border-border text-base text-text transition-colors duration-fast ease-out before:size-1.5 before:shrink-0 before:rounded-full before:bg-accent before:opacity-0 hover:text-accent aria-current:text-accent aria-current:before:opacity-100"
+                  className="flex min-h-11 items-center gap-2 border-b border-border text-base text-text transition-colors duration-fast ease-out before:size-1.5 before:shrink-0 before:rounded-full before:bg-accent before:opacity-0 hover:text-accent-ink aria-current:text-accent-ink aria-current:before:opacity-100"
                 >
                   {item.label}
                 </Link>

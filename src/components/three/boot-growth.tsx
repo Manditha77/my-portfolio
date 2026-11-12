@@ -6,7 +6,14 @@ import { BOOT, BOOT_3D, bootState } from "@/lib/boot";
 import { GROWTH_CELLS, growthAt, type GrowthState } from "@/lib/boot-growth";
 import { BUILD_SHAPES, DEFAULT_BLOCK, DEFAULT_VIEW } from "@/lib/build-shapes";
 import { cubicBezier, duration, easeOut } from "@/lib/motion-tokens";
-import { createBlockUniforms, fragmentShader, readTokenColors, vertexShader, type BlockUniforms } from "./build-material";
+import {
+  createBlockUniforms,
+  fragmentShader,
+  onThemeChange,
+  readTokenColors,
+  vertexShader,
+  type BlockUniforms,
+} from "./build-material";
 import { BLOCK } from "./build-poses";
 
 /*
@@ -70,9 +77,14 @@ function Blocks({ onFirstFrame, onSettled }: BlocksProps) {
     scale: new Vector3(),
   }));
 
+  // Colours from the theme's tokens, re-read if the theme changes while it plays.
   useEffect(() => {
-    const mesh = meshRef.current;
-    if (mesh) readTokenColors((mesh.material as ShaderMaterial).uniforms as BlockUniforms);
+    const read = () => {
+      const mesh = meshRef.current;
+      if (mesh) readTokenColors((mesh.material as ShaderMaterial).uniforms as BlockUniforms);
+    };
+    read();
+    return onThemeChange(read);
   }, []);
 
   useFrame((frame) => {

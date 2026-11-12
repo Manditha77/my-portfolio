@@ -24,7 +24,7 @@ export function ExpandableList({ items, shown, showAllLabel, showFewerLabel, cla
 
   return (
     <div className={className}>
-      <ul id={listId} className="max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
+      <ul id={listId} className="max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent-ink">
         {items.map((item, index) => (
           <li key={item} hidden={collapsible && !expanded && index >= shown}>
             {item}
@@ -37,7 +37,7 @@ export function ExpandableList({ items, shown, showAllLabel, showFewerLabel, cla
           aria-expanded={expanded}
           aria-controls={listId}
           onClick={() => setExpanded((value) => !value)}
-          className="group -mx-2 mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-accent hover:underline hover:underline-offset-4"
+          className="group -mx-2 mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-accent-ink hover:underline hover:underline-offset-4"
         >
           {expanded ? showFewerLabel : showAllLabel}
           <span

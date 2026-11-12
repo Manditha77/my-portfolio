@@ -107,7 +107,7 @@ export function BootStatus({ status, caption }: BootStatusProps) {
       <span ref={overlayRef} aria-hidden="true" className="absolute inset-0">
         {caption}
         <span ref={textRef} />
-        <span ref={caretRef} hidden className="absolute top-0 left-0 animate-caret text-accent">
+        <span ref={caretRef} hidden className="absolute top-0 left-0 animate-caret text-accent-ink">
           ▍
         </span>
       </span>

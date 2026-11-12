@@ -30,7 +30,7 @@ export function CaseStudyPager({ slug }: CaseStudyPagerProps) {
                     <span aria-hidden="true">← </span>
                     {xrCopy.previousCaseStudy}
                   </span>
-                  <span className="font-semibold tracking-tight transition-colors group-hover:text-accent">
+                  <span className="font-semibold tracking-tight transition-colors group-hover:text-accent-ink">
                     {previous.title}
                   </span>
                 </Link>
@@ -43,7 +43,7 @@ export function CaseStudyPager({ slug }: CaseStudyPagerProps) {
                     {xrCopy.nextCaseStudy}
                     <span aria-hidden="true"> →</span>
                   </span>
-                  <span className="font-semibold tracking-tight transition-colors group-hover:text-accent">
+                  <span className="font-semibold tracking-tight transition-colors group-hover:text-accent-ink">
                     {next.title}
                   </span>
                 </Link>

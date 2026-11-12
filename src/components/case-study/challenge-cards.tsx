@@ -22,7 +22,7 @@ export function ChallengeCards({ challenges, idPrefix }: ChallengeCardsProps) {
               data-scan={`${idPrefix}-challenge-${index + 1}`}
               className={cx("relative h-full rounded-lg border border-border bg-surface p-5 sm:p-6", cardHover)}
             >
-              <p aria-hidden="true" className="font-mono text-xs text-accent">
+              <p aria-hidden="true" className="font-mono text-xs text-accent-ink">
                 {String(index + 1).padStart(2, "0")}
               </p>
               <h3 id={headingId} className="mt-2 text-lg font-semibold tracking-tight">

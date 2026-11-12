@@ -11,8 +11,8 @@ export const buttonBase =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-[color,background-color,border-color,opacity,transform] duration-fast ease-out motion-on:active:translate-y-px";
 
 export const buttonVariants = {
-  primary: "bg-accent text-accent-contrast hover:opacity-90",
-  secondary: "border border-border text-text hover:border-accent hover:text-accent",
+  primary: "bg-accent text-accent-contrast hover:opacity-90 light:hover:bg-accent-hover light:hover:opacity-100",
+  secondary: "border border-border text-text hover:border-accent hover:text-accent-ink",
 } as const;
 
 export function ButtonLink({ variant = "primary", className, children, ...rest }: ButtonLinkProps) {

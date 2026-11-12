@@ -68,7 +68,7 @@ export function CopyEmailButton({ email, label, copiedLabel, failedLabel }: Copy
         onClick={handleClick}
         className={cx(buttonBase, buttonVariants.secondary, "min-w-36")}
       >
-        {copied ? <CheckIcon className="text-accent" /> : <CopyIcon />}
+        {copied ? <CheckIcon className="text-accent-ink" /> : <CopyIcon />}
         {copied ? copiedLabel : label}
       </button>
 

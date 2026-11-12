@@ -66,7 +66,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         ) : null}
 
         {project.highlights && project.highlights.length > 0 ? (
-          <ul className="max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent">
+          <ul className="max-w-measure list-disc space-y-1.5 pl-5 text-sm marker:text-accent-ink">
             {project.highlights.map((highlight) => (
               <li key={highlight}>{withCountUp(highlight, project.countUp)}</li>
             ))}
@@ -93,7 +93,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <p className="pt-5 lg:col-start-1 lg:row-start-2 lg:self-end">
           <a
             href={project.repo}
-            className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-accent hover:underline hover:underline-offset-4"
+            className="group -mx-2 inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-medium text-accent-ink hover:underline hover:underline-offset-4"
           >
             <GitHubIcon className="size-4" />
             <span>

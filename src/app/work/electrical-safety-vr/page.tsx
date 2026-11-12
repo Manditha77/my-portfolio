@@ -73,7 +73,7 @@ export default function ElectricalSafetyVrPage() {
         </CaseStudySection>
 
         <CaseStudySection id="role" heading={xrCopy.headings.role} prominent>
-          <ul className="mt-6 max-w-measure list-disc space-y-2 pl-5 marker:text-accent sm:text-lg">
+          <ul className="mt-6 max-w-measure list-disc space-y-2 pl-5 marker:text-accent-ink sm:text-lg">
             {caseStudy.role.map((item) => (
               <li key={item}>{item}</li>
             ))}

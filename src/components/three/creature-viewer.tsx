@@ -391,7 +391,7 @@ export function CreatureViewer({ creatures, labels, active, onReadyChange, onFai
         <button
           type="button"
           onClick={() => controlRef.current.animate?.()}
-          className="w-full rounded-md border border-accent/40 px-2 py-1 font-mono text-xs text-accent transition-colors duration-fast hover:border-accent"
+          className="w-full rounded-md border border-accent/40 px-2 py-1 font-mono text-xs text-accent-ink transition-colors duration-fast hover:border-accent"
         >
           {labels.animate}
         </button>

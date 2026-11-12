@@ -28,13 +28,13 @@ export function Writing() {
                     href={article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="-mx-1 inline-block rounded-sm px-1 py-1.5 transition-colors duration-fast ease-out hover:text-accent"
+                    className="-mx-1 inline-block rounded-sm px-1 py-1.5 transition-colors duration-fast ease-out hover:text-accent-ink"
                   >
                     {leading}
                     {/* Keep the arrow on the same line as the last word. */}
                     <span className="whitespace-nowrap">
                       {lastWord}{" "}
-                      <span aria-hidden="true" className="text-accent">
+                      <span aria-hidden="true" className="text-accent-ink">
                         ↗
                       </span>
                     </span>
