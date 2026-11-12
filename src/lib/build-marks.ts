@@ -108,7 +108,11 @@ function depthAt(face: Face, [x, y]: Point): number {
   return oz - (nx * (x - ox) + ny * (y - oy)) / nz;
 }
 
-function shapeFaces(key: ShapeKey): Face[] {
+/**
+ * Every visible face of `key`'s voxels; with `layer`, only that voxel layer (y), drawn as if alone. A layer
+ * counts the shape's walled-in cells as blocks too, so drawn alone it has no hole (the hero cube's centre).
+ */
+function shapeFaces(key: ShapeKey, layer?: number): Face[] {
   const shape = BUILD_SHAPES[key];
   const pitch = shape.view?.pitch ?? DEFAULT_VIEW.pitch;
   const yaw = shape.view?.yaw ?? DEFAULT_VIEW.yaw;
@@ -121,14 +125,26 @@ function shapeFaces(key: ShapeKey): Face[] {
     // "systems from parts" mark.
     const solid = (share: number) => key !== "cube" && share >= SOLID_FROM && share < 1;
     const size = (group.block ?? shape.block ?? DEFAULT_BLOCK).map((share) => (solid(share) ? 1 : share));
-    const filled = new Set(group.voxels.map((voxel) => voxel.join(",")));
+    const whole = new Set(group.voxels.map((voxel) => voxel.join(",")));
     // An empty cell walled in on all six sides (the cube's hidden centre) is never seen.
     const enclosed = (cell: Vec3) =>
+      !whole.has(cell.join(",")) &&
       SIDES.every(({ axis, sign }) => {
         const wall = [...cell] as Vec3;
         wall[axis] += sign;
-        return filled.has(wall.join(","));
+        return whole.has(wall.join(","));
       });
+    let voxels: readonly Voxel[] = group.voxels;
+    if (layer !== undefined) {
+      const xs = group.voxels.map(([x]) => x);
+      const zs = group.voxels.map(([, , z]) => z);
+      const walledIn: Voxel[] = [];
+      for (let x = Math.min(...xs); x <= Math.max(...xs); x++) {
+        for (let z = Math.min(...zs); z <= Math.max(...zs); z++) if (enclosed([x, layer, z])) walledIn.push([x, layer, z]);
+      }
+      voxels = [...group.voxels.filter(([, y]) => y === layer), ...walledIn];
+    }
+    const filled = new Set(voxels.map((voxel) => voxel.join(",")));
     const pivot: Voxel = group.turn?.pivot ?? [0, 0, 0];
     const place = (point: Vec3): Vec3 => {
       const local: Vec3 = [point[0] - pivot[0], point[1] - pivot[1], point[2] - pivot[2]];
@@ -136,11 +152,11 @@ function shapeFaces(key: ShapeKey): Face[] {
       return view([turned[0] + pivot[0], turned[1] + pivot[1], turned[2] + pivot[2]], pitch, yaw, roll);
     };
 
-    for (const voxel of group.voxels) {
+    for (const voxel of voxels) {
       for (const { axis, sign } of SIDES) {
         const neighbour = [...voxel] as Vec3;
         neighbour[axis] += sign;
-        if (filled.has(neighbour.join(",")) || enclosed(neighbour)) continue;
+        if (filled.has(neighbour.join(",")) || (layer === undefined && enclosed(neighbour))) continue;
 
         // The face's four corners, in the block's frame, wound counter-clockwise seen from outside.
         const u = ((axis + 1) % 3) as 0 | 1 | 2;
@@ -249,24 +265,8 @@ function hidden(face: Face, nearer: Face[]): boolean {
   return true;
 }
 
-/** A shape as paths in a `size`×`size` view box, `pad` clear on every side, coordinates to `digits` places. */
-export function markPaths(key: ShapeKey, { size = 24, pad = 1, digits = 1 } = {}): MarkPath[] {
-  const faces = paintOrder(shapeFaces(key));
-  let left = Infinity;
-  let right = -Infinity;
-  let bottom = Infinity;
-  let top = -Infinity;
-  for (const { points } of faces) {
-    for (const [x, y] of points) {
-      left = Math.min(left, x);
-      right = Math.max(right, x);
-      bottom = Math.min(bottom, y);
-      top = Math.max(top, y);
-    }
-  }
-  const scale = (size - 2 * pad) / Math.max(right - left, top - bottom);
-  const offsetX = size / 2 - ((left + right) / 2) * scale;
-  const offsetY = size / 2 + ((bottom + top) / 2) * scale;
+/** Faces as paths, view units = `offset` + face units × `scale` (y down), coordinates to `digits` places. */
+function toPaths(faces: Face[], scale: number, offsetX: number, offsetY: number, digits: number): MarkPath[] {
   const unit = 10 ** digits;
   const round = (n: number) => Math.round(n * unit) / unit;
   // Shortest form: no leading zero, and a minus sign doubles as the separator.
@@ -284,4 +284,33 @@ export function markPaths(key: ShapeKey, { size = 24, pad = 1, digits = 1 } = {}
     else paths.push({ tone: face.tone, d });
   }
   return paths;
+}
+
+/** A shape as paths in a `size`×`size` view box, `pad` clear on every side, coordinates to `digits` places. */
+export function markPaths(key: ShapeKey, { size = 24, pad = 1, digits = 1 } = {}): MarkPath[] {
+  const faces = paintOrder(shapeFaces(key));
+  let left = Infinity;
+  let right = -Infinity;
+  let bottom = Infinity;
+  let top = -Infinity;
+  for (const { points } of faces) {
+    for (const [x, y] of points) {
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+      bottom = Math.min(bottom, y);
+      top = Math.max(top, y);
+    }
+  }
+  const scale = (size - 2 * pad) / Math.max(right - left, top - bottom);
+  return toPaths(faces, scale, size / 2 - ((left + right) / 2) * scale, size / 2 + ((bottom + top) / 2) * scale, digits);
+}
+
+/**
+ * A shape layer by layer (voxel y, bottom first), each layer drawn as if alone, at a fixed `unit` view units
+ * per voxel around `center`: the hero poster's cube, which prints layer by layer and must land exactly where
+ * the 3D blocks rest. Drawn bottom layer first, each covers the one below where they meet.
+ */
+export function layerPaths(key: ShapeKey, { unit, center, digits = 1 }: { unit: number; center: number; digits?: number }): MarkPath[][] {
+  const layers = [...new Set(BUILD_SHAPES[key].groups.flatMap((group) => group.voxels.map(([, y]) => y)))].sort((a, b) => a - b);
+  return layers.map((layer) => toPaths(paintOrder(shapeFaces(key, layer)), unit, center, center, digits));
 }

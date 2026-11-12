@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { whenIdle } from "@/components/three/gate";
 import { useMotionOn } from "@/lib/use-motion-on";
 
 /*
@@ -9,6 +10,10 @@ import { useMotionOn } from "@/lib/use-motion-on";
  * only runs under data-motion="on". Never starts in a hidden tab; stops while motion is off.
  * The same observer runs the perspective floor's one sweep when the VR/AR section first enters
  * (data-floor-scan on <html>; .floor-sweep in globals.css), if the floor is showing.
+ * It also shows the floor (data-floor on <html>) once the browser is idle after load, so the floor's
+ * raster never delays first paint. A second observer, motion or not, marks VR/AR crossing the middle of the viewport (data-floor-xr on
+ * <html>), which brightens the floor wherever its scroll-driven view timeline doesn't run (phones, motion
+ * off, browsers without scroll timelines).
  */
 
 // Once per page load, even if the home page remounts after client-side navigation.
@@ -19,7 +24,7 @@ const FLOOR_KEY = "floor:vr-ar";
 function playFloorSweep() {
   played.add(FLOOR_KEY);
   const sweep = document.querySelector<HTMLElement>(".floor-sweep");
-  // No floor on this screen (phone, no scroll timelines): nothing to sweep.
+  // No floor on this page: nothing to sweep.
   if (!sweep || sweep.getClientRects().length === 0) return;
   const root = document.documentElement;
   const done = (event: AnimationEvent) => {
@@ -33,8 +38,37 @@ function playFloorSweep() {
   root.dataset.floorScan = "run";
 }
 
+// VR/AR counts as "on the floor" while it overlaps the middle of the viewport.
+const FLOOR_XR_MARGIN = "-35% 0px -35% 0px";
+
 export function ScanObserver() {
   const motionOn = useMotionOn();
+
+  useEffect(
+    () =>
+      whenIdle(() => {
+        document.documentElement.dataset.floor = "";
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    const section = document.getElementById("vr-ar");
+    if (!section) return;
+    const root = document.documentElement;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) root.dataset.floorXr = "";
+        else delete root.dataset.floorXr;
+      },
+      { rootMargin: FLOOR_XR_MARGIN },
+    );
+    observer.observe(section);
+    return () => {
+      observer.disconnect();
+      delete root.dataset.floorXr;
+    };
+  }, []);
 
   useEffect(() => {
     if (!motionOn) return;

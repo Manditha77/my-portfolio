@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SEQUENCE, SEQUENCE_STEPS, pauseSequence, readSequence } from "@/lib/hero-sequence";
 import { currentMotion, subscribeMotion } from "@/lib/motion-pref";
 
 /*
- * PIPELINE (from PPCH's Sense → Analyze → Act): the hero status line first ticks through its steps,
- * then types itself out once. The real status text is always in the DOM and sizes the box; the
- * animated copy is an aria-hidden overlay on top of it, so assistive tech reads the status once and
- * nothing shifts. The caret is positioned out of flow and moved with a transform, so typing never
- * counts as a layout shift. Plays once per page load, only with site motion on, paused while off-screen or
- * while the tab is hidden. Not the LCP element: the h1 and intro never wait for it.
+ * PIPELINE (from PPCH's Sense → Analyze → Act): the hero status line ticks through its steps in step with
+ * the poster's first-load build sequence (src/lib/hero-sequence.ts: each step shows as its stage starts
+ * and gets its tick as it ends), then types itself out once. It follows the sequence's CSS clock, so a late
+ * hydration just picks up at the current step, and it conducts the pause: while the hero is off screen or
+ * the tab is hidden, the whole sequence (the poster, this line and the 3D cube) holds still.
+ * The real status text is always in the DOM and sizes the box; the animated copy is an aria-hidden overlay
+ * on top of it, so assistive tech reads the status once and nothing shifts. The caret is positioned out of
+ * flow and moved with a transform, so typing never counts as a layout shift. Plays once per page load,
+ * only with site motion on. Not the LCP element: the h1 and intro never wait for it.
  */
 
-const STEP_MS = 250;
-const CHECK_AT_MS = 140; // within a step: the label shows first, then its tick
-const HOLD_MS = 450;
 const CHAR_MS = 35;
 const CHECK = "✓";
 const SEPARATOR = " · ";
@@ -64,16 +65,15 @@ export function PipelineStatus({ status, steps }: PipelineStatusProps) {
       caret.style.transform = `translate(${char.right - origin.left + 1}px, ${char.top - origin.top}px)`;
     };
 
-    const stepsEnd = steps.length * STEP_MS;
-    const typeStart = stepsEnd + HOLD_MS;
+    const typeStart = SEQUENCE.end;
     const total = typeStart + status.length * CHAR_MS;
 
     const frameAt = (elapsed: number): { copy: string; typing: boolean } => {
       if (elapsed < typeStart) {
         const parts: string[] = [];
         steps.forEach((step, index) => {
-          const start = index * STEP_MS;
-          if (elapsed >= start) parts.push(elapsed >= start + CHECK_AT_MS ? `${step} ${CHECK}` : step);
+          const [start, end] = SEQUENCE_STEPS[index] ?? SEQUENCE_STEPS[SEQUENCE_STEPS.length - 1];
+          if (elapsed >= start) parts.push(elapsed >= end ? `${step} ${CHECK}` : step);
         });
         return { copy: parts.join(SEPARATOR), typing: false };
       }
@@ -84,20 +84,33 @@ export function PipelineStatus({ status, steps }: PipelineStatusProps) {
     let elapsed = 0;
     let last: number | null = null;
     let onScreen = true;
+    let paused = false;
     let frame = 0;
 
     // Marked played on finish (not start), so dev Strict Mode's double effect run still plays it.
     const finish = () => {
       cancelAnimationFrame(frame);
+      pauseSequence(false);
       played = true;
       setDone(true);
     };
 
+    // Called from the observer and on tab visibility, not per frame: a hidden tab runs no frames.
+    const updatePause = () => {
+      const hide = !onScreen || document.hidden;
+      if (hide === paused) return;
+      paused = hide;
+      pauseSequence(paused);
+    };
+
     const tick = (now: number) => {
-      // Accumulate only visible time, so the sequence pauses off-screen and in hidden tabs.
+      // The build sequence's clock while it runs; after it, only visible time counts (typing pauses too).
       const delta = last === null ? 0 : Math.min(now - last, 100);
       last = now;
-      if (onScreen && !document.hidden) elapsed += delta;
+      const time = elapsed < typeStart ? readSequence().time : Infinity;
+      if (Number.isFinite(time)) elapsed = time;
+      else if (elapsed < typeStart) elapsed = typeStart;
+      else if (!paused) elapsed += delta;
 
       if (elapsed >= total) {
         finish();
@@ -115,16 +128,22 @@ export function PipelineStatus({ status, steps }: PipelineStatusProps) {
 
     const observer = new IntersectionObserver(([entry]) => {
       onScreen = entry.isIntersecting;
+      updatePause();
     });
-    observer.observe(root);
+    // The whole hero: on phones the poster sits below the status line.
+    observer.observe(root.closest("section") ?? root);
     const unsubscribe = subscribeMotion(() => {
       if (currentMotion() === "off") finish();
     });
+    document.addEventListener("visibilitychange", updatePause);
+    updatePause();
     frame = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(frame);
+      pauseSequence(false);
       observer.disconnect();
+      document.removeEventListener("visibilitychange", updatePause);
       unsubscribe();
     };
   }, [done, status, steps]);

@@ -44,7 +44,7 @@ export function Hero() {
         {/* Fixed aspect ratio: the poster renders first and the 3D canvas (desktop only) overlays it, so nothing shifts. */}
         <div
           aria-hidden="true"
-          className="relative mx-auto aspect-square w-full max-w-xs motion-on:animate-hero-in sm:max-w-sm lg:max-w-none"
+          className="relative mx-auto aspect-square w-full max-w-xs sm:max-w-sm lg:max-w-none"
         >
           <HeroVisual>
             <HeroPoster />

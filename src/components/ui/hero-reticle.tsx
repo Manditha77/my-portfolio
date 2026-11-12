@@ -5,15 +5,15 @@ import { useMotionOn } from "@/lib/use-motion-on";
 
 /*
  * SCAN (from AR Elemental Arena): the game's ring reticle, lying on the perspective floor wherever the
- * pointer meets it, like the game's hit-test reticle finding a surface. It belongs to the hero: it shows
- * while the pointer is over the hero (never behind the next section's text) and the hero still fills the
- * top half of the viewport, and hides once the page scrolls on. Rendered inside
+ * pointer meets it, like the game's hit-test reticle finding a surface. It belongs to the hero only: it
+ * shows while the pointer is over the hero (below the sticky header) and the hero still fills the top half
+ * of the viewport, hides once the page scrolls on, and is clipped to the hero's box, so even its glow never
+ * reaches the next section (the floor runs on behind the whole page). Rendered inside
  * PerspectiveFloor, so it sits at the floor's depth: behind all content and behind The Build's cube.
  * The pointer's height gives the depth along the floor; the ring and a faint glow under it are scaled to
  * that depth and flattened by the floor's tilt, so they read as ellipses lying on it. Above the horizon
  * there is no floor to hit, so the reticle hides; it fades as it nears the horizon.
- * The floor's geometry is read from its CSS (perspective, perspective-origin, --floor-tilt) and its box,
- * so it stays right for the fixed floor and for the still, hero-only fallback.
+ * The floor's geometry is read from its CSS (perspective, perspective-origin, --floor-tilt) and its box.
  * Same gate as the floor: large screen, a mouse-class pointer, site motion on. The animation loop runs
  * only while the reticle is catching up, so nothing runs while the pointer is still. Decorative.
  */
@@ -81,6 +81,7 @@ export function HeroReticle() {
     const layer = layerRef.current;
     const floor = root?.parentElement;
     const hero = document.getElementById("top");
+    const header = document.querySelector("header");
     const glow = glowRef.current;
     const ring = ringRef.current;
     if (!enabled || !root || !layer || !floor || !hero || !glow || !ring) return;
@@ -105,10 +106,22 @@ export function HeroReticle() {
       glow.style.transform = `translate3d(${x - RING * GLOW}px, ${y - RING * GLOW}px, 0) ${squash}`;
     };
 
+    // The hero's visible box in the viewport: below the sticky header.
+    const heroBox = () => {
+      const { top, bottom } = hero.getBoundingClientRect();
+      return { top: Math.max(top, header?.getBoundingClientRect().bottom ?? 0), bottom };
+    };
+
     // The hero still fills the top half of the viewport, and the pointer is over it.
     const heroShown = () => {
-      const bottom = hero.getBoundingClientRect().bottom;
-      return bottom > window.innerHeight / 2 && client.y <= bottom;
+      const { top, bottom } = heroBox();
+      return bottom > window.innerHeight / 2 && client.y >= top && client.y <= bottom;
+    };
+
+    // Cut to the hero's box (in the floor's coordinates), so nothing of it shows past the hero's edges.
+    const clipToHero = (rect: DOMRect) => {
+      const { top, bottom } = heroBox();
+      root.style.clipPath = `inset(${Math.max(0, top - rect.top)}px 0 ${Math.max(0, rect.bottom - bottom)}px 0)`;
     };
     const setActive = (active: boolean) => {
       inside = active;
@@ -124,6 +137,7 @@ export function HeroReticle() {
         return;
       }
       const rect = floor.getBoundingClientRect();
+      clipToHero(rect);
       const targetX = client.x - rect.left;
       const targetY = client.y - rect.top;
 
@@ -175,9 +189,10 @@ export function HeroReticle() {
     const page = document.documentElement;
     page.addEventListener("pointermove", onMove, { passive: true });
     page.addEventListener("pointerleave", onLeave, { passive: true });
-    // Scrolling moves the hero (and the fallback floor) under a still pointer, and can scroll it away.
+    // Scrolling moves the hero under a still pointer (and its clip with it), and can scroll it away.
     const onScroll = () => {
       if (!inside && pointerIn && heroShown()) setActive(true);
+      if (inside) clipToHero(floor.getBoundingClientRect());
       kick();
     };
     window.addEventListener("scroll", onScroll, { passive: true });

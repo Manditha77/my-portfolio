@@ -27,6 +27,12 @@
   --mark-dark: color-mix(in oklab, var(--accent) 58%, black);
   --mark-lit: color-mix(in oklab, var(--accent) 30%, white);
 
+  /* The hero poster's solid cube (its faces by how they face the light, src/lib/build-marks.ts): the
+     surface with a trace of accent, like The Build's 3D blocks, so the poster and the canvas match. */
+  --cube-light: color-mix(in oklab, var(--surface) 94%, var(--accent));
+  --cube-mid: var(--surface);
+  --cube-dark: color-mix(in oklab, var(--surface) 90%, black);
+
   --header-h: 4rem;
 
   /* Motion tokens: every UI transition and animation takes its timing from here (Tailwind classes via the
@@ -40,13 +46,13 @@
   --dur-floor-sweep: 1200ms; /* SCAN: one sweep along the whole floor, near to far */
   --delay-sweep: 250ms;
 
-  /* Perspective floor (home page, desktop): see "Perspective floor" below. */
-  --floor-strength: 0.09; /* the lines' opacity: faint enough to leave text contrast unchanged (AA) */
-  --floor-strength-xr: 0.18; /* brighter in VR/AR; still AA for text on a line pixel */
+  /* Perspective floor (home page): see "Perspective floor" below. */
+  --floor-strength: 0.14; /* the lines' opacity: every text colour on a line pixel stays AA */
+  --floor-strength-xr: 0.24; /* brighter in VR/AR; still AA for text on a line pixel */
   --floor-cell: 64px;
   --floor-tilt: 76deg;
   --floor-depth: 640px; /* perspective distance */
-  --floor-vanish: 58%; /* vanishing point, down the viewport; the horizon sits a little above it */
+  --floor-vanish: 40%; /* vanishing point, down the viewport; the floor's far edge sits just above it */
 
   color-scheme: dark;
 }
@@ -60,8 +66,8 @@
   --border: #d5dbe3;
   --accent: #0f766e;
   --accent-contrast: #ffffff;
-  --floor-strength: 0.07;
-  --floor-strength-xr: 0.11;
+  --floor-strength: 0.1;
+  --floor-strength-xr: 0.12;
   color-scheme: light;
 }
 
@@ -75,8 +81,8 @@
     --border: #d5dbe3;
     --accent: #0f766e;
     --accent-contrast: #ffffff;
-    --floor-strength: 0.07;
-    --floor-strength-xr: 0.11;
+    --floor-strength: 0.1;
+    --floor-strength-xr: 0.12;
     color-scheme: light;
   }
 }
@@ -116,26 +122,12 @@
   --default-transition-duration: var(--dur-fast);
   --default-transition-timing-function: var(--ease-out);
 
-  /* Hero poster entrance. Used with motion-on: only; never applied to hero text (LCP). */
-  --animate-hero-in: hero-in var(--dur-slow) var(--ease-out) both;
-
   /* PIPELINE typing caret. Blinks only while the status types out; removed when typing ends. */
   --animate-caret: caret-blink 0.9s steps(1) infinite;
 
   @keyframes caret-blink {
     50% {
       opacity: 0;
-    }
-  }
-
-  @keyframes hero-in {
-    from {
-      opacity: 0;
-      transform: scale(0.97);
-    }
-    to {
-      opacity: 1;
-      transform: none;
     }
   }
 }
@@ -225,6 +217,99 @@
 /* PIPELINE status: the real text is hidden only while the animated copy plays over it. */
 :root[data-motion="on"] [data-pipeline="pending"] [data-pipeline-real] {
   opacity: 0;
+}
+
+/* ---------- First-load build sequence (PIPELINE: sense → analyze → act) ----------
+   The hero poster (src/components/three/hero-poster.tsx; timings in src/lib/hero-sequence.ts, written
+   inline as --delay per element and --dur or --line per group). The resting styles here are the finished cube: blueprint and
+   beam hidden, every layer in place. The animations only run under data-motion="on" while HeroVisual
+   marks the sequence as playing, so motion off, reduced motion, no JS and a remount all show the finished
+   cube at once, and switching motion off mid-way snaps to it. Transform, opacity and dash offset only. */
+
+.seq-blueprint,
+.seq-beam {
+  opacity: 0;
+}
+
+.seq-blueprint path {
+  stroke-dasharray: 1 1;
+}
+
+:root[data-motion="on"] [data-sequence="play"] {
+  /* The clock: does nothing visible, lasts the whole sequence; script reads its time and pauses it. */
+  .seq-clock {
+    animation: seq-clock var(--dur) linear both;
+  }
+
+  /* Each line traces itself (--line: its group's draw time). */
+  .seq-blueprint path {
+    animation: seq-trace var(--line) var(--ease-out) var(--delay) both;
+  }
+
+  /* Shown from the start (backwards fill), then fades as the cube completes. */
+  .seq-blueprint {
+    animation: seq-fade-out var(--dur) linear var(--delay) both;
+  }
+
+  .seq-beam {
+    animation: seq-scan var(--dur) var(--ease-out) var(--delay) both;
+  }
+
+  .seq-layer {
+    animation: seq-print var(--dur) var(--ease-out) var(--delay) both;
+  }
+}
+
+@keyframes seq-clock {
+  to {
+    visibility: visible;
+  }
+}
+
+@keyframes seq-trace {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes seq-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* --rise: the cube's height (negative, view units), set by the poster. */
+@keyframes seq-scan {
+  from {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--rise));
+  }
+}
+
+/* A layer drops a little into its slot as it appears, like the 3D blocks settling. */
+@keyframes seq-print {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* ---------- Header mark (ASSEMBLE) ----------
@@ -319,39 +404,47 @@
 }
 
 /* ---------- Perspective floor (SCAN: an AR ground plane) ----------
-   The home page's one background surface (PerspectiveFloor): a faint accent grid receding to a horizon.
-   As the page scrolls its lines come towards the viewer, one cell per iteration of a scroll-timeline
-   animation, repeated, so the grid moves by transform only (compositor) and never passes the camera.
-   While the VR/AR section crosses the lower viewport the lines brighten (a view timeline), and one scan
-   sweep runs along the floor the first time the section enters (ScanObserver sets data-floor-scan).
+   The home page's one background surface (PerspectiveFloor), behind every section on every device: an
+   accent grid on a plane receding to a horizon, its lines converging like roads seen from slightly above,
+   fading out towards the far edge. Fixed and at z -2: behind The Build's canvas (-z-1) and all content;
+   opaque cards cover it. Sized to the large viewport, so a phone's URL bar never re-projects it.
+   Live on large screens with a real hover pointer and site motion on, where scroll-driven animations are
+   supported: the lines come towards the viewer as the page scrolls (one cell per iteration of a
+   scroll-timeline animation, repeated, so the grid moves by transform only and never passes the camera),
+   and they brighten while the VR/AR section crosses the lower viewport (a view timeline). Everywhere else
+   it is the same plane, still, and VR/AR brightens it while the section is mid-viewport (ScanObserver
+   sets data-floor-xr). One scan sweep runs along it the first time VR/AR enters, wherever motion is on.
    The hero's ring reticle sits on it (HeroReticle, a sibling of the masked layer, so neither faded nor
-   masked). Large screens with a real hover pointer, and site motion on, only. Fixed and at z -2: behind
-   The Build's canvas (-z-1) and all content; opaque cards cover it. Without scroll timelines it is a still
-   floor behind the hero that scrolls away with it, and VR/AR gets its own static floor (below). */
+   masked; desktop only). */
 
+/* Shown once the browser is idle after load (ScanObserver sets data-floor): its large composited plane is
+   rastered after first paint, never in its way (LCP). It fades in where @starting-style is supported. */
 .floor {
   display: none;
 }
 
-@media (min-width: 64rem) and (hover: hover) and (pointer: fine) {
-  :root[data-motion="on"] .floor {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: -2;
-    overflow: hidden;
-    contain: strict;
-    pointer-events: none;
+:root[data-floor] .floor {
+  display: block;
+  position: fixed;
+  inset: 0 0 auto;
+  height: 100lvh;
+  z-index: -2;
+  overflow: hidden;
+  contain: strict;
+  pointer-events: none;
+  transition: opacity var(--dur-slow) var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
   }
 }
 
-/* The mask: strongest low and left of centre, away from The Build's column, and gone well before the
-   horizon. On its own layer, outside the perspective one: WebKit flattens 3D children of an element
-   that has both. */
+/* The fade: nothing above the far edge, full strength from a little below it. On its own layer, outside
+   the perspective one: WebKit flattens 3D children of an element that has both. */
 .floor-surface {
   position: absolute;
   inset: 0;
-  mask-image: radial-gradient(ellipse 75% 62% at 42% 100%, #000 25%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent calc(var(--floor-vanish) - 3%), #000 calc(var(--floor-vanish) + 22%));
 }
 
 /* Holds the perspective: it only reaches direct children. */
@@ -363,11 +456,11 @@
 }
 
 /* The lines' strength is the plane's opacity, not color-mix, so a browser without color-mix can't
-   draw them at full strength. */
+   draw them at full strength. Wide enough that its sides stay out of view up to the fade. */
 .floor-plane {
   position: absolute;
-  left: -100%;
-  width: 300%;
+  left: -350%;
+  width: 800%;
   bottom: 0;
   height: 300%;
   opacity: var(--floor-strength);
@@ -378,14 +471,19 @@
     linear-gradient(to bottom, var(--accent) 1px, transparent 1px);
   background-size: var(--floor-cell) var(--floor-cell);
   background-position: center bottom;
+  transition: opacity var(--dur-slow) var(--ease-out);
+}
+
+:root[data-floor-xr] .floor-plane {
+  opacity: var(--floor-strength-xr);
 }
 
 /* The VR/AR scan sweep: an accent line with a faint trail behind it, lying on the floor plane. It starts
    at the bottom of the viewport and runs out towards the horizon. Invisible at rest and at the end. */
 .floor-sweep {
   position: absolute;
-  left: -100%;
-  width: 300%;
+  left: -350%;
+  width: 800%;
   bottom: 0;
   height: var(--floor-cell);
   opacity: 0;
@@ -402,34 +500,27 @@
   background: linear-gradient(to bottom, var(--accent), transparent);
 }
 
-@supports (animation-timeline: scroll()) and (timeline-scope: none) {
-  body {
-    timeline-scope: --vr-ar;
-  }
-
-  #vr-ar {
-    view-timeline-name: --vr-ar;
-  }
-
-  .floor-plane {
-    animation:
-      floor-advance linear 24 both,
-      floor-xr linear both;
-    animation-timeline: scroll(root block), --vr-ar;
-  }
-
-  /* Linear: the perspective already slows the line on screen as it recedes. */
-  :root[data-motion="on"][data-floor-scan="run"] .floor-sweep {
-    animation: floor-sweep var(--dur-floor-sweep) linear both;
-  }
+/* Linear: the perspective already slows the line on screen as it recedes. */
+:root[data-motion="on"][data-floor-scan="run"] .floor-sweep {
+  animation: floor-sweep var(--dur-floor-sweep) linear both;
 }
 
-@supports not ((animation-timeline: scroll()) and (timeline-scope: none)) {
+@supports (animation-timeline: scroll()) and (timeline-scope: none) {
   @media (min-width: 64rem) and (hover: hover) and (pointer: fine) {
-    :root[data-motion="on"] .floor {
-      position: absolute;
-      inset: 0 0 auto;
-      height: 100svh;
+    body {
+      timeline-scope: --vr-ar;
+    }
+
+    #vr-ar {
+      view-timeline-name: --vr-ar;
+    }
+
+    /* Animations win over data-floor-xr's declaration, so the view timeline alone sets the strength. */
+    :root[data-motion="on"] .floor-plane {
+      animation:
+        floor-advance linear 24 both,
+        floor-xr linear both;
+      animation-timeline: scroll(root block), --vr-ar;
     }
   }
 }
@@ -477,7 +568,7 @@
 
 /* Case-study headers: a faint flat grid with scanlines, fading out at the edges (they have no floor).
    Static: nothing loops. Derived from --accent, so it follows the theme; the tint stays low enough to
-   keep text contrast. The home VR/AR section sits on the perspective floor instead (below). */
+   keep text contrast. The home VR/AR section sits on the perspective floor instead. */
 [data-mode="xr"] {
   position: relative;
   isolation: isolate;
@@ -500,42 +591,6 @@
     32px 32px,
     100% 4px;
   mask-image: radial-gradient(ellipse 80% 70% at 50% 45%, #000 30%, transparent 100%);
-}
-
-/* The home VR/AR section's own floor: the perspective floor's grid at its VR/AR strength, static,
-   anchored to the section's foot. It shows wherever the live floor doesn't (phones, motion off, browsers
-   without scroll timelines), so the section always reads as a different "mode" on the same surface.
-   The plane is twice the section's height and width, and its projection centre is lifted by the
-   section's height (translate, perspective, translate back), so it recedes from the section's foot to
-   near its top. Its edges fade in its own plane (the mask is drawn before the transform), and the section
-   clips sideways, so the wider plane never widens the page. */
-#vr-ar {
-  overflow-x: clip;
-}
-
-#vr-ar::before {
-  content: "";
-  position: absolute;
-  inset: -100% -50% 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: var(--floor-strength-xr);
-  transform-origin: 50% 100%;
-  transform: translateY(-50%) perspective(var(--floor-depth)) translateY(50%) rotateX(var(--floor-tilt));
-  background-image:
-    linear-gradient(to right, var(--accent) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--accent) 1px, transparent 1px);
-  background-size: var(--floor-cell) var(--floor-cell);
-  background-position: center bottom;
-  mask-image: radial-gradient(ellipse 45% 70% at 50% 100%, #000 30%, transparent 100%);
-}
-
-@supports (animation-timeline: scroll()) and (timeline-scope: none) {
-  @media (min-width: 64rem) and (hover: hover) and (pointer: fine) {
-    :root[data-motion="on"] #vr-ar::before {
-      display: none;
-    }
-  }
 }
 
 /* Soft accent glow around the spotlight card. */

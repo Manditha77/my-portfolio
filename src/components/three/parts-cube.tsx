@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { MathUtils, Matrix4, Vector3, type InstancedMesh, type Mesh, type ShaderMaterial } from "three";
 import { setBuildDock } from "@/lib/build-dock";
+import { SEQUENCE, readSequence } from "@/lib/hero-sequence";
+import { duration } from "@/lib/motion-tokens";
 import {
   beamFragmentShader,
   beamVertexShader,
@@ -17,14 +19,12 @@ import {
 import {
   BLOCK,
   BLOCKS,
-  INTRO,
   REST,
   beamHalf,
   beamOpacity,
   createPoses,
   fillShape,
-  introBeam,
-  introPoses,
+  layerPrintPoses,
   placePoses,
   printPoses,
   type Pose,
@@ -44,8 +44,9 @@ import {
 
 /*
  * "The Build": the hero's "systems from parts" cube as one continuous scroll companion. 100 instanced
- * blocks in one draw call with no textures, plus the build beam (one thin plane). On load the cube is
- * created once: its blocks fly in from deep in the background and land as the beam rises through it.
+ * blocks in one draw call with no textures, plus the build beam (one thin plane). On first load it can
+ * take over the poster's build sequence (src/lib/hero-sequence.ts) at "act" and print the cube's blocks
+ * layer by layer into the blueprint; otherwise its hero cube waits until the poster has finished.
  * Each home section has a free box beside its heading (build-scroll.ts). As a box scrolls in, the beam
  * rises through it and prints that section's shape (build-shapes.ts) layer by layer; the shape holds
  * while the heading is in view, then the beam falls through it and dissolves it as it scrolls away, and
@@ -105,19 +106,15 @@ const BOX_PAD = 2;
 
 // The build beam's height on screen (its core is ~2px; the rest is its soft halo), px.
 const BEAM_PX = 24;
-// Intro: blocks wait within this share of the hero box's half-size, clear of its edges.
-const INTRO_REACH = 0.75;
-// After the intro the cube's turn eases up to speed (~95% in 1s).
+// After the build sequence the cube's turn eases up to speed (~95% in 1s).
 const SPIN_EASE = 3;
-
-// The hero creation plays once per page load: not again when the companion remounts (Motion toggled,
-// or back on the home page after a case study).
-let introPlayed = false;
+// The 3D cube only takes over the sequence's act if its canvas has time to fade in before it.
+const PRINT_BEFORE = SEQUENCE.actStart - duration.slow;
 
 // Reused every frame (there is only ever one companion), so a frame allocates nothing.
 const scratch = {
   placed: createPoses(),
-  intro: createPoses(),
+  first: createPoses(),
   out: createPoses(),
   cube: { ...REST } as PoseInput,
   shape: { ...REST } as PoseInput,
@@ -193,10 +190,19 @@ type BlocksProps = {
   boxRef: RefObject<HTMLDivElement | null>;
   pointerRef: RefObject<PointerState>;
   visible: boolean;
-  onReady: () => void;
+  /** The canvas has drawn: it fades in. */
+  onDrawn: () => void;
+  /** The 3D hero cube is showing (or printing): the poster's cube can go. */
+  onHeroShown: () => void;
 };
 
-function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
+/**
+ * The first-load build sequence, as the companion sees it: not yet decided (first frame), printing its
+ * act, waiting (hidden) for the poster to finish it, or over (finished, or never played).
+ */
+type SequenceRole = "undecided" | "print" | "wait" | "none";
+
+function Blocks({ mapRef, boxRef, pointerRef, visible, onDrawn, onHeroShown }: BlocksProps) {
   const invalidate = useThree((state) => state.invalidate);
   const visibleRef = useRef(visible);
   const timer = useRef<number | undefined>(undefined);
@@ -218,11 +224,12 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     liveStop: -1,
     /** Off screen with something to play: the next scroll asks for a frame even if the path didn't move. */
     sleeping: false,
-    /** Hero creation: -1 until the first frame decides, then seconds in, Infinity once done or skipped. */
-    intro: -1,
-    /** performance.now() when the intro ended (the idle breathing waits from here too). */
-    introEnded: 0,
-    /** The cube's turn speed, as a share of SPIN_SPEED: held at 0 through the intro, then eased up. */
+    sequence: "undecided" as SequenceRole,
+    /** performance.now() when the build sequence ended (the idle breathing waits from here too). */
+    sequenceEnded: 0,
+    /** onHeroShown has been called. */
+    heroShown: false,
+    /** The cube's turn speed, as a share of SPIN_SPEED: held at 0 through the sequence, then eased up. */
     spinRate: 1,
   });
   const [uniforms] = useState(createBlockUniforms);
@@ -316,32 +323,31 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const stop = stops[index];
     const hero = index === 0;
 
-    // The hero creation: decided on the first frame, and played only if the hero cube is formed and on
-    // screen then. It runs on its own clock, so scrolling away mid-way dissolves it like any other shape.
-    if (m.intro < 0) {
+    // The first-load build sequence, on the poster's clock. Decided on the first frame: the 3D cube prints
+    // the act only if the hero cube is formed and on screen and the act is far enough off; otherwise it
+    // stays hidden until the poster has finished. Scrolling away mid-way dissolves it like any other shape.
+    const sequence = m.sequence === "none" ? { time: Infinity, paused: false } : readSequence();
+    if (m.sequence === "undecided") {
       // Fully formed: the hero may already be "exiting" at scroll 0, but not yet any part of the way.
       const heroFormed = hero && (phase === FORMED || (phase === EXITING && k <= 0));
       const heroOnScreen = stop.top < window.scrollY + window.innerHeight && stop.top + stop.height > window.scrollY;
-      m.intro = !introPlayed && heroFormed && heroOnScreen ? 0 : Infinity;
-      if (m.intro === 0) m.spinRate = 0;
-      introPlayed = true;
-    } else if (m.intro < INTRO.end) {
-      m.intro += delta;
-      if (m.intro >= INTRO.end) {
-        m.intro = Infinity;
-        m.introEnded = now;
-      }
+      if (!Number.isFinite(sequence.time)) m.sequence = "none";
+      else m.sequence = heroFormed && heroOnScreen && sequence.time <= PRINT_BEFORE ? "print" : "wait";
+      if (m.sequence !== "none") m.spinRate = 0;
+    } else if (m.sequence !== "none" && !Number.isFinite(sequence.time)) {
+      m.sequence = "none";
+      m.sequenceEnded = now;
     }
-    const introRunning = Number.isFinite(m.intro);
+    const sequenceRunning = m.sequence !== "none";
 
     // Hero only: pointer separation and tilt, and the idle breathing, fade out as it dissolves; none of
-    // them during the intro.
+    // them during the build sequence.
     let heroWeight = 0;
     if (hero && phase < EXITING) heroWeight = 1;
     else if (hero && phase === EXITING) heroWeight = 1 - k;
-    if (introRunning) heroWeight = 0;
+    if (sequenceRunning) heroWeight = 0;
     const moving = pointer.inside && now - pointer.lastMove < SETTLE_AFTER_MS;
-    const idleFor = now - Math.max(pointer.lastActivity, m.introEnded) - IDLE_AFTER_MS;
+    const idleFor = now - Math.max(pointer.lastActivity, m.sequenceEnded) - IDLE_AFTER_MS;
     const breathing = heroWeight === 1 && !moving && idleFor > 0;
 
     let separation = moving ? heroWeight : 0;
@@ -352,9 +358,9 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     m.separation = MathUtils.damp(m.separation, separation, breathing ? IDLE_EASE : EASE, delta);
     m.tiltX = MathUtils.damp(m.tiltX, tiltXTarget, EASE, delta);
     m.tiltY = MathUtils.damp(m.tiltY, tiltYTarget, EASE, delta);
-    // The hero cube turns until it has dissolved; after the intro it eases up to speed.
+    // The hero cube turns until it has dissolved; after the build sequence it eases up to speed.
     const cubeShows = hero && phase !== BETWEEN;
-    m.spinRate = introRunning ? 0 : MathUtils.damp(m.spinRate, 1, SPIN_EASE, delta);
+    m.spinRate = sequenceRunning ? 0 : MathUtils.damp(m.spinRate, 1, SPIN_EASE, delta);
     if (cubeShows) m.spin += SPIN_SPEED * m.spinRate * delta;
 
     // Live actions: on their own clock from the moment a shape forms, easing in and out.
@@ -394,18 +400,13 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
       const half = beamHalf(key) * stop.scale;
       const low = centreY - half;
       const high = centreY + half;
-      if (introRunning && hero) {
-        introPoses(scratch.placed, scratch.intro, m.intro, low, high, {
-          x: stop.x / zoom,
-          y: centreY,
-          halfWidth: (INTRO_REACH * stop.width) / 2 / zoom,
-          halfHeight: (INTRO_REACH * stop.height) / 2 / zoom,
-        });
-        poses = scratch.intro;
-        const intro = introBeam(m.intro, low, high);
-        beam = { ...intro, opacity: intro.opacity * beamOpacity(scratch.placed, intro.y, "in"), trail: 1 };
+      // The build sequence: hidden while the poster plays it, or printing its act layer by layer.
+      if (hero && m.sequence === "wait") poses = null;
+      else if (hero && m.sequence === "print") {
+        layerPrintPoses(scratch.placed, scratch.first, sequence.time);
+        poses = scratch.first;
       }
-      if (phase === ENTERING || phase === EXITING) {
+      if (poses && (phase === ENTERING || phase === EXITING)) {
         const rising = phase === ENTERING;
         const along = MathUtils.smoothstep(k, 0, 1);
         const y = rising ? MathUtils.lerp(low, high, along) : MathUtils.lerp(high, low, along);
@@ -413,10 +414,8 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
         poses = scratch.out;
         // Only while blocks are changing: never a line over a formed shape.
         const opacity = beamOpacity(scratch.placed, y, rising ? "in" : "out");
-        // The intro's beam shows until this one has faded in.
-        if (opacity > 0 || !beam) beam = { y, opacity, trail: rising ? 1 : -1 };
+        if (opacity > 0) beam = { y, opacity, trail: rising ? 1 : -1 };
       }
-      if (beam && beam.opacity <= 0) beam = null;
     }
 
     // The clipped box follows the blocks (and the beam, across the free box), inside the stop's band.
@@ -457,8 +456,12 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
       beamUniforms.uTrail.value = beam.trail;
     }
 
-    // Report ready once a real frame has been drawn.
-    if (m.frames < 2 && ++m.frames === 2) onReady();
+    // The canvas fades in once a real frame has been drawn; the poster's cube goes once the 3D one shows.
+    if (m.frames < 2 && ++m.frames === 2) onDrawn();
+    if (!m.heroShown && m.frames === 2 && m.sequence !== "wait") {
+      m.heroShown = true;
+      onHeroShown();
+    }
 
     // Next frame: straight away while scroll moves the companion or anything eases; a timed frame while
     // the hero cube turns or live actions play on screen; otherwise none until scroll, a resize or the
@@ -468,7 +471,8 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
     const looping = cubeShows || formed || m.live > 0;
     m.sleeping = false;
     window.clearTimeout(timer.current);
-    if (m.frames < 2 || introRunning || m.progress !== target || isEasing(m, separation, tiltXTarget, tiltYTarget)) {
+    const sequenceMoving = sequenceRunning && !sequence.paused;
+    if (m.frames < 2 || sequenceMoving || m.progress !== target || isEasing(m, separation, tiltXTarget, tiltYTarget)) {
       state.invalidate();
     } else if (looping && onScreen) {
       timer.current = window.setTimeout(() => {
@@ -507,6 +511,7 @@ type PartsCubeProps = {
   /** The hero visual's box: the cube's position and size at scroll 0. */
   heroRef: RefObject<HTMLElement | null>;
   pointerRef: RefObject<PointerState>;
+  /** The 3D hero cube is showing: the poster's cube can fade out. */
   onReady: () => void;
   onFail: () => void;
 };
@@ -587,10 +592,8 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
             boxRef={boxRef}
             pointerRef={pointerRef}
             visible={visible}
-            onReady={() => {
-              setReady(true);
-              onReady();
-            }}
+            onDrawn={() => setReady(true)}
+            onHeroShown={onReady}
           />
         </Canvas>
       </div>

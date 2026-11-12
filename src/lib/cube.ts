@@ -1,10 +1,16 @@
 /*
- * The site's cube motif: an orthographic projection of nested cubes (a tesseract-like wireframe).
- * Pure geometry, no React, so the hero poster, share images and icons can all draw the same mark.
+ * The hero cube's blueprint (an orthographic projection of its outer cube, at the poster's angle) and the
+ * share images' grid. Pure geometry, no React.
  */
 
 type Vec3 = readonly [number, number, number];
 export type Point = readonly [number, number];
+
+/**
+ * The hero poster's frame: a `view`×`view` box with the outer cube `scale` view units from centre to face,
+ * so the cube is 2 companion units across, as in the 3D companion.
+ */
+export const POSTER = { view: 400, scale: 100 } as const;
 
 // View rotation (radians). Kept off the true isometric angle so no two vertices overlap.
 const YAW = 0.6;
@@ -20,54 +26,92 @@ function cubeVertices(half: number): Vec3[] {
   return vertices;
 }
 
-/** Indices of vertex pairs that differ in exactly one axis (the 12 cube edges). */
-const CUBE_EDGES: [number, number][] = [];
-for (let a = 0; a < 8; a++) {
-  for (let b = a + 1; b < 8; b++) {
-    const diff = a ^ b;
-    if (diff === 1 || diff === 2 || diff === 4) CUBE_EDGES.push([a, b]);
-  }
-}
+/** One straight line of the blueprint, as an SVG path ("M x1 y1 L x2 y2"). */
+export type BlueprintLine = { key: string; d: string; back: boolean };
 
-export type CubeGeometry = {
-  outerPath: string;
-  innerPath: string;
-  spokesPath: string;
-  outerPoints: { key: string; point: Point }[];
+export type Blueprint = {
+  /** The outer cube's 12 edges in drawing order: bottom ring, uprights, top ring. */
+  edges: BlueprintLine[];
+  /** The block lines on the three visible faces, at a third and two thirds across each. */
+  grid: BlueprintLine[];
+  /** Highest and lowest y of the outer cube, view units. */
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
 };
 
 /**
- * Projects the nested cubes into a square `view`×`view` box, centred, where `scale` is the
- * outer cube's half-width in view units.
+ * The hero cube's blueprint: the outer cube (half-width `scale` view units, centred in a `view`×`view`
+ * box) as single lines, so each can be traced on its own. The three hidden edges are marked `back`.
  */
-export function cubeGeometry({ view, scale }: { view: number; scale: number }): CubeGeometry {
+export function blueprintGeometry({ view, scale }: { view: number; scale: number }): Blueprint {
   const center = view / 2;
 
-  /** Rotate around Y, then X, then project orthographically. */
-  function project([x, y, z]: Vec3): Point {
+  /** Rotate around Y, then X, then project orthographically; also returns depth (larger is nearer). */
+  function project([x, y, z]: Vec3): { point: Point; depth: number } {
     const rx = x * Math.cos(YAW) + z * Math.sin(YAW);
     const rz = -x * Math.sin(YAW) + z * Math.cos(YAW);
     const ry = y * Math.cos(PITCH) - rz * Math.sin(PITCH);
-    return [center + rx * scale, center - ry * scale];
+    const depth = y * Math.sin(PITCH) + rz * Math.cos(PITCH);
+    return { point: [center + rx * scale, center - ry * scale], depth };
   }
 
-  function segmentsPath(pairs: [Vec3, Vec3][]): string {
-    return pairs
-      .map(([from, to]) => {
-        const [x1, y1] = project(from);
-        const [x2, y2] = project(to);
-        return `M${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}`;
-      })
-      .join("");
+  const line = (from: Vec3, to: Vec3, back: boolean): BlueprintLine => {
+    const [x1, y1] = project(from).point;
+    const [x2, y2] = project(to).point;
+    // Whole view units: a hairline's half-unit rounding never shows, and the markup stays small.
+    const r = Math.round;
+    return { key: `${from.join()}${to.join()}`, d: `M${r(x1)} ${r(y1)}L${r(x2)} ${r(y2)}`, back };
+  };
+
+  const vertices = cubeVertices(1);
+  // The vertex farthest from the viewer: the three edges that meet there are hidden.
+  const backIndex = vertices.reduce((best, vertex, i) => (project(vertex).depth < project(vertices[best]).depth ? i : best), 0);
+  // Vertex index bits: x is 4, y is 2, z is 1 (see cubeVertices). Bottom ring, uprights, top ring, each
+  // walked around the cube so the trace reads as one pen moving on.
+  const yBit = 2;
+  const ring = [0, 1, 5, 4];
+  const order: [number, number][] = [
+    ...ring.map((a, i): [number, number] => [a, ring[(i + 1) % 4]]),
+    ...ring.map((a): [number, number] => [a, a | yBit]),
+    ...ring.map((a, i): [number, number] => [a | yBit, ring[(i + 1) % 4] | yBit]),
+  ];
+  const edges = order.map(([a, b]) => line(vertices[a], vertices[b], a === backIndex || b === backIndex));
+
+  // Visible faces: the three whose outward normal points towards the viewer.
+  const grid: BlueprintLine[] = [];
+  for (const axis of [0, 1, 2] as const) {
+    for (const sign of [-1, 1] as const) {
+      const normal: Vec3 = [axis === 0 ? sign : 0, axis === 1 ? sign : 0, axis === 2 ? sign : 0];
+      if (project(normal).depth <= 0) continue;
+      const u = (axis + 1) % 3;
+      const v = (axis + 2) % 3;
+      for (const [across, along] of [
+        [u, v],
+        [v, u],
+      ]) {
+        for (const at of [-1 / 3, 1 / 3]) {
+          const from = [0, 0, 0] as [number, number, number];
+          const to = [0, 0, 0] as [number, number, number];
+          from[axis] = to[axis] = sign;
+          from[across] = to[across] = at;
+          from[along] = -1;
+          to[along] = 1;
+          grid.push(line(from, to, false));
+        }
+      }
+    }
   }
 
-  const outer = cubeVertices(1);
-  const inner = cubeVertices(0.5);
+  const points = vertices.map((vertex) => project(vertex).point);
   return {
-    outerPath: segmentsPath(CUBE_EDGES.map(([a, b]) => [outer[a], outer[b]])),
-    innerPath: segmentsPath(CUBE_EDGES.map(([a, b]) => [inner[a], inner[b]])),
-    spokesPath: segmentsPath(outer.map((vertex, i) => [vertex, inner[i]])),
-    outerPoints: outer.map((vertex) => ({ key: vertex.join(","), point: project(vertex) })),
+    edges,
+    grid,
+    top: Math.min(...points.map(([, y]) => y)),
+    bottom: Math.max(...points.map(([, y]) => y)),
+    left: Math.min(...points.map(([x]) => x)),
+    right: Math.max(...points.map(([x]) => x)),
   };
 }
 
