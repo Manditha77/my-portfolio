@@ -16,7 +16,7 @@ const subheading = "text-lg font-semibold tracking-tight";
 export function Experience() {
   return (
     <Section id="experience">
-      <div className="relative mt-10 pl-6 before:absolute before:top-6 before:bottom-0 before:left-1.5 before:w-px before:-translate-x-1/2 before:bg-linear-to-b before:from-border before:from-90% before:to-transparent sm:pl-8">
+      <div data-build-end className="relative mt-10 pl-6 before:absolute before:top-6 before:bottom-0 before:left-1.5 before:w-px before:-translate-x-1/2 before:bg-linear-to-b before:from-border before:from-90% before:to-transparent sm:pl-8">
         <StaggerList as="ol" role="list" className="space-y-6">
           {experience.map((job, index) => {
             const headingId = `job-${index}`;
@@ -58,10 +58,12 @@ export function Experience() {
           })}
         </StaggerList>
 
-        <h3 className={`mt-10 ${subheading}`}>{experienceCopy.leadershipHeading}</h3>
+        <h3 data-build-clear className={`mt-10 ${subheading}`}>
+          {experienceCopy.leadershipHeading}
+        </h3>
         <StaggerList as="ol" role="list" className="mt-4 space-y-6">
           {leadership.map((item) => (
-            <StaggerItem key={`${item.event}-${item.role}`} className="relative">
+            <StaggerItem key={`${item.event}-${item.role}`} data-build-clear className="relative">
               {/* Centred on the year line. */}
               <span
                 aria-hidden="true"
@@ -80,7 +82,7 @@ export function Experience() {
       </div>
 
       {/* Off the timeline (no dot), but indented to the same content column as the entries above. */}
-      <div className="mt-12 pl-6 sm:pl-8 lg:w-1/2 lg:pr-5">
+      <div data-build-clear className="mt-12 pl-6 sm:pl-8 lg:w-1/2 lg:pr-5">
         <h3 className={subheading}>{experienceCopy.educationHeading}</h3>
         <ul role="list" className="mt-4 divide-y divide-border border-y border-border">
           {education.map((entry) => (

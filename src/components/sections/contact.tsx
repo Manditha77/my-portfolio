@@ -10,27 +10,30 @@ export function Contact() {
 
   return (
     <Section id="contact" heading={contact.heading}>
-      <p className="mt-4 max-w-measure text-text-muted sm:text-lg">{contact.line}</p>
+      {/* The Build's companion settles beside this block, never behind it. */}
+      <div data-build-clear>
+        <p className="mt-4 max-w-measure text-text-muted sm:text-lg">{contact.line}</p>
 
-      <div className="mt-7 flex flex-wrap gap-3">
-        <ButtonLink href={`mailto:${email}`}>
-          <MailIcon />
-          {contact.emailCta}
-        </ButtonLink>
-        <CopyEmailButton
-          email={email}
-          label={contact.copyCta}
-          copiedLabel={contact.copied}
-          failedLabel={contact.copyFailed}
-        />
+        <div className="mt-7 flex flex-wrap gap-3">
+          <ButtonLink href={`mailto:${email}`}>
+            <MailIcon />
+            {contact.emailCta}
+          </ButtonLink>
+          <CopyEmailButton
+            email={email}
+            label={contact.copyCta}
+            copiedLabel={contact.copied}
+            failedLabel={contact.copyFailed}
+          />
+        </div>
+
+        <p className="mt-5 text-sm text-text-muted">
+          {contact.emailLabel}:{" "}
+          <span className="font-mono break-all text-text select-all">{email}</span>
+        </p>
+
+        <SocialLinks variant="text" className="mt-6 -ml-0.5" />
       </div>
-
-      <p className="mt-5 text-sm text-text-muted">
-        {contact.emailLabel}:{" "}
-        <span className="font-mono break-all text-text select-all">{email}</span>
-      </p>
-
-      <SocialLinks variant="text" className="mt-6 -ml-0.5" />
     </Section>
   );
 }

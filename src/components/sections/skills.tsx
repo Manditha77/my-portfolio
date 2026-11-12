@@ -6,11 +6,15 @@ import { TagList } from "@/components/ui/tag";
 export function Skills() {
   return (
     <Section id="skills">
-      <StaggerList role="list" className="mt-10 grid gap-x-10 gap-y-8 md:grid-cols-2">
+      <StaggerList data-build-end role="list" className="mt-10 grid gap-6 md:grid-cols-2">
         {skillGroups.map((group, index) => {
           const headingId = `skills-group-${index}`;
           return (
-            <StaggerItem key={group.label} aria-labelledby={headingId}>
+            <StaggerItem
+              key={group.label}
+              aria-labelledby={headingId}
+              className="rounded-lg border border-border bg-surface p-5"
+            >
               <h3 id={headingId} className="font-mono text-xs uppercase tracking-wide text-text-muted">
                 {group.label}
               </h3>

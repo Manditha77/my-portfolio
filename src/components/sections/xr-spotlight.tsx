@@ -16,9 +16,11 @@ import { cx } from "@/lib/cx";
 export function XrSpotlight() {
   return (
     <Section id="vr-ar" anchorAliases={["xr"]} data-mode="xr">
-      <p className="mt-3 max-w-measure text-text-muted sm:text-lg">{xrCopy.subtitle}</p>
+      <p data-build-clear className="mt-3 max-w-measure text-text-muted sm:text-lg">
+        {xrCopy.subtitle}
+      </p>
 
-      <StaggerList role="list" className="mt-10 space-y-8">
+      <StaggerList data-build-end role="list" className="mt-10 space-y-8">
         {xrProjects.map((project) => (
           <StaggerItem key={project.slug}>
             <XrProjectCard project={project} />

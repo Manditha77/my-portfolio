@@ -26,10 +26,10 @@ type StaggerListProps = {
   children: ReactNode;
 };
 
-export function StaggerList({ as = "ul", className, role, children }: StaggerListProps) {
+export function StaggerList({ as = "ul", children, ...rest }: StaggerListProps) {
   const List = as === "ol" ? m.ol : m.ul;
   return (
-    <List className={className} role={role} variants={listVariants}>
+    <List variants={listVariants} {...rest}>
       {children}
     </List>
   );

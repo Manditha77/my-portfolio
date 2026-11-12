@@ -6,6 +6,7 @@ import { Container } from "@/components/ui/container";
 import { MotionToggle } from "@/components/ui/motion-toggle";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DesktopNav } from "./desktop-nav";
+import { HeaderMark } from "./header-mark";
 import { MobileMenu } from "./mobile-menu";
 
 export function Header() {
@@ -13,7 +14,11 @@ export function Header() {
     // Fixed height (border included) so it always matches --header-h, which scroll-padding-top uses.
     <header className="sticky top-0 z-40 h-(--header-h) border-b border-border bg-bg/85 backdrop-blur-md">
       <Container className="flex h-full items-center justify-between gap-3">
-        <Link href="/#top" className="text-sm font-semibold tracking-tight whitespace-nowrap sm:text-base">
+        <Link
+          href="/#top"
+          className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight whitespace-nowrap sm:text-base"
+        >
+          <HeaderMark />
           {site.name}
         </Link>
 

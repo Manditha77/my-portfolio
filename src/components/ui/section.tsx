@@ -33,7 +33,7 @@ export function Section({ id, heading, anchorAliases, children, className, ...re
         <Reveal>
           {/* Decorative numbered label (aria-hidden inside AssembleText); the h2 names the section. */}
           {eyebrow && <AssembleText text={eyebrow} className="mb-2 font-mono text-xs text-text-muted" />}
-          <h2 id={headingId} className="text-h2 font-semibold tracking-tight">
+          <h2 id={headingId} data-build-clear className="text-h2 font-semibold tracking-tight">
             {heading ?? sectionHeading(id)}
           </h2>
           {children}

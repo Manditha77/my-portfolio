@@ -19,6 +19,14 @@
   --accent: #2dd4bf;
   --accent-contrast: #04201c;
 
+  /* The header mark's voxel faces (src/lib/build-marks.ts): three shades of the accent, lit from the
+     upper left, and a pale accent for lenses and screens. Mixed towards white and black, so they follow
+     either theme's accent without overrides. */
+  --mark-light: color-mix(in oklab, var(--accent) 72%, white);
+  --mark-mid: var(--accent);
+  --mark-dark: color-mix(in oklab, var(--accent) 58%, black);
+  --mark-lit: color-mix(in oklab, var(--accent) 30%, white);
+
   --header-h: 4rem;
   color-scheme: dark;
 }
@@ -168,6 +176,64 @@
 /* PIPELINE status: the real text is hidden only while the animated copy plays over it. */
 :root[data-motion="on"] [data-pipeline="pending"] [data-pipeline-real] {
   opacity: 0;
+}
+
+/* ---------- Header mark (ASSEMBLE) ----------
+   The current section's Build shape (src/components/layout/header-mark.tsx). The new shape builds up from
+   the bottom in block-like rows while the old one drains away downwards; with motion off it just swaps. */
+
+.header-mark > svg {
+  opacity: 0;
+  clip-path: inset(100% 0 0 0);
+}
+
+.header-mark > svg[data-on] {
+  opacity: 1;
+  clip-path: inset(0);
+}
+
+:root[data-motion="on"] .header-mark > svg {
+  transition:
+    clip-path 360ms steps(6, end),
+    opacity 300ms ease-out;
+}
+
+/* The mini build beam: rides the new shape's reveal edge up in the same six steps, then fades. Remounted
+   on each switch, so it plays once per switch; never with motion off. */
+.header-mark-beam {
+  display: none;
+}
+
+:root[data-motion="on"] .header-mark-beam {
+  display: block;
+  position: absolute;
+  inset: auto -2px 0;
+  height: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+  pointer-events: none;
+  animation:
+    mark-beam-rise 360ms steps(6, end) both,
+    mark-beam-fade 420ms linear both;
+}
+
+@keyframes mark-beam-rise {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-24px);
+  }
+}
+
+@keyframes mark-beam-fade {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* ---------- VR / AR "mode shift" ---------- */
