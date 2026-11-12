@@ -5,7 +5,7 @@ import { Container } from "@/components/ui/container";
 import { SocialLinks } from "@/components/ui/social-links";
 import { LocalTime } from "./local-time";
 
-const textLink = "inline-flex min-h-11 items-center transition-colors duration-150 ease-out hover:text-text";
+const textLink = "inline-flex min-h-11 items-center transition-colors duration-fast ease-out hover:text-text";
 
 /** Cached so the page stays static: the year is fixed at build time, and every deploy rebuilds. */
 async function buildYear() {
@@ -31,7 +31,7 @@ export async function Footer() {
               href={repo.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline underline-offset-4 transition-colors duration-150 ease-out hover:text-text"
+              className="underline underline-offset-4 transition-colors duration-fast ease-out hover:text-text"
             >
               {repo.label}
               <span className="sr-only"> {site.contact.opensNewTab}</span>

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { Variants } from "motion/react";
 import * as m from "motion/react-m";
+import { duration, easeOut, seconds } from "@/lib/motion-tokens";
 
 /*
  * Staggered list reveal. Must sit inside a Reveal: these have no viewport trigger of their own and
@@ -16,7 +17,7 @@ const listVariants: Variants = {
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: seconds(duration.medium), ease: easeOut } },
 };
 
 type StaggerListProps = {

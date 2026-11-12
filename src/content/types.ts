@@ -10,6 +10,8 @@ export type ExternalLink = {
 export type ContentImage = {
   src: string;
   alt: string;
+  /** A short visible title for a gallery tile, so it doesn't repeat the alt text. Falls back to `alt`. */
+  caption?: string;
   width: number;
   height: number;
 };

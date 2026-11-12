@@ -1,9 +1,11 @@
 import { education, experience, experienceCopy, leadership } from "@/content/experience";
+import { cardHover } from "@/components/ui/card";
 import { CollapsibleTagList } from "@/components/ui/collapsible-tag-list";
 import { DateRange } from "@/components/ui/date-range";
 import { ScanFrame } from "@/components/ui/scan-frame";
 import { Section } from "@/components/ui/section";
 import { StaggerItem, StaggerList } from "@/components/ui/stagger";
+import { cx } from "@/lib/cx";
 
 /*
  * Timeline: one thin line on the left (the wrapper's ::before, centred 6px in) with a dot per entry.
@@ -30,7 +32,7 @@ export function Experience() {
                 <article
                   aria-labelledby={headingId}
                   data-scan={headingId}
-                  className="relative rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6"
+                  className={cx("relative rounded-lg border border-border bg-surface p-5 sm:p-6", cardHover)}
                 >
                   <p className="font-mono text-xs text-text-muted">
                     <DateRange start={job.start} end={job.end} presentLabel={experienceCopy.present} />

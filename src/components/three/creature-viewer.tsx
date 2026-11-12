@@ -6,6 +6,7 @@ import { useEffect, useEffectEvent, useRef, useState, type PointerEvent, type Re
 import { LoopOnce, MathUtils, type AnimationAction, type Group } from "three";
 import type { ArCreature } from "@/content/xr";
 import { cx } from "@/lib/cx";
+import { duration, easeOutCss } from "@/lib/motion-tokens";
 import { disposeCreatures, loadCreature, type LoadedCreature } from "./creature-models";
 
 /*
@@ -31,10 +32,10 @@ const SKY_LIGHT = 0xffffff;
 const GROUND_LIGHT = 0x3a3a3a;
 
 // Lock-on, after the stage's 200ms crossfade from the screenshot.
-const ENTER_MS = 200;
-const FIRST_FADE_DELAY_MS = 250;
-const CREATURE_FADE_MS = 400;
-const LOCK_MS = 300;
+const ENTER_MS = duration.base;
+const FIRST_FADE_DELAY_MS = duration.sweepDelay;
+const CREATURE_FADE_MS = duration.slow;
+const LOCK_MS = duration.medium;
 
 // Once per page load, even if the viewer remounts.
 let swept = false;
@@ -239,12 +240,12 @@ export function CreatureViewer({ creatures, labels, active, onReadyChange, onFai
         { "--c-len": "6px", opacity: 0.4 },
         { "--c-len": "18px", opacity: 1 },
       ],
-      { duration: LOCK_MS, easing: "ease-out" },
+      { duration: LOCK_MS, easing: easeOutCss },
     );
     fadeRef.current?.animate([{ opacity: 0 }, { opacity: 1 }], {
       duration: CREATURE_FADE_MS,
       delay: first ? FIRST_FADE_DELAY_MS : 0,
-      easing: "ease-out",
+      easing: easeOutCss,
       fill: "backwards",
     });
   }, [locked, shownIndex]);
@@ -300,7 +301,7 @@ export function CreatureViewer({ creatures, labels, active, onReadyChange, onFai
               loading="eager"
               onLoad={() => setCardsLoaded((list) => (list.includes(index) ? list : [...list, index]))}
               className={cx(
-                "absolute inset-0 size-full rounded-md object-cover transition-opacity duration-200",
+                "absolute inset-0 size-full rounded-md object-cover transition-opacity duration-base",
                 index === selected ? "opacity-100" : "opacity-0",
               )}
             />
@@ -353,7 +354,7 @@ export function CreatureViewer({ creatures, labels, active, onReadyChange, onFai
               aria-pressed={index === selected}
               onClick={() => choose(index)}
               className={cx(
-                "rounded-md border px-2 py-1 font-mono text-xs transition-colors duration-150",
+                "rounded-md border px-2 py-1 font-mono text-xs transition-colors duration-fast",
                 index === selected
                   ? "border-accent bg-accent text-accent-contrast"
                   : "border-border bg-surface text-text hover:border-accent",
@@ -366,7 +367,7 @@ export function CreatureViewer({ creatures, labels, active, onReadyChange, onFai
         <button
           type="button"
           onClick={() => controlRef.current.animate?.()}
-          className="w-full rounded-md border border-accent/40 px-2 py-1 font-mono text-xs text-accent transition-colors duration-150 hover:border-accent"
+          className="w-full rounded-md border border-accent/40 px-2 py-1 font-mono text-xs text-accent transition-colors duration-fast hover:border-accent"
         >
           {labels.animate}
         </button>

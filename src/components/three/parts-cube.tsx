@@ -20,6 +20,7 @@ import {
   INTRO,
   REST,
   beamHalf,
+  beamOpacity,
   createPoses,
   fillShape,
   introBeam,
@@ -104,8 +105,6 @@ const BOX_PAD = 2;
 
 // The build beam's height on screen (its core is ~2px; the rest is its soft halo), px.
 const BEAM_PX = 24;
-// The beam fades in and out over this share of a print or dissolve.
-const BEAM_FADE = 0.08;
 // Intro: blocks wait within this share of the hero box's half-size, clear of its edges.
 const INTRO_REACH = 0.75;
 // After the intro the cube's turn eases up to speed (~95% in 1s).
@@ -403,7 +402,8 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
           halfHeight: (INTRO_REACH * stop.height) / 2 / zoom,
         });
         poses = scratch.intro;
-        beam = { ...introBeam(m.intro, low, high), trail: 1 };
+        const intro = introBeam(m.intro, low, high);
+        beam = { ...intro, opacity: intro.opacity * beamOpacity(scratch.placed, intro.y, "in"), trail: 1 };
       }
       if (phase === ENTERING || phase === EXITING) {
         const rising = phase === ENTERING;
@@ -411,7 +411,8 @@ function Blocks({ mapRef, boxRef, pointerRef, visible, onReady }: BlocksProps) {
         const y = rising ? MathUtils.lerp(low, high, along) : MathUtils.lerp(high, low, along);
         printPoses(poses, scratch.out, y, rising ? "in" : "out");
         poses = scratch.out;
-        const opacity = MathUtils.smoothstep(k, 0, BEAM_FADE) * (1 - MathUtils.smoothstep(k, 1 - BEAM_FADE, 1));
+        // Only while blocks are changing: never a line over a formed shape.
+        const opacity = beamOpacity(scratch.placed, y, rising ? "in" : "out");
         // The intro's beam shows until this one has faded in.
         if (opacity > 0 || !beam) beam = { y, opacity, trail: rising ? 1 : -1 };
       }
@@ -567,7 +568,7 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
     >
       <div
         data-ready={ready || undefined}
-        className="opacity-0 transition-opacity duration-400 data-ready:opacity-100"
+        className="opacity-0 transition-opacity duration-slow data-ready:opacity-100"
         style={canvasSize}
       >
         <Canvas

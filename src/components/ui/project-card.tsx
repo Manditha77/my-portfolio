@@ -1,8 +1,10 @@
 import Image from "next/image";
 import type { Project } from "@/content/projects";
 import { workCopy } from "@/content/projects";
+import { cx } from "@/lib/cx";
 import { withCountUp } from "@/lib/measured";
 import { Badge } from "./badge";
+import { cardHover } from "./card";
 import { CollapsibleTagList } from "./collapsible-tag-list";
 import { GitHubIcon } from "./icons";
 import { ScanFrame } from "./scan-frame";
@@ -23,7 +25,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
     <article
       aria-labelledby={headingId}
       data-scan={project.slug}
-      className="relative rounded-lg border border-border bg-surface p-5 transition-colors duration-200 ease-out focus-within:border-accent hover:border-accent/60 sm:p-6 lg:grid lg:grid-cols-2 lg:gap-x-10"
+      className={cx("relative rounded-lg border border-border bg-surface p-5 sm:p-6 lg:grid lg:grid-cols-2 lg:gap-x-10", cardHover)}
     >
       <div className="lg:col-start-1 lg:row-start-1">
         <div className="flex flex-wrap gap-2">
@@ -96,7 +98,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             {workCopy.repoLink}
             <span className="sr-only"> for {project.title}</span> {workCopy.repoLinkSuffix}
           </span>
-          <span aria-hidden="true" className="transition-transform duration-150 ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
+          <span aria-hidden="true" className="transition-transform duration-fast ease-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
             →
           </span>
         </a>

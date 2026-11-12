@@ -328,6 +328,42 @@ export function printPoses(placed: Pose[], out: Pose[], beam: number, direction:
   }
 }
 
+/**
+ * The beam's opacity at `beam` (page units, +y up) over `placed`, printing ("in") or dissolving ("out").
+ * It follows where the beam is, not the scroll, so the line is only there while blocks are changing: it
+ * fades in over one block before its first contact, and is gone by the time the last block is complete
+ * (printing: the top block fully grown; dissolving: the bottom block fully gone). Once a shape is formed
+ * there is never a line hanging over it, wherever the scroll parks.
+ */
+export function beamOpacity(placed: Pose[], beam: number, direction: "in" | "out"): number {
+  let bottom = Infinity;
+  let top = -Infinity;
+  let bottomRadius = 0;
+  let topRadius = 0;
+  for (let i = 0; i < BLOCKS; i++) {
+    const pose = placed[i];
+    const radius = 0.5 * BLOCK * pose.scale.length();
+    if (radius === 0) continue;
+    if (pose.position.y - radius < bottom) {
+      bottom = pose.position.y - radius;
+      bottomRadius = radius;
+    }
+    if (pose.position.y + radius > top) {
+      top = pose.position.y + radius;
+      topRadius = radius;
+    }
+  }
+  if (top < bottom) return 0;
+  // A block finishes this far past its trailing edge (printPoses: PRINT_BAND of its diameter, from its leading edge).
+  const overshoot = (radius: number) => (2 * PRINT_BAND - 2) * radius;
+  // Rising, the beam meets the bottom first and finishes past the top; falling, the reverse.
+  const low = direction === "in" ? bottom : bottom - overshoot(bottomRadius);
+  const high = direction === "in" ? top + overshoot(topRadius) : top;
+  const fadeLow = 2 * bottomRadius;
+  const fadeHigh = 2 * topRadius;
+  return MathUtils.smoothstep(beam, low - fadeLow, low) * (1 - MathUtils.smoothstep(beam, high - fadeHigh, high));
+}
+
 /*
  * The hero creation (once per page load): the cube's blocks fly in from deep in the background, small and
  * scattered, and land as a rising beam passes them, so the cube is printed layer by layer. Seconds.

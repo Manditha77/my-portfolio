@@ -120,7 +120,7 @@ export const site: Site = {
     copied: "Copied!",
     copyFailed: "Couldn't copy. Select the address:",
     emailLabel: "Email",
-    opensNewTab: "(opens in new tab)",
+    opensNewTab: "(opens in a new tab)",
   },
   footer: {
     credit: "Designed & built by Manditha Madushanka",

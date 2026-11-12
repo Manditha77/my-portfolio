@@ -5,6 +5,7 @@ import type { Variants } from "motion/react";
 import { LazyMotion } from "motion/react";
 // The per-element entry point keeps the full `motion` component (drag, layout, etc.) out of the bundle.
 import * as m from "motion/react-m";
+import { duration, easeOut, seconds } from "@/lib/motion-tokens";
 
 const loadFeatures = () => import("./reveal-features").then((mod) => mod.default);
 
@@ -14,7 +15,7 @@ const variants: Variants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.35, ease: "easeOut", delayChildren: 0.1 },
+    transition: { duration: seconds(duration.medium), ease: easeOut, delayChildren: 0.1 },
   },
 };
 

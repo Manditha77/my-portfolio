@@ -25,7 +25,7 @@ const layouts = {
 } as const;
 
 /**
- * Captioned screenshots: 16:9 tiles, or phone-shaped tiles for portrait phone captures. Each visual
+ * Captioned screenshots (a short title under each; the full description is the alt text): 16:9 tiles, or phone-shaped tiles for portrait phone captures. Each visual
  * gets the SCAN frame on an unclipped wrapper (the image box itself clips), so the corners can sit outside it.
  */
 export function CaseStudyGallery({ images, shape, idPrefix }: CaseStudyGalleryProps) {
@@ -56,7 +56,7 @@ export function CaseStudyGallery({ images, shape, idPrefix }: CaseStudyGalleryPr
                 )}
                 <ScanFrame />
               </div>
-              <figcaption className="mt-2 text-sm text-text-muted">{image.alt}</figcaption>
+              <figcaption className="mt-2 text-sm text-text-muted">{image.caption ?? image.alt}</figcaption>
             </figure>
           </li>
         );

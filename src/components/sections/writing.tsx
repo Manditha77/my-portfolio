@@ -1,6 +1,8 @@
 import { articles, writingCopy } from "@/content/writing";
+import { cardHover } from "@/components/ui/card";
 import { Section } from "@/components/ui/section";
 import { StaggerItem, StaggerList } from "@/components/ui/stagger";
+import { cx } from "@/lib/cx";
 import { formatMonth } from "@/lib/dates";
 
 export function Writing() {
@@ -16,7 +18,7 @@ export function Writing() {
             <StaggerItem key={article.url}>
               <article
                 aria-labelledby={headingId}
-                className="h-full rounded-lg border border-border bg-surface p-5 transition-colors duration-150 focus-within:border-accent hover:border-accent"
+                className={cx("h-full rounded-lg border border-border bg-surface p-5", cardHover)}
               >
                 <p className="font-mono text-xs text-text-muted">
                   <time dateTime={article.published}>{formatMonth(article.published)}</time>
@@ -26,7 +28,7 @@ export function Writing() {
                     href={article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="-mx-1 inline-block rounded-sm px-1 py-1.5 transition-colors duration-150 ease-out hover:text-accent"
+                    className="-mx-1 inline-block rounded-sm px-1 py-1.5 transition-colors duration-fast ease-out hover:text-accent"
                   >
                     {leading}
                     {/* Keep the arrow on the same line as the last word. */}

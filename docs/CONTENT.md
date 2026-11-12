@@ -74,7 +74,7 @@ Compact card after 1–3 and before "More on GitHub"; visually secondary to the 
 - **Year:** 2026 · **Type:** Personal project · **Status:** Live
 - **Repo:** https://github.com/Manditha77/my-portfolio (link label: "View source on GitHub")
 - **Stack:** Next.js, TypeScript, Tailwind CSS, React Three Fiber, three.js, Motion, Vercel
-- **Card blurb:** The site you're reading, built to be fast, accessible and honest: every fact comes from one content file, and the single 3D element only loads where it won't slow anyone down.
+- **Card blurb:** The site you're reading, built to be fast, accessible and honest: every fact comes from one content file, and the 3D only loads where it won't slow anyone down.
 - **Highlights:**
   - Next.js, strict TypeScript and Tailwind, with content kept in typed data files
   - Lazy-loaded 3D that phones and reduced-motion users never download
@@ -103,13 +103,13 @@ Compact card after 1–3 and before "More on GitHub"; visually secondary to the 
 - **Platform:** Windows build (OpenXR); developed and demonstrated with the XR Device Simulator. (If tested on a real headset later, update this line.)
 
 #### Images (public/images/xr/electrical-safety-vr/)
-| File | Shows | Alt text |
-|---|---|---|
-| overview.png | Workshop entrance: welcome board, PPE station, workbench | VR electrical workshop with a welcome board, a PPE station and a workbench |
-| ppe.png | Putting on PPE at the PPE station (PPE 1 / 6) | Trainee picking up an insulated glove at the PPE station, with a PPE progress counter |
-| hazard.png | Wet-floor hazard with its risk panel and the Safe Isolation poster | Wet-floor hazard beside Workstation 2 with a risk panel and the Safe Isolation steps poster |
-| fuse-snap.png | Fitting the new fuse ("Release to fit") next to the damaged-parts bin | Fitting a new fuse into Workstation 2, with the damaged-parts bin beside it |
-| results.png | Training results: PASS – EXCELLENT | Training results screen showing a pass, 6 of 6 job steps, 4 of 4 hazards and zero unsafe actions |
+| File | Shows | Gallery caption | Alt text |
+|---|---|---|---|
+| overview.png | Workshop entrance: welcome board, PPE station, workbench | The workshop entrance | VR electrical workshop with a welcome board, a PPE station and a workbench |
+| ppe.png | Putting on PPE at the PPE station (PPE 1 / 6) | Putting on PPE | Trainee picking up an insulated glove at the PPE station, with a PPE progress counter |
+| hazard.png | Wet-floor hazard with its risk panel and the Safe Isolation poster | Spotting a wet-floor hazard | Wet-floor hazard beside Workstation 2 with a risk panel and the Safe Isolation steps poster |
+| fuse-snap.png | Fitting the new fuse ("Release to fit") next to the damaged-parts bin | Fitting the new fuse | Fitting a new fuse into Workstation 2, with the damaged-parts bin beside it |
+| results.png | Training results: PASS – EXCELLENT | Training results | Training results screen showing a pass, 6 of 6 job steps, 4 of 4 hazards and zero unsafe actions |
 
 #### Home page spotlight blurb
 A VR training simulator where trainees learn electrical workshop safety by doing. They put on the right PPE, find and make safe hazards against the clock, then isolate, prove dead and replace a blown fuse in the correct order, and get a scored result at the end. I built the indoor workshop and integrated our five-person team's work into the final build.
@@ -187,13 +187,13 @@ Alt text: "Fire summon card", "Water summon card", "Earth summon card", "Air sum
 Home card creature viewer (desktop only) caption: "<Name> from AR Elemental Arena: drag to rotate, click to animate".
 
 #### Screenshots (public/images/xr/ar-elemental-arena/), portrait phone screenshots, 720×1600
-| File | In gallery | Alt text |
-|---|---|---|
-| menu.jpeg | yes | Game menu in Chrome on Android with two options: scan a summon card (marker-based AR) or deploy the battle arena (markerless AR) |
-| summon-water.jpeg | yes (also the home card visual and video placeholder) | The Tide Serpent creature waving on top of the scanned water summon card, with the roster at 1 of 4 |
-| summon-earth.jpeg | yes | The Stone Golem creature walking on the scanned earth summon card, with the roster at 2 of 4 |
-| battle.jpeg | yes (also the share image) | Stone Golem facing an Ember Drake in the AR arena on a real desk, with health bars, an "Air buff: Overcast" weather banner and Attack and Defend buttons |
-| battle-low-health.jpeg | **no**: the camera scene is rotated sideways (the UI is upright) | — |
+| File | In gallery | Gallery caption | Alt text |
+|---|---|---|---|
+| menu.jpeg | yes | Choosing an AR mode | Game menu in Chrome on Android with two options: scan a summon card (marker-based AR) or deploy the battle arena (markerless AR) |
+| summon-water.jpeg | yes (also the home card visual and video placeholder) | Summoning Tide Serpent | The Tide Serpent creature waving on top of the scanned water summon card, with the roster at 1 of 4 |
+| summon-earth.jpeg | yes | Summoning Stone Golem | The Stone Golem creature walking on the scanned earth summon card, with the roster at 2 of 4 |
+| battle.jpeg | yes (also the share image) | Battling Ember Drake | Stone Golem facing an Ember Drake in the AR arena on a real desk, with health bars, an "AIR BUFF — OVERCAST" weather banner and Attack and Defend buttons |
+| battle-low-health.jpeg | **no**: the camera scene is rotated sideways (the UI is upright) | — | — |
 
 #### Home page card blurb
 A mobile web AR game. Scan physical summon cards to collect four elemental creatures, then place a battle arena on a real table or floor and fight a real-time battle against an AI opponent. The local live weather gives one element a damage buff. Built solo; it runs in Chrome on Android, with no app to install.
@@ -207,7 +207,7 @@ The assignment required both marker-based and markerless AR, plus a data-driven 
 1. **Summon (marker-based AR):** point the camera at a summon card and its creature appears on the card. Drag to rotate, pinch to resize, and tap to cycle its animations, each with matching sound effects. Every card scanned adds that creature to your roster.
 2. **Choose your creature** from the ones you've scanned. The enemy is picked at random.
 3. **Deploy the arena (markerless AR):** a reticle finds a real floor or table; tap to place the arena, and both creatures appear facing each other.
-4. **Weather buff:** with your permission, the game reads the current weather at your location and gives one element ×1.5 damage for that match (for example "AIR BUFF — Overcast").
+4. **Weather buff:** with your permission, the game reads the current weather at your location and gives one element ×1.5 damage for that match (for example "AIR BUFF — OVERCAST").
 5. **Fight in real time:** tap to move within the arena, attack when in range, and defend to halve the next hit. The enemy AI acts on its own timer: it approaches, winds up attacks you can react to, defends, retreats when low and taunts. Hits show floating damage numbers and vibrate the phone.
 6. **Win or lose,** then play again.
 

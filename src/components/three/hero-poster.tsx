@@ -1,8 +1,10 @@
-import { cubeGeometry, gridPath as buildGridPath } from "@/lib/cube";
+import { cubeGeometry } from "@/lib/cube";
 import { cx } from "@/lib/cx";
 
 /*
- * Static poster for the hero visual: the nested-cube motif (see lib/cube) over a faded grid.
+ * Static poster for the hero visual: the nested-cube motif (see lib/cube) in a soft accent glow, with a
+ * second, flat glow just below it where it would meet the perspective floor, so the cube reads as
+ * floating above it (the floor is the hero's only background; on phones the glow reads as a shadow).
  * Rendered on the server as inline SVG, so it costs no request and no client JS. It is also the
  * fallback and loading state for the 3D element (see HeroVisual).
  */
@@ -11,7 +13,8 @@ const VIEW = 400;
 const CENTER = VIEW / 2;
 
 const { outerPath, innerPath, spokesPath, outerPoints } = cubeGeometry({ view: VIEW, scale: 100 });
-const gridPath = buildGridPath(VIEW, VIEW, 25);
+// The cube's lowest corner is at y ≈ 350; the floor glow sits a little below it.
+const FLOOR_GLOW = { cy: 374, rx: 128, ry: 16 };
 
 type HeroPosterProps = {
   className?: string;
@@ -31,21 +34,17 @@ export function HeroPoster({ className }: HeroPosterProps) {
           <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
           <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
         </radialGradient>
-        {/* Luminance mask: fades the grid out towards the edges. */}
-        <radialGradient id="hero-poster-fade">
-          <stop offset="0%" stopColor="white" />
-          <stop offset="100%" stopColor="black" />
+        <radialGradient id="hero-poster-floor-glow">
+          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
         </radialGradient>
-        <mask id="hero-poster-mask">
-          <rect width={VIEW} height={VIEW} fill="url(#hero-poster-fade)" />
-        </mask>
       </defs>
 
-      <path d={gridPath} className="stroke-border" strokeWidth={1} mask="url(#hero-poster-mask)" />
       <circle cx={CENTER} cy={CENTER} r={CENTER} fill="url(#hero-poster-glow)" />
+      <ellipse cx={CENTER} {...FLOOR_GLOW} fill="url(#hero-poster-floor-glow)" />
 
-      {/* The cube fades out once HeroVisual's 3D canvas is ready; the grid and glow stay as its backdrop. */}
-      <g className="transition-opacity duration-400 group-data-[3d=ready]:opacity-0">
+      {/* The cube fades out once HeroVisual's 3D canvas is ready; the glows stay as its backdrop. */}
+      <g className="transition-opacity duration-slow group-data-[3d=ready]:opacity-0">
         <g fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke">
           <path d={spokesPath} className="stroke-accent" strokeWidth={1} strokeOpacity={0.35} />
           <path d={innerPath} className="stroke-accent" strokeWidth={1.25} strokeOpacity={0.6} />

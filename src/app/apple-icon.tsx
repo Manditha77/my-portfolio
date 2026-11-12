@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { CubeMark } from "@/components/og/cube-mark";
+import { VoxelMark } from "@/components/og/voxel-mark";
 import { brand } from "@/lib/brand";
 
 export const size = { width: 180, height: 180 };
@@ -19,8 +19,8 @@ export default function AppleIcon() {
           backgroundColor: brand.bg,
         }}
       >
-        {/* The mark fills its own box edge to edge, so it is drawn smaller than the icon. */}
-        <CubeMark size={124} stroke={6} detail="simple" />
+        {/* The header mark's voxel cube. It fills its own box edge to edge, so it is drawn smaller than the icon. */}
+        <VoxelMark size={116} />
       </div>
     ),
     size,

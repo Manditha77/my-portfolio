@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { site } from "@/content/site";
-import { CubeMark } from "@/components/og/cube-mark";
+import { VoxelMark } from "@/components/og/voxel-mark";
 import { brand } from "@/lib/brand";
 import { gridPath } from "@/lib/cube";
 
@@ -73,9 +73,22 @@ export default function OpengraphImage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", position: "absolute", right: 60, top: 85 }}>
-          <CubeMark size={460} stroke={5} />
+        {/* The header mark's voxel cube, just printed: the build beam rests beneath it. */}
+        <div style={{ display: "flex", position: "absolute", right: 95, top: 95 }}>
+          <VoxelMark size={400} />
         </div>
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            right: 75,
+            top: 528,
+            width: 440,
+            height: 2,
+            backgroundColor: brand.accent,
+            boxShadow: `0 0 12px ${brand.accent}`,
+          }}
+        />
       </div>
     ),
     size,

@@ -117,6 +117,7 @@ const imageDir = "/images/xr/electrical-safety-vr";
 const overview: ContentImage = {
   src: `${imageDir}/overview.png`,
   alt: "VR electrical workshop with a welcome board, a PPE station and a workbench",
+  caption: "The workshop entrance",
   width: 1910,
   height: 1070,
 };
@@ -144,24 +145,28 @@ export const electricalSafetyVr: ElectricalSafetyVrProject = {
       {
         src: `${imageDir}/ppe.png`,
         alt: "Trainee picking up an insulated glove at the PPE station, with a PPE progress counter",
+        caption: "Putting on PPE",
         width: 1898,
         height: 1069,
       },
       {
         src: `${imageDir}/hazard.png`,
         alt: "Wet-floor hazard beside Workstation 2 with a risk panel and the Safe Isolation steps poster",
+        caption: "Spotting a wet-floor hazard",
         width: 1910,
         height: 1073,
       },
       {
         src: `${imageDir}/fuse-snap.png`,
         alt: "Fitting a new fuse into Workstation 2, with the damaged-parts bin beside it",
+        caption: "Fitting the new fuse",
         width: 1877,
         height: 1057,
       },
       {
         src: `${imageDir}/results.png`,
         alt: "Training results screen showing a pass, 6 of 6 job steps, 4 of 4 hazards and zero unsafe actions",
+        caption: "Training results",
         width: 1911,
         height: 1076,
       },
@@ -233,9 +238,9 @@ export const electricalSafetyVr: ElectricalSafetyVrProject = {
 const arRepo = "https://github.com/Manditha77/ar-elemental-arena";
 const arImageDir = "/images/xr/ar-elemental-arena";
 
-/** Portrait Android screenshots, all 720×1600. */
-function phoneShot(file: string, alt: string): ContentImage {
-  return { src: `${arImageDir}/${file}`, alt, width: 720, height: 1600 };
+/** Portrait Android screenshots, all 720×1600, with a short gallery caption. */
+function phoneShot(file: string, alt: string, caption: string): ContentImage {
+  return { src: `${arImageDir}/${file}`, alt, caption, width: 720, height: 1600 };
 }
 
 function summonCard(element: ArElement): ContentImage {
@@ -250,11 +255,13 @@ function summonCard(element: ArElement): ContentImage {
 const summonWater = phoneShot(
   "summon-water.jpeg",
   "The Tide Serpent creature waving on top of the scanned water summon card, with the roster at 1 of 4",
+  "Summoning Tide Serpent",
 );
 
 const battle = phoneShot(
   "battle.jpeg",
-  "Stone Golem facing an Ember Drake in the AR arena on a real desk, with health bars, an “Air buff: Overcast” weather banner and Attack and Defend buttons",
+  "Stone Golem facing an Ember Drake in the AR arena on a real desk, with health bars, an “AIR BUFF — OVERCAST” weather banner and Attack and Defend buttons",
+  "Battling Ember Drake",
 );
 
 // Left out: battle-low-health.jpeg, whose camera scene is rotated sideways.
@@ -262,11 +269,13 @@ const arGallery: readonly ContentImage[] = [
   phoneShot(
     "menu.jpeg",
     "Game menu in Chrome on Android with two options: scan a summon card (marker-based AR) or deploy the battle arena (markerless AR)",
+    "Choosing an AR mode",
   ),
   summonWater,
   phoneShot(
     "summon-earth.jpeg",
     "The Stone Golem creature walking on the scanned earth summon card, with the roster at 2 of 4",
+    "Summoning Stone Golem",
   ),
   battle,
 ];
@@ -335,7 +344,7 @@ export const arElementalArena: ArElementalArenaProject = {
       },
       {
         title: "Weather buff",
-        body: "With your permission, the game reads the current weather at your location and gives one element ×1.5 damage for that match (for example “AIR BUFF — Overcast”).",
+        body: "With your permission, the game reads the current weather at your location and gives one element ×1.5 damage for that match (for example “AIR BUFF — OVERCAST”).",
       },
       {
         title: "Fight in real time",
@@ -399,7 +408,7 @@ export const xrCopy = {
   repoCta: "View code on GitHub",
   liveDemoCta: "Try it live",
   liveDemoHint: "Android Chrome",
-  opensNewTab: "(opens in new tab)",
+  opensNewTab: "(opens in a new tab)",
   openFullSize: "Open full size",
   articleCredit: "How I set it up:",
   stackLabel: "Tech stack",

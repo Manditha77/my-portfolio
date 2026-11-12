@@ -135,7 +135,7 @@ export const thisPortfolio: CompactProject = {
   type: "Personal project",
   status: "Live",
   blurb:
-    "The site you're reading, built to be fast, accessible and honest: every fact comes from one content file, and the single 3D element only loads where it won't slow anyone down.",
+    "The site you're reading, built to be fast, accessible and honest: every fact comes from one content file, and the 3D only loads where it won't slow anyone down.",
   highlights: [
     "Next.js, strict TypeScript and Tailwind, with content kept in typed data files",
     "Lazy-loaded 3D that phones and reduced-motion users never download",

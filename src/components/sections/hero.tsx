@@ -2,7 +2,6 @@ import { site } from "@/content/site";
 import { HeroPoster } from "@/components/three/hero-poster";
 import { HeroVisual } from "@/components/three/hero-visual";
 import { ButtonLink } from "@/components/ui/button-link";
-import { HeroReticle } from "@/components/ui/hero-reticle";
 import { Container } from "@/components/ui/container";
 import { IconLink } from "@/components/ui/icon-link";
 import { GitHubIcon, LinkedInIcon } from "@/components/ui/icons";
@@ -14,7 +13,6 @@ export function Hero() {
 
   return (
     <section id="top" aria-labelledby="top-heading" className="relative isolate pt-8 pb-section lg:pt-16">
-      <HeroReticle />
       <Container className="grid items-center gap-10 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
         <div>
           <StatusPill>

@@ -83,7 +83,7 @@ export function CreatureStage({ creatures, labels, children }: CreatureStageProp
       {show && (
         <div
           inert={!live}
-          className="absolute inset-0 opacity-0 transition-opacity duration-200 group-data-[3d=ready]:opacity-100"
+          className="absolute inset-0 opacity-0 transition-opacity duration-base group-data-[3d=ready]:opacity-100"
         >
           <SilentBoundary onError={() => setFailed(true)}>
             <CreatureViewer

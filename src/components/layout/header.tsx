@@ -37,6 +37,8 @@ export function Header() {
           </div>
         </div>
       </Container>
+      {/* Scroll progress: the build beam along the bottom edge (CSS only, .header-progress). */}
+      <span aria-hidden="true" className="header-progress" />
     </header>
   );
 }

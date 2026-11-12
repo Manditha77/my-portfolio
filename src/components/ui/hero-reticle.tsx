@@ -4,74 +4,126 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useMotionOn } from "@/lib/use-motion-on";
 
 /*
- * SCAN (from AR Elemental Arena): inside the hero, a small accent ring reticle follows the pointer with
- * slight easing, over a patch of dot "surface" that shows only around it, as the game's reticle finds a
- * floor. Render it as the first child of a `relative isolate` section: the layer sits behind all of the
- * section's content, so no text or button contrast changes. Decorative and aria-hidden.
- * Only with site motion on and a mouse-class pointer. The animation loop runs only while the reticle
- * is catching up, so nothing runs while the pointer is still; it hides when the pointer leaves.
+ * SCAN (from AR Elemental Arena): the game's ring reticle, lying on the perspective floor wherever the
+ * pointer meets it, like the game's hit-test reticle finding a surface. It belongs to the hero: it shows
+ * while the pointer is over the hero (never behind the next section's text) and the hero still fills the
+ * top half of the viewport, and hides once the page scrolls on. Rendered inside
+ * PerspectiveFloor, so it sits at the floor's depth: behind all content and behind The Build's cube.
+ * The pointer's height gives the depth along the floor; the ring and a faint glow under it are scaled to
+ * that depth and flattened by the floor's tilt, so they read as ellipses lying on it. Above the horizon
+ * there is no floor to hit, so the reticle hides; it fades as it nears the horizon.
+ * The floor's geometry is read from its CSS (perspective, perspective-origin, --floor-tilt) and its box,
+ * so it stays right for the fixed floor and for the still, hero-only fallback.
+ * Same gate as the floor: large screen, a mouse-class pointer, site motion on. The animation loop runs
+ * only while the reticle is catching up, so nothing runs while the pointer is still. Decorative.
  */
 
-const FINE_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
-const SPOT = 360; // px: the patch of dots around the reticle
-const DOT_STEP = 24; // px: must match .reticle-dots background-size in globals.css
-const RING = 24; // px
+const FLOOR_QUERY = "(min-width: 64rem) and (hover: hover) and (pointer: fine)";
+const RING = 36; // px: the ring's radius where the floor meets the bottom of the viewport
+const GLOW = 3; // the glow's radius, in ring radii
 const EASE_MS = 60; // time constant: ~95% of the way in 180ms
 const SETTLED_PX = 0.3;
+// Fully shown above this on-screen scale, hidden below the lower one (towards the horizon).
+const SHOW_FROM = 0.35;
+const HIDE_BELOW = 0.12;
 
-function subscribeFinePointer(onChange: () => void) {
-  const media = window.matchMedia(FINE_POINTER_QUERY);
+function subscribeFloor(onChange: () => void) {
+  const media = window.matchMedia(FLOOR_QUERY);
   media.addEventListener("change", onChange);
   return () => media.removeEventListener("change", onChange);
 }
 
-function useFinePointer(): boolean {
+function useFloorShown(): boolean {
   return useSyncExternalStore(
-    subscribeFinePointer,
-    () => window.matchMedia(FINE_POINTER_QUERY).matches,
+    subscribeFloor,
+    () => window.matchMedia(FLOOR_QUERY).matches,
     () => false,
   );
 }
 
-/** Positive remainder, so the dot pattern stays fixed to the section at negative offsets too. */
-function wrap(value: number): number {
-  return ((value % DOT_STEP) + DOT_STEP) % DOT_STEP;
+type FloorGeometry = { depth: number; vanishY: number; sin: number; cos: number };
+
+function readGeometry(floor: HTMLElement): FloorGeometry | null {
+  const layer = floor.querySelector(".floor-view");
+  if (!layer) return null;
+  const styles = getComputedStyle(layer);
+  const depth = parseFloat(styles.perspective);
+  const vanishY = parseFloat(styles.perspectiveOrigin.split(" ")[1] ?? "");
+  const tilt = (parseFloat(getComputedStyle(floor).getPropertyValue("--floor-tilt")) * Math.PI) / 180;
+  if (!(depth > 0) || Number.isNaN(vanishY) || Number.isNaN(tilt)) return null;
+  return { depth, vanishY, sin: Math.sin(tilt), cos: Math.cos(tilt) };
+}
+
+/**
+ * Where a point `y` px down the floor's box (height `height`) lands on the floor: its on-screen scale
+ * across (`x`) and down (`y`, the tilt's flattening), or null above the horizon.
+ */
+function projectOnFloor(y: number, height: number, { depth: p, vanishY, sin, cos }: FloorGeometry) {
+  const below = (y - vanishY) * sin + p * cos;
+  if (below <= 0) return null;
+  // Distance along the floor from its near edge (the bottom of the box).
+  const along = Math.max(0, (p * (height - y)) / below);
+  const recede = p + along * sin;
+  return { x: p / recede, y: (p * (p * cos + (height - vanishY) * sin)) / (recede * recede) };
 }
 
 export function HeroReticle() {
   const motionOn = useMotionOn();
-  const finePointer = useFinePointer();
-  const enabled = motionOn && finePointer;
+  const floorShown = useFloorShown();
+  const enabled = motionOn && floorShown;
+  const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
-  const spotRef = useRef<HTMLDivElement>(null);
-  const dotsRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
+    const root = rootRef.current;
     const layer = layerRef.current;
-    const section = layer?.parentElement;
-    const spot = spotRef.current;
-    const dots = dotsRef.current;
+    const floor = root?.parentElement;
+    const hero = document.getElementById("top");
+    const glow = glowRef.current;
     const ring = ringRef.current;
-    if (!enabled || !layer || !section || !spot || !dots || !ring) return;
+    if (!enabled || !root || !layer || !floor || !hero || !glow || !ring) return;
 
+    let geometry = readGeometry(floor);
     const client = { x: 0, y: 0 };
     let position: { x: number; y: number } | null = null;
+    // Shown (inside) only while the pointer is on the page (pointerIn) and over the hero (heroShown).
     let inside = false;
+    let pointerIn = false;
     let frame = 0;
     let last: number | null = null;
 
-    // Transforms only: the patch moves, and its dots shift back by the remainder so they stay put.
-    const place = (x: number, y: number) => {
-      const left = x - SPOT / 2;
-      const top = y - SPOT / 2;
-      spot.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-      dots.style.transform = `translate3d(${-wrap(left)}px, ${-wrap(top)}px, 0)`;
-      ring.style.transform = `translate3d(${x - RING / 2}px, ${y - RING / 2}px, 0)`;
+    // Transforms only: both circles are centred on the point and scaled to lie on the floor there.
+    const place = (x: number, y: number, height: number) => {
+      const scale = geometry && projectOnFloor(y, height, geometry);
+      const shown = scale ? Math.min(1, Math.max(0, (scale.x - HIDE_BELOW) / (SHOW_FROM - HIDE_BELOW))) : 0;
+      layer.style.opacity = String(shown);
+      if (!scale || shown === 0) return;
+      const squash = `scale(${scale.x}, ${scale.y})`;
+      ring.style.transform = `translate3d(${x - RING}px, ${y - RING}px, 0) ${squash}`;
+      glow.style.transform = `translate3d(${x - RING * GLOW}px, ${y - RING * GLOW}px, 0) ${squash}`;
+    };
+
+    // The hero still fills the top half of the viewport, and the pointer is over it.
+    const heroShown = () => {
+      const bottom = hero.getBoundingClientRect().bottom;
+      return bottom > window.innerHeight / 2 && client.y <= bottom;
+    };
+    const setActive = (active: boolean) => {
+      inside = active;
+      if (!active) position = null;
+      root.dataset.active = String(active);
     };
 
     const tick = (now: number) => {
-      const rect = section.getBoundingClientRect();
+      if (!heroShown()) {
+        setActive(false);
+        frame = 0;
+        last = null;
+        return;
+      }
+      const rect = floor.getBoundingClientRect();
       const targetX = client.x - rect.left;
       const targetY = client.y - rect.top;
 
@@ -85,7 +137,7 @@ export function HeroReticle() {
         position.y += (targetY - position.y) * k;
       }
       last = now;
-      place(position.x, position.y);
+      place(position.x, position.y, rect.height);
 
       if (Math.abs(targetX - position.x) < SETTLED_PX && Math.abs(targetY - position.y) < SETTLED_PX) {
         frame = 0;
@@ -104,60 +156,68 @@ export function HeroReticle() {
       if (event.pointerType === "touch") return;
       client.x = event.clientX;
       client.y = event.clientY;
-      if (!inside) {
-        inside = true;
-        layer.dataset.active = "true";
-      }
+      pointerIn = true;
+      if (!inside && heroShown()) setActive(true);
       kick();
     };
 
     const onLeave = () => {
-      inside = false;
-      position = null;
-      layer.dataset.active = "false";
+      pointerIn = false;
+      setActive(false);
     };
 
-    section.addEventListener("pointerenter", onMove, { passive: true });
-    section.addEventListener("pointermove", onMove, { passive: true });
-    section.addEventListener("pointerleave", onLeave, { passive: true });
-    // Scrolling moves the section under a still pointer.
-    window.addEventListener("scroll", kick, { passive: true });
+    // The vanishing point is in px, so it moves with the viewport.
+    const onResize = () => {
+      geometry = readGeometry(floor);
+      kick();
+    };
+
+    const page = document.documentElement;
+    page.addEventListener("pointermove", onMove, { passive: true });
+    page.addEventListener("pointerleave", onLeave, { passive: true });
+    // Scrolling moves the hero (and the fallback floor) under a still pointer, and can scroll it away.
+    const onScroll = () => {
+      if (!inside && pointerIn && heroShown()) setActive(true);
+      kick();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
 
     return () => {
       cancelAnimationFrame(frame);
-      section.removeEventListener("pointerenter", onMove);
-      section.removeEventListener("pointermove", onMove);
-      section.removeEventListener("pointerleave", onLeave);
-      window.removeEventListener("scroll", kick);
+      page.removeEventListener("pointermove", onMove);
+      page.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
     };
   }, [enabled]);
 
   if (!enabled) return null;
 
   return (
+    // The wrapper fades in and out with the pointer; the layer inside fades towards the horizon.
     <div
-      ref={layerRef}
-      aria-hidden="true"
+      ref={rootRef}
       data-active="false"
-      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-0 transition-opacity duration-150 ease-out data-[active=true]:opacity-100"
+      className="absolute inset-0 opacity-0 transition-opacity duration-fast ease-out data-[active=true]:opacity-100"
     >
-      <div ref={spotRef} className="reticle-spot absolute top-0 left-0 overflow-hidden" style={{ width: SPOT, height: SPOT }}>
+      <div ref={layerRef} className="absolute inset-0">
         <div
-          ref={dotsRef}
-          className="reticle-dots absolute top-0 left-0"
-          style={{ width: SPOT + DOT_STEP, height: SPOT + DOT_STEP }}
+          ref={glowRef}
+          className="absolute top-0 left-0 rounded-full bg-[radial-gradient(closest-side,var(--accent),transparent)] opacity-15"
+          style={{ width: 2 * RING * GLOW, height: 2 * RING * GLOW }}
         />
+        {/* The AR game's ring: inner radius 0.8 of the outer, so the stroke is a fifth of the radius. */}
+        <svg
+          ref={ringRef}
+          width={2 * RING}
+          height={2 * RING}
+          viewBox="0 0 24 24"
+          className="absolute top-0 left-0 fill-none stroke-accent opacity-70"
+        >
+          <circle cx="12" cy="12" r="10.8" strokeWidth="2.4" />
+        </svg>
       </div>
-      {/* The AR game's ring: inner radius 0.8 of the outer, so the stroke is a fifth of the radius. */}
-      <svg
-        ref={ringRef}
-        width={RING}
-        height={RING}
-        viewBox="0 0 24 24"
-        className="absolute top-0 left-0 fill-none stroke-accent opacity-70"
-      >
-        <circle cx="12" cy="12" r="10.8" strokeWidth="2.4" />
-      </svg>
     </div>
   );
 }

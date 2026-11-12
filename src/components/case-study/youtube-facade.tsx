@@ -37,7 +37,7 @@ export function YouTubeFacade({ youtubeId, title, playLabel, children }: YouTube
       {children}
       <span
         aria-hidden="true"
-        className="absolute top-1/2 left-1/2 flex size-16 -translate-1/2 items-center justify-center rounded-full bg-accent text-accent-contrast shadow-lg transition-transform duration-150 ease-out group-hover:scale-105"
+        className="absolute top-1/2 left-1/2 flex size-16 -translate-1/2 items-center justify-center rounded-full bg-accent text-accent-contrast shadow-lg transition-transform duration-fast ease-out group-hover:scale-105"
       >
         <svg viewBox="0 0 24 24" className="ml-1 size-7" fill="currentColor">
           <path d="M8 5v14l11-7z" />

@@ -28,6 +28,26 @@
   --mark-lit: color-mix(in oklab, var(--accent) 30%, white);
 
   --header-h: 4rem;
+
+  /* Motion tokens: every UI transition and animation takes its timing from here (Tailwind classes via the
+     duration-fast|base|medium|slow utilities below; Motion and WAAPI via src/lib/motion-tokens.ts, keep in
+     sync). The easings live in @theme (--ease-out, --ease-assemble), so they double as ease-* classes. */
+  --dur-fast: 150ms; /* hover and focus: colours, borders, small nudges */
+  --dur-base: 200ms; /* card borders, menus, small fades */
+  --dur-medium: 300ms; /* reveal-on-scroll, staggered items, mark fades */
+  --dur-slow: 400ms; /* entrances, poster/canvas hand-off, the header mark's assemble */
+  --dur-sweep: 600ms; /* SCAN: one sweep down a card */
+  --dur-floor-sweep: 1200ms; /* SCAN: one sweep along the whole floor, near to far */
+  --delay-sweep: 250ms;
+
+  /* Perspective floor (home page, desktop): see "Perspective floor" below. */
+  --floor-strength: 0.09; /* the lines' opacity: faint enough to leave text contrast unchanged (AA) */
+  --floor-strength-xr: 0.18; /* brighter in VR/AR; still AA for text on a line pixel */
+  --floor-cell: 64px;
+  --floor-tilt: 76deg;
+  --floor-depth: 640px; /* perspective distance */
+  --floor-vanish: 58%; /* vanishing point, down the viewport; the horizon sits a little above it */
+
   color-scheme: dark;
 }
 
@@ -40,6 +60,8 @@
   --border: #d5dbe3;
   --accent: #0f766e;
   --accent-contrast: #ffffff;
+  --floor-strength: 0.07;
+  --floor-strength-xr: 0.11;
   color-scheme: light;
 }
 
@@ -53,6 +75,8 @@
     --border: #d5dbe3;
     --accent: #0f766e;
     --accent-contrast: #ffffff;
+    --floor-strength: 0.07;
+    --floor-strength-xr: 0.11;
     color-scheme: light;
   }
 }
@@ -84,8 +108,16 @@
   --text-h2: clamp(1.5rem, 1.25rem + 1.25vw, 2.25rem);
   --text-h2--line-height: 1.15;
 
+  /* Motion easings (tokens; see the durations on :root). --ease-out is Tailwind's default curve, made the
+     site's one ease-out: CSS keyframes and Motion use it too. --ease-assemble is ASSEMBLE's block-by-block
+     step. Bare transition-* classes default to the fast token. */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-assemble: steps(6, end);
+  --default-transition-duration: var(--dur-fast);
+  --default-transition-timing-function: var(--ease-out);
+
   /* Hero poster entrance. Used with motion-on: only; never applied to hero text (LCP). */
-  --animate-hero-in: hero-in 400ms ease-out both;
+  --animate-hero-in: hero-in var(--dur-slow) var(--ease-out) both;
 
   /* PIPELINE typing caret. Blinks only while the status types out; removed when typing ends. */
   --animate-caret: caret-blink 0.9s steps(1) infinite;
@@ -106,6 +138,23 @@
       transform: none;
     }
   }
+}
+
+/* Duration classes that read the motion tokens (duration-fast etc. would hard-code them). */
+@utility duration-fast {
+  transition-duration: var(--dur-fast);
+}
+
+@utility duration-base {
+  transition-duration: var(--dur-base);
+}
+
+@utility duration-medium {
+  transition-duration: var(--dur-medium);
+}
+
+@utility duration-slow {
+  transition-duration: var(--dur-slow);
 }
 
 /* ---------- Base ---------- */
@@ -194,8 +243,8 @@
 
 :root[data-motion="on"] .header-mark > svg {
   transition:
-    clip-path 360ms steps(6, end),
-    opacity 300ms ease-out;
+    clip-path var(--dur-slow) var(--ease-assemble),
+    opacity var(--dur-medium) var(--ease-out);
 }
 
 /* The mini build beam: rides the new shape's reveal edge up in the same six steps, then fades. Remounted
@@ -212,9 +261,10 @@
   background: var(--accent);
   box-shadow: 0 0 4px var(--accent);
   pointer-events: none;
+  /* The fade runs a touch longer than the rise, so the beam reaches the top before it goes. */
   animation:
-    mark-beam-rise 360ms steps(6, end) both,
-    mark-beam-fade 420ms linear both;
+    mark-beam-rise var(--dur-slow) var(--ease-assemble) both,
+    mark-beam-fade calc(var(--dur-slow) * 1.15) linear both;
 }
 
 @keyframes mark-beam-rise {
@@ -236,16 +286,204 @@
   }
 }
 
+/* ---------- Header progress (ASSEMBLE: the build beam, laid flat) ----------
+   A 1px accent beam along the header's bottom edge that fills left to right with page scroll. Pure CSS on
+   a scroll timeline: no JS. Hidden where scroll-driven animations aren't supported, and with motion off. */
+
+.header-progress {
+  display: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  :root[data-motion="on"] .header-progress {
+    display: block;
+    position: absolute;
+    inset-inline: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--accent);
+    box-shadow: 0 0 4px var(--accent);
+    pointer-events: none;
+    transform: scaleX(0);
+    transform-origin: left;
+    /* The timeline must follow the shorthand, which resets it. */
+    animation: header-progress-fill linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+@keyframes header-progress-fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ---------- Perspective floor (SCAN: an AR ground plane) ----------
+   The home page's one background surface (PerspectiveFloor): a faint accent grid receding to a horizon.
+   As the page scrolls its lines come towards the viewer, one cell per iteration of a scroll-timeline
+   animation, repeated, so the grid moves by transform only (compositor) and never passes the camera.
+   While the VR/AR section crosses the lower viewport the lines brighten (a view timeline), and one scan
+   sweep runs along the floor the first time the section enters (ScanObserver sets data-floor-scan).
+   The hero's ring reticle sits on it (HeroReticle, a sibling of the masked layer, so neither faded nor
+   masked). Large screens with a real hover pointer, and site motion on, only. Fixed and at z -2: behind
+   The Build's canvas (-z-1) and all content; opaque cards cover it. Without scroll timelines it is a still
+   floor behind the hero that scrolls away with it, and VR/AR gets its own static floor (below). */
+
+.floor {
+  display: none;
+}
+
+@media (min-width: 64rem) and (hover: hover) and (pointer: fine) {
+  :root[data-motion="on"] .floor {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    overflow: hidden;
+    contain: strict;
+    pointer-events: none;
+  }
+}
+
+/* The mask: strongest low and left of centre, away from The Build's column, and gone well before the
+   horizon. On its own layer, outside the perspective one: WebKit flattens 3D children of an element
+   that has both. */
+.floor-surface {
+  position: absolute;
+  inset: 0;
+  mask-image: radial-gradient(ellipse 75% 62% at 42% 100%, #000 25%, transparent 100%);
+}
+
+/* Holds the perspective: it only reaches direct children. */
+.floor-view {
+  position: absolute;
+  inset: 0;
+  perspective: var(--floor-depth);
+  perspective-origin: 50% var(--floor-vanish);
+}
+
+/* The lines' strength is the plane's opacity, not color-mix, so a browser without color-mix can't
+   draw them at full strength. */
+.floor-plane {
+  position: absolute;
+  left: -100%;
+  width: 300%;
+  bottom: 0;
+  height: 300%;
+  opacity: var(--floor-strength);
+  transform-origin: 50% 100%;
+  transform: rotateX(var(--floor-tilt));
+  background-image:
+    linear-gradient(to right, var(--accent) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--accent) 1px, transparent 1px);
+  background-size: var(--floor-cell) var(--floor-cell);
+  background-position: center bottom;
+}
+
+/* The VR/AR scan sweep: an accent line with a faint trail behind it, lying on the floor plane. It starts
+   at the bottom of the viewport and runs out towards the horizon. Invisible at rest and at the end. */
+.floor-sweep {
+  position: absolute;
+  left: -100%;
+  width: 300%;
+  bottom: 0;
+  height: var(--floor-cell);
+  opacity: 0;
+  border-top: 2px solid var(--accent);
+  transform-origin: 50% 100%;
+  transform: rotateX(var(--floor-tilt)) translateY(var(--floor-cell));
+}
+
+.floor-sweep::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+}
+
+@supports (animation-timeline: scroll()) and (timeline-scope: none) {
+  body {
+    timeline-scope: --vr-ar;
+  }
+
+  #vr-ar {
+    view-timeline-name: --vr-ar;
+  }
+
+  .floor-plane {
+    animation:
+      floor-advance linear 24 both,
+      floor-xr linear both;
+    animation-timeline: scroll(root block), --vr-ar;
+  }
+
+  /* Linear: the perspective already slows the line on screen as it recedes. */
+  :root[data-motion="on"][data-floor-scan="run"] .floor-sweep {
+    animation: floor-sweep var(--dur-floor-sweep) linear both;
+  }
+}
+
+@supports not ((animation-timeline: scroll()) and (timeline-scope: none)) {
+  @media (min-width: 64rem) and (hover: hover) and (pointer: fine) {
+    :root[data-motion="on"] .floor {
+      position: absolute;
+      inset: 0 0 auto;
+      height: 100svh;
+    }
+  }
+}
+
+@keyframes floor-advance {
+  from {
+    transform: rotateX(var(--floor-tilt)) translateY(0);
+  }
+  to {
+    transform: rotateX(var(--floor-tilt)) translateY(var(--floor-cell));
+  }
+}
+
+@keyframes floor-xr {
+  entry 0% {
+    opacity: var(--floor-strength);
+  }
+  entry 45% {
+    opacity: var(--floor-strength-xr);
+  }
+  exit 55% {
+    opacity: var(--floor-strength-xr);
+  }
+  exit 100% {
+    opacity: var(--floor-strength);
+  }
+}
+
+@keyframes floor-sweep {
+  from {
+    opacity: 0;
+    transform: rotateX(var(--floor-tilt)) translateY(var(--floor-cell));
+  }
+  10%,
+  70% {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 0;
+    transform: rotateX(var(--floor-tilt)) translateY(calc(var(--floor-cell) * -20));
+  }
+}
+
 /* ---------- VR / AR "mode shift" ---------- */
 
-/* A faint grid with scanlines behind the section, fading out at the edges. Static: nothing loops.
-   Derived from --accent, so it follows the theme; the tint stays low enough to keep text contrast. */
+/* Case-study headers: a faint flat grid with scanlines, fading out at the edges (they have no floor).
+   Static: nothing loops. Derived from --accent, so it follows the theme; the tint stays low enough to
+   keep text contrast. The home VR/AR section sits on the perspective floor instead (below). */
 [data-mode="xr"] {
   position: relative;
   isolation: isolate;
 }
 
-[data-mode="xr"]::before {
+[data-mode="xr"]:not(#vr-ar)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -262,6 +500,42 @@
     32px 32px,
     100% 4px;
   mask-image: radial-gradient(ellipse 80% 70% at 50% 45%, #000 30%, transparent 100%);
+}
+
+/* The home VR/AR section's own floor: the perspective floor's grid at its VR/AR strength, static,
+   anchored to the section's foot. It shows wherever the live floor doesn't (phones, motion off, browsers
+   without scroll timelines), so the section always reads as a different "mode" on the same surface.
+   The plane is twice the section's height and width, and its projection centre is lifted by the
+   section's height (translate, perspective, translate back), so it recedes from the section's foot to
+   near its top. Its edges fade in its own plane (the mask is drawn before the transform), and the section
+   clips sideways, so the wider plane never widens the page. */
+#vr-ar {
+  overflow-x: clip;
+}
+
+#vr-ar::before {
+  content: "";
+  position: absolute;
+  inset: -100% -50% 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--floor-strength-xr);
+  transform-origin: 50% 100%;
+  transform: translateY(-50%) perspective(var(--floor-depth)) translateY(50%) rotateX(var(--floor-tilt));
+  background-image:
+    linear-gradient(to right, var(--accent) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--accent) 1px, transparent 1px);
+  background-size: var(--floor-cell) var(--floor-cell);
+  background-position: center bottom;
+  mask-image: radial-gradient(ellipse 45% 70% at 50% 100%, #000 30%, transparent 100%);
+}
+
+@supports (animation-timeline: scroll()) and (timeline-scope: none) {
+  @media (min-width: 64rem) and (hover: hover) and (pointer: fine) {
+    :root[data-motion="on"] #vr-ar::before {
+      display: none;
+    }
+  }
 }
 
 /* Soft accent glow around the spotlight card. */
@@ -298,7 +572,7 @@
 
 :root[data-motion="on"] [data-scan-play="run"] .scan-line,
 :root[data-motion="on"] .lock-line[data-run] {
-  animation: scan-sweep 600ms ease-out 250ms both;
+  animation: scan-sweep var(--dur-sweep) var(--ease-out) var(--delay-sweep) both;
 }
 
 @keyframes scan-sweep {
@@ -335,8 +609,8 @@
   inset: -6px;
   opacity: 0;
   transition:
-    opacity 180ms ease-out,
-    --c-len 180ms ease-out;
+    opacity var(--dur-fast) var(--ease-out),
+    --c-len var(--dur-fast) var(--ease-out);
 }
 
 .scan-corners,
@@ -385,19 +659,4 @@
 .lock-corners[data-lock="locked"] {
   --c-len: 18px;
   opacity: 1;
-}
-
-/* Hero reticle (HeroReticle): a soft round patch of dot "surface" around the pointer. Faint, and
-   behind all hero content. The 24px step must match DOT_STEP in hero-reticle.tsx. */
-.reticle-spot {
-  mask-image: radial-gradient(closest-side, #000 25%, transparent);
-}
-
-.reticle-dots {
-  background-image: radial-gradient(
-    circle,
-    color-mix(in oklab, var(--text-muted) 40%, transparent) 1px,
-    transparent 1.5px
-  );
-  background-size: 24px 24px;
 }

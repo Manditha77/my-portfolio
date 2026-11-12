@@ -2,6 +2,7 @@
 
 import type { Variants } from "motion/react";
 import * as m from "motion/react-m";
+import { duration, easeOut, seconds } from "@/lib/motion-tokens";
 
 /*
  * ASSEMBLE (from the hero cube, "systems from parts"): the text snaps together character by character.
@@ -16,7 +17,7 @@ const lineVariants: Variants = {
 
 const charVariants: Variants = {
   hidden: { opacity: 0, y: "-0.45em" },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: seconds(duration.fast), ease: easeOut } },
 };
 
 type AssembleTextProps = {
