@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { MathUtils, Matrix4, Vector3, type InstancedMesh, type Mesh, type ShaderMaterial } from "three";
 import { setBuildDock } from "@/lib/build-dock";
@@ -499,6 +499,16 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
   const [canvasSize, setCanvasSize] = useState<{ width: number; height: number } | null>(null);
   const [visible, setVisible] = useState(() => !document.hidden);
   const [ready, setReady] = useState(false);
+  const mountedRef = useRef(false);
+
+  // A lost context only counts while this canvas is mounted: unmounting (or the page being hidden) loses
+  // it on purpose. This cleanup runs before the canvas's own teardown.
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Measure the sections (and the hero box) now and whenever the layout or content changes size.
   useEffect(() => {
@@ -569,7 +579,13 @@ export function PartsCube({ heroRef, pointerRef, onReady, onFail }: PartsCubePro
           frameloop={visible ? "demand" : "never"}
           gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
           onCreated={({ gl }) => {
-            gl.domElement.addEventListener("webglcontextlost", onFail, { once: true });
+            gl.domElement.addEventListener(
+              "webglcontextlost",
+              () => {
+                if (mountedRef.current) onFail();
+              },
+              { once: true },
+            );
           }}
         >
           <Blocks

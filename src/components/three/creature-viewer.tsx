@@ -2,7 +2,15 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import Image from "next/image";
-import { useEffect, useEffectEvent, useRef, useState, type PointerEvent, type RefObject } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type RefObject,
+} from "react";
 import { LoopOnce, MathUtils, type AnimationAction, type Group } from "three";
 import type { ArCreature } from "@/content/xr";
 import { cx } from "@/lib/cx";
@@ -184,6 +192,16 @@ export function CreatureViewer({ creatures, labels, active, onReadyChange, onFai
   const fadeRef = useRef<HTMLDivElement>(null);
   const cornersRef = useRef<HTMLSpanElement>(null);
   const lineRef = useRef<HTMLSpanElement>(null);
+  const mountedRef = useRef(false);
+
+  // A lost context only counts while this canvas is mounted: unmounting (or the page being hidden) loses
+  // it on purpose. This cleanup runs before the canvas's own teardown.
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const fail = useEffectEvent(onFail);
   const reportReady = useEffectEvent(onReadyChange);
@@ -328,7 +346,13 @@ export function CreatureViewer({ creatures, labels, active, onReadyChange, onFai
             gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
             onCreated={({ camera, gl }) => {
               camera.lookAt(0, 0.8, 0);
-              gl.domElement.addEventListener("webglcontextlost", onFail, { once: true });
+              gl.domElement.addEventListener(
+                "webglcontextlost",
+                () => {
+                  if (mountedRef.current) onFail();
+                },
+                { once: true },
+              );
             }}
           >
             <hemisphereLight args={[SKY_LIGHT, GROUND_LIGHT, 2.2]} />
