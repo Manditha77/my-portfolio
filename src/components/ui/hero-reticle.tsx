@@ -8,10 +8,11 @@ import { useMotionOn } from "@/lib/use-motion-on";
  * SCAN (from AR Elemental Arena): the game's ring reticle, lying on the perspective floor wherever the
  * pointer meets it, like the game's hit-test reticle finding a surface. Kept quiet: a small 1px ring at low
  * opacity, no glow. It belongs to the cube's column of the hero only: it shows while the pointer is around
- * or below the hero visual (its box widened by ZONE_PAD, down to the hero's bottom, below the sticky header)
- * and the hero still fills the top half of the viewport, hides once the page scrolls on, and is clipped to
- * that zone, so it never reaches the hero's text column or the next section (the floor runs on behind the
- * whole page). Rendered inside PerspectiveFloor, so it sits at the floor's depth: behind all content and
+ * or below the hero visual (its box widened by ZONE_PAD, down to the hero's bottom, below the sticky header,
+ * and cut to the hero's content box and the viewport) and the hero still fills the top half of the viewport,
+ * hides once the page scrolls on, and stays whole inside that zone (its centre is kept a ring's radius from
+ * the edges, and it is clipped to the zone), so it never reaches the hero's text column, the side margins,
+ * the window's edge or the next section (the floor runs on behind the whole page). Rendered inside PerspectiveFloor, so it sits at the floor's depth: behind all content and
  * behind The Build's cube. The pointer's height gives the depth along the floor; the ring is scaled to that
  * depth and flattened by the floor's tilt, so it reads as an ellipse lying on it, with its stroke kept at
  * about 1px on screen. Above the horizon there is no floor to hit, so the reticle hides; it fades as it
@@ -47,6 +48,7 @@ function useFloorShown(): boolean {
 }
 
 type FloorGeometry = { depth: number; vanishY: number; sin: number; cos: number };
+type Zone = { left: number; right: number; top: number; bottom: number };
 
 function readGeometry(floor: HTMLElement): FloorGeometry | null {
   const layer = floor.querySelector(".floor-view");
@@ -57,6 +59,17 @@ function readGeometry(floor: HTMLElement): FloorGeometry | null {
   const tilt = (parseFloat(getComputedStyle(floor).getPropertyValue("--floor-tilt")) * Math.PI) / 180;
   if (!(depth > 0) || Number.isNaN(vanishY) || Number.isNaN(tilt)) return null;
   return { depth, vanishY, sin: Math.sin(tilt), cos: Math.cos(tilt) };
+}
+
+/** The hero's content box across the viewport: its Container (hero.tsx, the section's first child) inside its side padding. */
+function contentBox(hero: HTMLElement): { left: number; right: number } {
+  const container = hero.firstElementChild ?? hero;
+  const rect = container.getBoundingClientRect();
+  const styles = getComputedStyle(container);
+  return {
+    left: rect.left + parseFloat(styles.paddingLeft),
+    right: rect.right - parseFloat(styles.paddingRight),
+  };
 }
 
 /**
@@ -113,17 +126,23 @@ export function HeroReticle() {
       circle.style.strokeWidth = String(STROKE / scale.x);
     };
 
+    // The hero's content box (its Container, inside the side padding), measured on setup and resize.
+    let content = contentBox(hero);
+
     // The reticle's zone in the viewport: the hero visual's box widened by ZONE_PAD, down to the hero's
-    // bottom, below the sticky header. The hero's text column is outside it.
+    // bottom, below the sticky header, and cut to the hero's content box and the viewport, so at narrow
+    // desktop widths (where ZONE_PAD would reach the window's edge) it stays in the visible hero. The hero's
+    // text column is outside it.
     const zone = () => {
       const heroRect = hero.getBoundingClientRect();
       const visualRect = visual.getBoundingClientRect();
       const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+      const { clientWidth, clientHeight } = document.documentElement;
       return {
-        left: visualRect.left - ZONE_PAD,
-        right: visualRect.right + ZONE_PAD,
+        left: Math.max(visualRect.left - ZONE_PAD, content.left, 0),
+        right: Math.min(visualRect.right + ZONE_PAD, content.right, clientWidth),
         top: Math.max(visualRect.top - ZONE_PAD, heroRect.top, headerBottom),
-        bottom: heroRect.bottom,
+        bottom: Math.min(heroRect.bottom, clientHeight),
       };
     };
 
@@ -141,12 +160,27 @@ export function HeroReticle() {
     };
 
     // Cut to the zone (in the floor's coordinates), so nothing of it shows past the zone's edges.
-    const clipToZone = (rect: DOMRect) => {
-      const { left, right, top, bottom } = zone();
+    const clipToZone = (rect: DOMRect, { left, right, top, bottom }: Zone) => {
       const inset = [top - rect.top, rect.right - right, rect.bottom - bottom, left - rect.left].map(
         (value) => `${Math.max(0, value)}px`,
       );
       root.style.clipPath = `inset(${inset.join(" ")})`;
+    };
+
+    // The ring's centre for a pointer at (x, y) in the floor's coordinates: kept inside the zone by the ring's
+    // on-screen radii at that depth, so the whole ring always shows (never cut off at the zone's edge).
+    const inZone = (x: number, y: number, rect: DOMRect, { left, right, top, bottom }: Zone) => {
+      const radii = (atY: number) => {
+        const scale = geometry && projectOnFloor(atY, rect.height, geometry);
+        return scale ? { x: RING * scale.x, y: RING * scale.y } : { x: 0, y: 0 };
+      };
+      // A zone narrower than the ring: its middle.
+      const clamp = (value: number, low: number, high: number) =>
+        low > high ? (low + high) / 2 : Math.min(high, Math.max(low, value));
+      const ry = radii(y).y;
+      const cy = clamp(y, top - rect.top + ry, bottom - rect.top - ry);
+      const rx = radii(cy).x;
+      return { x: clamp(x, left - rect.left + rx, right - rect.left - rx), y: cy };
     };
     const setActive = (active: boolean) => {
       inside = active;
@@ -162,9 +196,9 @@ export function HeroReticle() {
         return;
       }
       const rect = floor.getBoundingClientRect();
-      clipToZone(rect);
-      const targetX = client.x - rect.left;
-      const targetY = client.y - rect.top;
+      const bounds = zone();
+      clipToZone(rect, bounds);
+      const { x: targetX, y: targetY } = inZone(client.x - rect.left, client.y - rect.top, rect, bounds);
 
       if (position === null) {
         // Entering: start on the pointer, not sliding in from the last exit point.
@@ -208,6 +242,7 @@ export function HeroReticle() {
     // The vanishing point is in px, so it moves with the viewport.
     const onResize = () => {
       geometry = readGeometry(floor);
+      content = contentBox(hero);
       kick();
     };
 
@@ -217,7 +252,7 @@ export function HeroReticle() {
     // Scrolling moves the hero under a still pointer (and its clip with it), and can scroll it away.
     const onScroll = () => {
       if (!inside && pointerIn && heroShown()) setActive(true);
-      if (inside) clipToZone(floor.getBoundingClientRect());
+      if (inside) clipToZone(floor.getBoundingClientRect(), zone());
       kick();
     };
     window.addEventListener("scroll", onScroll, { passive: true });

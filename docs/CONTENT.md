@@ -97,8 +97,8 @@ Compact card after 1–3 and before "More on GitHub"; visually secondary to the 
 - **Repo:** https://github.com/Manditha77/my-portfolio (link label: "View source on GitHub")
 - **Stack:** Next.js, TypeScript, Tailwind CSS, React Three Fiber, three.js, Motion, Vercel
 - **Card blurb:** The site you're reading: fast, accessible, and built from one typed content file.
-- **Chips:** Lighthouse 99 · WCAG AA · 3D lazy-loaded
-- **Note:** The Lighthouse figure is mobile Performance from a run in Oct 2026; re-run before changing it.
+- **Chips:** Accessibility 100 · WCAG AA · 3D lazy-loaded
+- **Note:** "Accessibility 100" is the Lighthouse mobile Accessibility score (Nov 2026: 100 in 5 of 5 runs on the production build); re-run before changing it.
 
 **More on GitHub:** link to https://github.com/Manditha77?tab=repositories
 

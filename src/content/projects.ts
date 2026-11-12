@@ -209,11 +209,11 @@ export const thisPortfolio: CompactProject = {
   type: "Personal project",
   status: "Live",
   blurb: "The site you're reading: fast, accessible, and built from one typed content file.",
-  // Lighthouse mobile Performance (Oct 2026); re-run before changing it.
-  chips: ["Lighthouse 99", "WCAG AA", "3D lazy-loaded"],
+  // Lighthouse mobile Accessibility (Nov 2026: 100 in 5 of 5 runs); re-run before changing it.
+  chips: ["Accessibility 100", "WCAG AA", "3D lazy-loaded"],
   stack: ["Next.js", "TypeScript", "Tailwind CSS", "React Three Fiber", "three.js", "Motion", "Vercel"],
   link: { label: "View source on GitHub", href: site.links.portfolioRepo.href },
-  countUp: ["99"],
+  countUp: ["100"],
 };
 
 export const moreOnGitHub: ExternalLink = site.links.githubRepos;
