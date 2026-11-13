@@ -29,3 +29,13 @@ export const caseStudies: readonly CaseStudyEntry[] = [
 ];
 
 export { caseStudyHref };
+
+/** Interface strings for the case studies' screenshot galleries and their full view. */
+export const galleryCopy = {
+  openFullView: "Open full view",
+  viewerLabel: "Screenshot viewer",
+  close: "Close full view",
+  previous: "Previous screenshot",
+  next: "Next screenshot",
+  position: (current: number, total: number) => `${current} of ${total}`,
+};

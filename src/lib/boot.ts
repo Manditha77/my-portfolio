@@ -4,8 +4,8 @@
  * slide out and snap in; src/lib/boot-growth.ts), while a part counter under it counts up to 27. It
  * settles onto the floor as the floor rolls out from under it, then it glides (FLIP) into its hero slot
  * while three blocks detach from it (into the header mark, the status dot and "View my work") and the
- * header and the hero content reveal in reading order; at the end the status types out, the 3D cube takes
- * over and the reticle wakes. On capable desktops a WebGL copy of the growth may take over from the SVG
+ * header and the hero content reveal in reading order; at the end the status types out and the 3D cube
+ * takes over. On capable desktops a WebGL copy of the growth may take over from the SVG
  * while it plays (src/components/three/boot-growth.tsx).
  * All CSS (globals.css, "Cube boot"), scoped to data-boot="play" on <html>, which only bootInitScript sets,
  * before first paint. So no JS, Motion off, a return visit and back-navigation all show the finished page

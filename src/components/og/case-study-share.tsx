@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import type { ContentImage } from "@/content/types";
+import type { ScreenshotShape } from "@/content/xr";
 import { brand } from "@/lib/brand";
 import { gridPath } from "@/lib/cube";
 
@@ -10,13 +11,16 @@ export const shareImageSize = { width: 1200, height: 630 };
 const GRID_STEP = 40;
 const SCREEN_HEIGHT = 500;
 const BEZEL = 10;
+const WINDOW_WIDTH = 520;
+const WINDOW_BEZEL = 8;
 
 type CaseStudyShareProps = {
   eyebrow: string;
   title: string;
   subtitle: string;
-  /** A portrait phone screenshot from /public, shown upright in a phone frame. */
+  /** A screenshot from /public: a portrait phone capture in a phone frame, or a landscape one in a window frame. */
   screenshot: ContentImage;
+  shape?: ScreenshotShape;
 };
 
 const mimeTypes: Record<string, string> = { jpeg: "image/jpeg", jpg: "image/jpeg", png: "image/png" };
@@ -29,10 +33,13 @@ async function publicImageDataUrl(src: string): Promise<string> {
   return `data:${mimeTypes[extension] ?? "image/png"};base64,${data.toString("base64")}`;
 }
 
-/** A 1200×630 share image for a case study with phone screenshots: the text on the left, the phone on the right. */
-export async function caseStudyShareImage({ eyebrow, title, subtitle, screenshot }: CaseStudyShareProps) {
+/** A 1200×630 share image for a case study: the text on the left, the screenshot on the right. */
+export async function caseStudyShareImage({ eyebrow, title, subtitle, screenshot, shape = "phone" }: CaseStudyShareProps) {
   const { width, height } = shareImageSize;
-  const screenWidth = Math.round((SCREEN_HEIGHT * screenshot.width) / screenshot.height);
+  const phone = shape === "phone";
+  // The phone is set by its height; a landscape window by its width.
+  const screenWidth = phone ? Math.round((SCREEN_HEIGHT * screenshot.width) / screenshot.height) : WINDOW_WIDTH;
+  const screenHeight = phone ? SCREEN_HEIGHT : Math.round((WINDOW_WIDTH * screenshot.height) / screenshot.width);
   const imageUrl = await publicImageDataUrl(screenshot.src);
 
   return new ImageResponse(
@@ -47,7 +54,7 @@ export async function caseStudyShareImage({ eyebrow, title, subtitle, screenshot
           position: "relative",
           backgroundColor: brand.bg,
           color: brand.text,
-          padding: "0 110px 0 80px",
+          padding: phone ? "0 110px 0 80px" : "0 70px 0 80px",
         }}
       >
         {/* Faint grid, fading out towards the edges, with an accent glow behind the phone. */}
@@ -69,12 +76,12 @@ export async function caseStudyShareImage({ eyebrow, title, subtitle, screenshot
           <rect width={width} height={height} fill="url(#glow)" />
         </svg>
 
-        <div style={{ display: "flex", flexDirection: "column", width: 700 }}>
+        <div style={{ display: "flex", flexDirection: "column", width: phone ? 700 : 470 }}>
           <div style={{ display: "flex", fontSize: 26, letterSpacing: 1, color: brand.accent }}>{eyebrow}</div>
-          <div style={{ display: "flex", marginTop: 24, fontSize: 80, lineHeight: 1.05, letterSpacing: -2 }}>
+          <div style={{ display: "flex", marginTop: 24, fontSize: phone ? 80 : 68, lineHeight: 1.05, letterSpacing: -2 }}>
             {title}
           </div>
-          <div style={{ display: "flex", marginTop: 28, fontSize: 36, lineHeight: 1.3, color: brand.textMuted }}>
+          <div style={{ display: "flex", marginTop: 28, fontSize: phone ? 36 : 32, lineHeight: 1.3, color: brand.textMuted }}>
             {subtitle}
           </div>
         </div>
@@ -82,14 +89,14 @@ export async function caseStudyShareImage({ eyebrow, title, subtitle, screenshot
         <div
           style={{
             display: "flex",
-            padding: BEZEL,
-            borderRadius: 40,
+            padding: phone ? BEZEL : WINDOW_BEZEL,
+            borderRadius: phone ? 40 : 14,
             backgroundColor: brand.surface,
             border: `2px solid ${brand.border}`,
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- Satori renders plain <img>, not next/image. */}
-          <img src={imageUrl} alt="" width={screenWidth} height={SCREEN_HEIGHT} style={{ borderRadius: 30 }} />
+          <img src={imageUrl} alt="" width={screenWidth} height={screenHeight} style={{ borderRadius: phone ? 30 : 8 }} />
         </div>
       </div>
     ),

@@ -223,6 +223,11 @@
   html {
     scroll-padding-top: var(--header-h);
   }
+
+  /* A modal (the gallery's full view) holds the page still behind it. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
 }
 
 /* ---------- Motion switch ----------
@@ -986,9 +991,7 @@
    scroll-timeline animation, repeated, so the grid moves by transform only and never passes the camera),
    and they brighten while the VR/AR section crosses the lower viewport (a view timeline). Everywhere else
    it is the same plane, still, and VR/AR brightens it while the section is mid-viewport (ScanObserver
-   sets data-floor-xr). One scan sweep runs along it the first time VR/AR enters, wherever motion is on.
-   The hero's ring reticle sits on it (HeroReticle, a sibling of the masked layer, so neither faded nor
-   masked; desktop only). */
+   sets data-floor-xr). One scan sweep runs along it the first time VR/AR enters, wherever motion is on. */
 
 /* Shown once the browser is idle after load (ScanObserver sets data-floor): its large composited plane is
    rastered after first paint, never in its way (LCP). It fades in where @starting-style is supported.

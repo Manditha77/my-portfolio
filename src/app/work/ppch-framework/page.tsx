@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ppchFramework as project, workCopy } from "@/content/projects";
 import { sectionHeading } from "@/content/navigation";
+import { CaseStudyGallery } from "@/components/case-study/case-study-gallery";
 import { CaseStudyHeader } from "@/components/case-study/case-study-header";
 import { CaseStudyPager } from "@/components/case-study/case-study-pager";
 import { CaseStudySection } from "@/components/case-study/case-study-section";
@@ -18,7 +19,7 @@ const { dataset, models, actEngine, deployed } = caseStudy.results;
 const PATH = "/work/ppch-framework";
 const shareTitle = `${project.title}: ${project.subtitle}`;
 
-// The share images come from opengraph-image.tsx and twitter-image.tsx in this folder (the root image).
+// The share images come from opengraph-image.tsx and twitter-image.tsx in this folder (the PR-comment card).
 export const metadata: Metadata = {
   title: project.title,
   description: project.blurb,
@@ -144,6 +145,10 @@ export default function PpchFrameworkPage() {
               </ResultCard>
             </li>
           </ul>
+        </CaseStudySection>
+
+        <CaseStudySection id="screenshots" heading={workCopy.headings.screenshots}>
+          <CaseStudyGallery images={caseStudy.gallery} shape="landscape" fit="contain" idPrefix={project.slug} />
         </CaseStudySection>
 
         <CaseStudySection id="limitations" heading={workCopy.headings.limitations}>

@@ -30,6 +30,10 @@ export type ProjectCaseStudy = {
     deployed: { heading: string; body: readonly string[] };
   };
   limitations: string;
+  /** Screenshots in story order, shown after the results. */
+  gallery: readonly ContentImage[];
+  /** The screenshot in the generated share image. */
+  share: ContentImage;
 };
 
 export type Project = {
@@ -54,6 +58,16 @@ export type Project = {
   countUp?: readonly string[];
   caseStudy?: ProjectCaseStudy;
   todos: readonly Todo[];
+};
+
+const ppchImageDir = "/images/projects/ppch";
+
+const prComment: ContentImage = {
+  src: `${ppchImageDir}/pr-comment.png`,
+  alt: "PPCH bot comment on a pull request explaining why it was flagged, with model scores and a scope caveat",
+  caption: "The PR comment",
+  width: 1138,
+  height: 863,
 };
 
 export const ppchFramework = {
@@ -135,6 +149,38 @@ export const ppchFramework = {
     },
     limitations:
       "The deployed Action runs Random Forest + XGBoost; Logistic Regression was found best later, in the four-model comparison.",
+    gallery: [
+      prComment,
+      {
+        src: `${ppchImageDir}/refactor-diff.png`,
+        alt: "Suggested Extract Method refactoring diff, with all methods now under the complexity threshold",
+        caption: "Verified refactoring",
+        width: 1150,
+        height: 870,
+      },
+      {
+        src: `${ppchImageDir}/multi-file-summary.png`,
+        alt: "Analysis summary across two changed files listing each extracted method",
+        caption: "Across every changed file",
+        width: 1410,
+        height: 858,
+      },
+      {
+        src: `${ppchImageDir}/workflow-setup.png`,
+        alt: "GitHub Actions workflow file using the PPCH Action",
+        caption: "Install in a few lines",
+        width: 1155,
+        height: 611,
+      },
+      {
+        src: `${ppchImageDir}/action-run.png`,
+        alt: "Successful PPCH guard run in GitHub Actions",
+        caption: "Running in GitHub Actions",
+        width: 1919,
+        height: 1079,
+      },
+    ],
+    share: prComment,
   },
   todos: [],
 } satisfies Project;
@@ -237,6 +283,7 @@ export const workCopy = {
     problem: "The problem",
     howItWorks: "How it works",
     results: "Results",
+    screenshots: "Screenshots",
     limitations: "Limitations",
   },
 };

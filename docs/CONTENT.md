@@ -67,6 +67,13 @@ Code-quality issues are usually found after a pull request merges. Can complexit
 **Limitations**
 The deployed Action runs Random Forest + XGBoost; Logistic Regression was found best later, in the four-model comparison.
 
+**Screenshots** (`public/images/projects/ppch/`, after Results; caption · alt text)
+1. `pr-comment.png`: The PR comment · PPCH bot comment on a pull request explaining why it was flagged, with model scores and a scope caveat (also the share image)
+2. `refactor-diff.png`: Verified refactoring · Suggested Extract Method refactoring diff, with all methods now under the complexity threshold
+3. `multi-file-summary.png`: Across every changed file · Analysis summary across two changed files listing each extracted method
+4. `workflow-setup.png`: Install in a few lines · GitHub Actions workflow file using the PPCH Action
+5. `action-run.png`: Running in GitHub Actions · Successful PPCH guard run in GitHub Actions
+
 **Links:** repo (header button).
 
 ### 2. GroceryEase: Web-based grocery management system

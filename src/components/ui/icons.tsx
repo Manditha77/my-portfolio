@@ -97,6 +97,30 @@ export function CheckIcon(props: IconProps) {
   );
 }
 
+export function ExpandIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />
+    </BaseIcon>
+  );
+}
+
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M15 5l-7 7 7 7" />
+    </BaseIcon>
+  );
+}
+
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M9 5l7 7-7 7" />
+    </BaseIcon>
+  );
+}
+
 /* Brand glyphs are filled shapes, not outlines. */
 
 export function MediumIcon(props: IconProps) {

@@ -60,7 +60,7 @@ export const shellCopy = {
   closeMenu: "Close menu",
   switchToLight: "Switch to light theme",
   switchToDark: "Switch to dark theme",
-  /** The Motion toggle's fixed accessible name; aria-pressed carries the state. */
+  /** The Motion toggle's name and tooltip, by state: what a press does. */
   pauseAnimations: "Pause animations",
   playAnimations: "Play animations",
   backToTop: "Back to top",
